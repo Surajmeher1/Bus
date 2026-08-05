@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .sidebar { background: linear-gradient(180deg,#1a0530 0%,#2d0a4e 100%); }
+    .nav-link.active { background: rgba(168,85,247,.25); }
+    .sidebar-logo { background: linear-gradient(135deg,#a855f7,#7c3aed); }
+    .modal-overlay { display:flex; }
+    .table-actions { display:flex; gap:6px; }
+    .search-filter-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .tab-nav { display:flex; gap:0; border-bottom:2px solid var(--border-color); margin-bottom:20px; }
+    .tab-nav-btn { padding:10px 20px; font-size:.875rem; font-weight:600; color:var(--text-secondary); border-bottom:3px solid transparent; margin-bottom:-2px; cursor:pointer; transition:all .2s; }
+    .tab-nav-btn:hover { color:var(--primary-600); }
+    .tab-nav-btn.active { color:var(--primary-600); border-bottom-color:var(--primary-500); }
+    .tab-pane { display:none; } .tab-pane.active { display:block; }
+    canvas { max-height: 280px !important; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🛡️</div>
+      <div class="sidebar-brand">Admin Panel<br><span style="font-weight:400;opacity:.7;font-size:.8rem;">System Control</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Overview</div>
+      <div class="nav-item"><a class="nav-link active" href="#" data-section="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a></div>
+      <div class="nav-section-title">Management</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="buses"><i class="fa-solid fa-bus"></i><span>Buses</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="drivers"><i class="fa-solid fa-id-card"></i><span>Drivers</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="managers"><i class="fa-solid fa-user-tie"></i><span>Bus Managers</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="routes"><i class="fa-solid fa-route"></i><span>Routes</span></a></div>
+      <div class="nav-section-title">Operations</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="schedule"><i class="fa-solid fa-calendar-days"></i><span>Schedule</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="reports"><i class="fa-solid fa-chart-line"></i><span>Reports</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="logs"><i class="fa-solid fa-list-check"></i><span>Activity Logs</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></a></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-link" id="logout-btn" style="cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></div>
+    </div>
+  </aside>
+
+  <div class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+        <div>
+          <div class="topbar-title" id="page-title">Admin Dashboard</div>
+          <div style="font-size:.75rem;color:var(--text-muted);" id="page-subtitle">System Overview</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+        <div class="user-menu-wrapper">
+          <div class="user-avatar" id="user-avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed);">A</div>
+          <div class="user-menu" id="user-menu">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+              <div style="font-weight:600;" id="user-display-name">Administrator</div>
+              <div style="font-size:.75rem;color:var(--text-muted);" id="user-display-role">Admin</div>
+            </div>
+            <div class="user-menu-item" data-section="settings"><i class="fa-solid fa-gear"></i> Settings</div>
+            <div class="user-menu-item danger" id="logout-btn-menu"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ═══ ADMIN DASHBOARD ═══ -->
+      <section id="section-dashboard" class="section fade-in">
+        <div class="page-header">
+          <div><h1 class="page-title">System Dashboard</h1><div class="page-subtitle">Real-time system overview</div></div>
+          <button class="btn btn-primary" onclick="loadDashboard()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+        </div>
+
+        <div class="grid grid-5 mb-24" style="grid-template-columns:repeat(5,1fr);">
+          <div class="stat-card blue"><div class="stat-icon blue"><i class="fa-solid fa-graduation-cap"></i></div><div class="stat-info"><div class="stat-value" id="s-students">–</div><div class="stat-label">Students</div></div></div>
+          <div class="stat-card cyan"><div class="stat-icon cyan"><i class="fa-solid fa-bus"></i></div><div class="stat-info"><div class="stat-value" id="s-buses">–</div><div class="stat-label">Total Buses</div></div></div>
+          <div class="stat-card green"><div class="stat-icon green"><i class="fa-solid fa-circle-play"></i></div><div class="stat-info"><div class="stat-value" id="s-active">–</div><div class="stat-label">Active Trips</div></div></div>
+          <div class="stat-card orange"><div class="stat-icon orange"><i class="fa-solid fa-route"></i></div><div class="stat-info"><div class="stat-value" id="s-routes">–</div><div class="stat-label">Routes</div></div></div>
+          <div class="stat-card red"><div class="stat-icon red"><i class="fa-solid fa-id-card"></i></div><div class="stat-info"><div class="stat-value" id="s-drivers">–</div><div class="stat-label">Drivers</div></div></div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-2 mb-24">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Bus Status Distribution</div></div>
+            <div class="card-body"><canvas id="chart-bus-status"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Students by Department</div></div>
+            <div class="card-body"><canvas id="chart-departments"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Quick Access -->
+        <div class="grid grid-4">
+          <div class="card" style="cursor:pointer;" onclick="showSection('students')">
+            <div class="card-body" style="text-align:center;padding:28px;">
+              <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary-100);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-graduation-cap" style="color:var(--primary-600);font-size:1.3rem;"></i></div>
+              <div style="font-weight:700;margin-bottom:4px;">Manage Students</div>
+              <div style="font-size:.8rem;color:var(--text-secondary);">Add, edit, delete students</div>
+            </div>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showSection('buses')">
+            <div class="card-body" style="text-align:center;padding:28px;">
+              <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-bus" style="color:#16a34a;font-size:1.3rem;"></i></div>
+              <div style="font-weight:700;margin-bottom:4px;">Manage Buses</div>
+              <div style="font-size:.8rem;color:var(--text-secondary);">Add, configure buses</div>
+            </div>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showSection('routes')">
+            <div class="card-body" style="text-align:center;padding:28px;">
+              <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#fef3c7;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-route" style="color:#d97706;font-size:1.3rem;"></i></div>
+              <div style="font-weight:700;margin-bottom:4px;">Manage Routes</div>
+              <div style="font-size:.8rem;color:var(--text-secondary);">Add/edit bus routes</div>
+            </div>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showSection('reports')">
+            <div class="card-body" style="text-align:center;padding:28px;">
+              <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-chart-pie" style="color:#dc2626;font-size:1.3rem;"></i></div>
+              <div style="font-weight:700;margin-bottom:4px;">View Reports</div>
+              <div style="font-size:.8rem;color:var(--text-secondary);">Analytics & statistics</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ STUDENTS ═══ -->
+      <section id="section-students" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Student Management</h1>
+          <button class="btn btn-primary" onclick="openModal('add-student-modal')"><i class="fa-solid fa-plus"></i> Add Student</button>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="search-filter-bar" style="margin:0;flex:1;">
+              <div class="search-bar" style="flex:1;max-width:320px;">
+                <i class="fa-solid fa-search"></i>
+                <input id="student-search" placeholder="Search by name, roll, department..." oninput="searchStudents()"/>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadStudents()"><i class="fa-solid fa-arrows-rotate"></i></button>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Roll No.</th><th>Name</th><th>Email</th><th>Department</th><th>Semester</th><th>Joined</th><th>Actions</th></tr></thead>
+                <tbody id="students-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ BUSES ═══ -->
+      <section id="section-buses" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Bus Management</h1>
+          <button class="btn btn-primary" onclick="openModal('add-bus-modal')"><i class="fa-solid fa-plus"></i> Add Bus</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Bus No.</th><th>Registration</th><th>Route</th><th>Driver</th><th>Manager</th><th>Status</th><th>Seats</th><th>Actions</th></tr></thead>
+                <tbody id="buses-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ DRIVERS ═══ -->
+      <section id="section-drivers" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Driver Management</h1>
+          <button class="btn btn-primary" onclick="openModal('add-driver-modal')"><i class="fa-solid fa-plus"></i> Add Driver</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Name</th><th>Phone</th><th>License No.</th><th>Address</th><th>Actions</th></tr></thead>
+                <tbody id="drivers-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ MANAGERS ═══ -->
+      <section id="section-managers" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Bus Manager Management</h1>
+          <button class="btn btn-primary" onclick="openModal('add-manager-modal')"><i class="fa-solid fa-plus"></i> Add Manager</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Actions</th></tr></thead>
+                <tbody id="managers-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ ROUTES ═══ -->
+      <section id="section-routes" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Route Management</h1>
+          <button class="btn btn-primary" onclick="openModal('add-route-modal')"><i class="fa-solid fa-plus"></i> Add Route</button>
+        </div>
+        <div id="routes-grid" class="grid grid-2"></div>
+      </section>
+
+      <!-- ═══ SCHEDULE ═══ -->
+      <section id="section-schedule" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Today's Schedule</h1></div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Bus</th><th>Route</th><th>Driver</th><th>Start</th><th>End</th><th>Status</th><th>Seats</th></tr></thead>
+                <tbody id="schedule-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ REPORTS ═══ -->
+      <section id="section-reports" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Analytics & Reports</h1></div>
+        <div class="tab-nav" id="report-tabs">
+          <div class="tab-nav-btn active" onclick="switchReportTab('utilization')">Bus Utilization</div>
+          <div class="tab-nav-btn" onclick="switchReportTab('routes')">Route Stats</div>
+          <div class="tab-nav-btn" onclick="switchReportTab('departments')">Student Stats</div>
+        </div>
+
+        <div id="tab-utilization" class="tab-pane active">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Bus Utilization Report</div></div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Bus No.</th><th>Capacity</th><th>Available</th><th>Occupancy</th><th>Status</th><th>Trips</th></tr></thead>
+                  <tbody id="util-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="tab-routes" class="tab-pane">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Route Statistics</div></div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Route</th><th>Total Trips</th><th>Buses Assigned</th></tr></thead>
+                  <tbody id="route-stats-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="tab-departments" class="tab-pane">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Students by Department</div></div>
+            <div class="card-body"><canvas id="chart-dept-report" style="max-height:320px;"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ NOTIFICATIONS ═══ -->
+      <section id="section-notifications" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Notifications</h1></div>
+        <div class="grid grid-2 mb-24">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Send Notification</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Title</label><input id="admin-notif-title" class="form-control" placeholder="Notification title"/></div>
+              <div class="form-group"><label class="form-label">Message</label><textarea id="admin-notif-msg" class="form-control" rows="4" placeholder="Message..."></textarea></div>
+              <div class="form-group"><label class="form-label">Recipient</label>
+                <select id="admin-notif-type" class="form-control">
+                  <option value="all">All Users</option>
+                  <option value="student">All Students</option>
+                  <option value="manager">All Managers</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <button class="btn btn-primary flex-1" onclick="sendAdminNotif(false)"><i class="fa-solid fa-paper-plane"></i> Send</button>
+                <button class="btn btn-danger" onclick="sendAdminNotif(true)"><i class="fa-solid fa-triangle-exclamation"></i> Emergency</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">All Notifications</div><button class="btn btn-outline btn-sm" onclick="loadAllNotifs()">Refresh</button></div>
+            <div style="max-height:420px;overflow-y:auto;" id="all-notifs-list">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ ACTIVITY LOGS ═══ -->
+      <section id="section-logs" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Activity Logs</h1><button class="btn btn-outline" onclick="loadLogs()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button></div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Time</th><th>Role</th><th>User ID</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
+                <tbody id="logs-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ SETTINGS ═══ -->
+      <section id="section-settings" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Settings</h1></div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-lock" style="color:var(--warning);margin-right:8px;"></i>Change Admin Password</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Current Password</label><input id="s-cur-pw" class="form-control" type="password"/></div>
+              <div class="form-group"><label class="form-label">New Password</label><input id="s-new-pw" class="form-control" type="password"/></div>
+              <div class="form-group"><label class="form-label">Confirm New Password</label><input id="s-conf-pw" class="form-control" type="password"/></div>
+              <button class="btn btn-warning w-full" onclick="changeAdminPw()"><i class="fa-solid fa-key"></i> Change Password</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-circle-info" style="color:var(--primary-500);margin-right:8px;"></i>System Information</div></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="flex-between" style="padding:10px;background:var(--bg-base);border-radius:var(--radius-md);"><span style="font-size:.875rem;color:var(--text-secondary);">System Name</span><span style="font-weight:600;font-size:.875rem;">Smart Bus Tracker</span></div>
+                <div class="flex-between" style="padding:10px;background:var(--bg-base);border-radius:var(--radius-md);"><span style="font-size:.875rem;color:var(--text-secondary);">Version</span><span style="font-weight:600;font-size:.875rem;">1.0.0</span></div>
+                <div class="flex-between" style="padding:10px;background:var(--bg-base);border-radius:var(--radius-md);"><span style="font-size:.875rem;color:var(--text-secondary);">Database</span><span style="font-weight:600;font-size:.875rem;">SQLite (better-sqlite3)</span></div>
+                <div class="flex-between" style="padding:10px;background:var(--bg-base);border-radius:var(--radius-md);"><span style="font-size:.875rem;color:var(--text-secondary);">Real-time</span><span style="font-weight:600;font-size:.875rem;">Socket.IO</span></div>
+                <div class="flex-between" style="padding:10px;background:var(--bg-base);border-radius:var(--radius-md);"><span style="font-size:.875rem;color:var(--text-secondary);">Maps</span><span style="font-weight:600;font-size:.875rem;">Leaflet + OpenStreetMap</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Modals ────────────────────────────────────────────────────────── -->
+<!-- Add Student -->
+<div class="modal-overlay" id="add-student-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add New Student</div><span class="modal-close" onclick="closeModal('add-student-modal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="modal-body">
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Full Name *</label><input id="new-stu-name" class="form-control"/></div>
+        <div class="form-group"><label class="form-label">Roll Number *</label><input id="new-stu-roll" class="form-control"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email *</label><input id="new-stu-email" class="form-control" type="email"/></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Phone</label><input id="new-stu-phone" class="form-control"/></div>
+        <div class="form-group"><label class="form-label">Semester</label><select id="new-stu-sem" class="form-control"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Department</label><select id="new-stu-dept" class="form-control"><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>Electrical</option></select></div>
+      <div class="form-group"><label class="form-label">Password (default: Student@123)</label><input id="new-stu-pw" class="form-control" type="password" placeholder="Student@123"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-student-modal')">Cancel</button><button class="btn btn-primary" onclick="addStudent()">Add Student</button></div>
+  </div>
+</div>
+
+<!-- Add Bus -->
+<div class="modal-overlay" id="add-bus-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add New Bus</div><span class="modal-close" onclick="closeModal('add-bus-modal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="modal-body">
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Bus Number *</label><input id="new-bus-num" class="form-control" placeholder="BUS-004"/></div>
+        <div class="form-group"><label class="form-label">Registration No. *</label><input id="new-bus-reg" class="form-control" placeholder="KA-01-XX-0000"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Capacity</label><input id="new-bus-cap" class="form-control" type="number" value="50"/></div>
+      <div class="form-group"><label class="form-label">Route</label><select id="new-bus-route" class="form-control"><option value="">No Route</option></select></div>
+      <div class="form-group"><label class="form-label">Driver</label><select id="new-bus-driver" class="form-control"><option value="">No Driver</option></select></div>
+      <div class="form-group"><label class="form-label">Manager</label><select id="new-bus-mgr" class="form-control"><option value="">No Manager</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-bus-modal')">Cancel</button><button class="btn btn-primary" onclick="addBus()">Add Bus</button></div>
+  </div>
+</div>
+
+<!-- Add Driver -->
+<div class="modal-overlay" id="add-driver-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add New Driver</div><span class="modal-close" onclick="closeModal('add-driver-modal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name *</label><input id="new-drv-name" class="form-control"/></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Phone</label><input id="new-drv-phone" class="form-control"/></div>
+        <div class="form-group"><label class="form-label">License Number</label><input id="new-drv-lic" class="form-control"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Address</label><textarea id="new-drv-addr" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-driver-modal')">Cancel</button><button class="btn btn-primary" onclick="addDriver()">Add Driver</button></div>
+  </div>
+</div>
+
+<!-- Add Manager -->
+<div class="modal-overlay" id="add-manager-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add New Manager</div><span class="modal-close" onclick="closeModal('add-manager-modal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name *</label><input id="new-mgr-name" class="form-control"/></div>
+      <div class="form-group"><label class="form-label">Email *</label><input id="new-mgr-email" class="form-control" type="email"/></div>
+      <div class="form-group"><label class="form-label">Phone</label><input id="new-mgr-phone" class="form-control"/></div>
+      <div class="form-group"><label class="form-label">Password</label><input id="new-mgr-pw" class="form-control" type="password" placeholder="Manager@123"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-manager-modal')">Cancel</button><button class="btn btn-primary" onclick="addManager()">Add Manager</button></div>
+  </div>
+</div>
+
+<!-- Add Route -->
+<div class="modal-overlay" id="add-route-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add New Route</div><span class="modal-close" onclick="closeModal('add-route-modal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Route Name *</label><input id="new-rt-name" class="form-control" placeholder="Route C - Campus to Airport"/></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Source</label><input id="new-rt-src" class="form-control"/></div>
+        <div class="form-group"><label class="form-label">Destination</label><input id="new-rt-dest" class="form-control"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Distance (km)</label><input id="new-rt-dist" class="form-control" type="number"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-route-modal')">Cancel</button><button class="btn btn-primary" onclick="addRoute()">Add Route</button></div>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/socket-client.js"></script>
+<script src="../../assets/js/map.js"></script>
+<script>
+Auth.redirectIfNotRole('admin');
+let busChart, deptChart, deptReportChart;
+let allDriversCached = [], allManagersCached = [], allRoutesCached = [];
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById(`section-${name}`).style.display = 'block';
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
+  document.getElementById('page-title').textContent = {
+    dashboard:'Admin Dashboard', students:'Students', buses:'Buses', drivers:'Drivers',
+    managers:'Managers', routes:'Routes', schedule:'Schedule', reports:'Reports',
+    notifications:'Notifications', logs:'Activity Logs', settings:'Settings'
+  }[name] || name;
+  const actions = { students: loadStudents, buses: loadBuses, drivers: loadDrivers, managers: loadManagers, routes: loadRoutes, schedule: loadSchedule, reports: loadReports, notifications: loadAllNotifs, logs: loadLogs };
+  if (actions[name]) actions[name]();
+  document.getElementById('user-menu')?.classList.remove('open');
+}
+document.querySelectorAll('.nav-link[data-section], .user-menu-item[data-section]').forEach(l => l.addEventListener('click', e => { e.preventDefault(); showSection(l.dataset.section); }));
+
+// ── Modals ─────────────────────────────────────────────────────────────────────
+function openModal(id) { const m = document.getElementById(id); m.style.opacity='1'; m.style.pointerEvents='all'; m.classList.add('open'); }
+function closeModal(id){ const m = document.getElementById(id); m.style.opacity='0'; m.style.pointerEvents='none'; m.classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.opacity='0'; m.style.pointerEvents='none'; }));
+
+// ── Dashboard ──────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [statsRes, reportsRes] = await Promise.all([AdminAPI.getStats(), AdminAPI.getReports()]);
+    const s = statsRes.data || {};
+    const r = reportsRes.data || {};
+
+    document.getElementById('s-students').textContent = s.totalStudents || 0;
+    document.getElementById('s-buses').textContent    = s.totalBuses || 0;
+    document.getElementById('s-active').textContent   = s.activeTrips || 0;
+    document.getElementById('s-routes').textContent   = s.totalRoutes || 0;
+    document.getElementById('s-drivers').textContent  = s.totalDrivers || 0;
+
+    // Bus status chart
+    const busRes = await BusAPI.getAll();
+    const buses = busRes.data || [];
+    const statusCount = buses.reduce((acc, b) => { acc[b.status] = (acc[b.status]||0)+1; return acc; }, {});
+    const ctx1 = document.getElementById('chart-bus-status');
+    if (busChart) busChart.destroy();
+    busChart = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(statusCount).map(k=>k.charAt(0).toUpperCase()+k.slice(1)),
+        datasets: [{ data: Object.values(statusCount), backgroundColor: ['#22c55e','#f59e0b','#ef4444','#6b7280','#94a3b8'], borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+    });
+
+    // Dept chart
+    const depts = r.studentsByDept || [];
+    const ctx2 = document.getElementById('chart-departments');
+    if (deptChart) deptChart.destroy();
+    deptChart = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: depts.map(d=>d.department||'Unknown'),
+        datasets: [{ label: 'Students', data: depts.map(d=>d.count), backgroundColor: '#3b82f6', borderRadius: 6 }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── Students ──────────────────────────────────────────────────────────────────
+async function loadStudents() {
+  try {
+    const res = await StudentAPI.getAll();
+    renderStudentTable(res.data || []);
+  } catch(e) {}
+}
+function renderStudentTable(students) {
+  document.getElementById('students-tbody').innerHTML = students.length ? students.map(s => `
+    <tr>
+      <td><b>${s.roll_number}</b></td>
+      <td>${s.name}</td>
+      <td style="font-size:.8125rem;">${s.email}</td>
+      <td>${s.department||'—'}</td>
+      <td>${s.semester||'—'}</td>
+      <td style="font-size:.75rem;color:var(--text-muted);">${new Date(s.created_at).toLocaleDateString()}</td>
+      <td><div class="table-actions">
+        <button class="btn btn-icon btn-danger btn-sm" onclick="deleteStudent(${s.student_id})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+      </div></td>
+    </tr>
+  `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No students found</td></tr>';
+}
+async function searchStudents() {
+  const q = document.getElementById('student-search').value.trim();
+  if (!q) { loadStudents(); return; }
+  try { const res = await StudentAPI.search(q); renderStudentTable(res.data || []); } catch(e) {}
+}
+async function addStudent() {
+  const data = {
+    name: document.getElementById('new-stu-name').value,
+    roll_number: document.getElementById('new-stu-roll').value,
+    email: document.getElementById('new-stu-email').value,
+    phone: document.getElementById('new-stu-phone').value,
+    semester: document.getElementById('new-stu-sem').value,
+    department: document.getElementById('new-stu-dept').value,
+    password: document.getElementById('new-stu-pw').value || 'Student@123',
+  };
+  if (!data.name || !data.roll_number || !data.email) { Toast.warning('Fill required fields.'); return; }
+  try { await StudentAPI.create(data); Toast.success('Student added!'); closeModal('add-student-modal'); loadStudents(); } catch(e) { Toast.error(e.message); }
+}
+async function deleteStudent(id) {
+  if (!confirm('Delete this student?')) return;
+  try { await StudentAPI.delete(id); Toast.success('Student deleted.'); loadStudents(); } catch(e) { Toast.error(e.message); }
+}
+
+// ── Buses ──────────────────────────────────────────────────────────────────────
+async function loadBuses() {
+  try {
+    const [busRes, routeRes, driverRes, mgrRes] = await Promise.all([BusAPI.getAll(), RouteAPI.getAll(), DriverAPI.getAll(), ManagerAPI.getAll()]);
+    allRoutesCached = routeRes.data||[]; allDriversCached = driverRes.data||[]; allManagersCached = mgrRes.data||[];
+    populateBusModalSelects();
+    const buses = busRes.data || [];
+    document.getElementById('buses-tbody').innerHTML = buses.length ? buses.map(b => `
+      <tr>
+        <td><b>${b.bus_number}</b></td>
+        <td style="font-size:.8rem;">${b.registration_number}</td>
+        <td>${b.route_name||'—'}</td>
+        <td>${b.driver_name||'—'}</td>
+        <td>${b.manager_name||'—'}</td>
+        <td><span class="badge badge-${b.status}">${b.status}</span></td>
+        <td>${b.available_seats}/${b.capacity}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteBus(${b.bus_id})"><i class="fa-solid fa-trash-can"></i></button></td>
+      </tr>
+    `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No buses</td></tr>';
+  } catch(e) {}
+}
+function populateBusModalSelects() {
+  document.getElementById('new-bus-route').innerHTML = '<option value="">No Route</option>' + allRoutesCached.map(r=>`<option value="${r.route_id}">${r.route_name}</option>`).join('');
+  document.getElementById('new-bus-driver').innerHTML = '<option value="">No Driver</option>' + allDriversCached.map(d=>`<option value="${d.driver_id}">${d.name}</option>`).join('');
+  document.getElementById('new-bus-mgr').innerHTML = '<option value="">No Manager</option>' + allManagersCached.map(m=>`<option value="${m.manager_id}">${m.name}</option>`).join('');
+}
+async function addBus() {
+  const data = { bus_number: document.getElementById('new-bus-num').value, registration_number: document.getElementById('new-bus-reg').value, capacity: document.getElementById('new-bus-cap').value, route_id: document.getElementById('new-bus-route').value||null, driver_id: document.getElementById('new-bus-driver').value||null, manager_id: document.getElementById('new-bus-mgr').value||null };
+  if (!data.bus_number || !data.registration_number) { Toast.warning('Fill required fields.'); return; }
+  try { await BusAPI.create(data); Toast.success('Bus added!'); closeModal('add-bus-modal'); loadBuses(); } catch(e) { Toast.error(e.message); }
+}
+async function deleteBus(id) { if (!confirm('Delete this bus?')) return; try { await BusAPI.delete(id); Toast.success('Bus deleted.'); loadBuses(); } catch(e) { Toast.error(e.message); } }
+
+// ── Drivers ────────────────────────────────────────────────────────────────────
+async function loadDrivers() {
+  try {
+    const res = await DriverAPI.getAll();
+    document.getElementById('drivers-tbody').innerHTML = (res.data||[]).map(d => `
+      <tr>
+        <td><b>${d.name}</b></td>
+        <td>${d.phone||'—'}</td>
+        <td>${d.license_number||'—'}</td>
+        <td>${d.address||'—'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteDriver(${d.driver_id})"><i class="fa-solid fa-trash-can"></i></button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No drivers</td></tr>';
+  } catch(e) {}
+}
+async function addDriver() {
+  const data = { name: document.getElementById('new-drv-name').value, phone: document.getElementById('new-drv-phone').value, license_number: document.getElementById('new-drv-lic').value, address: document.getElementById('new-drv-addr').value };
+  if (!data.name) { Toast.warning('Name is required.'); return; }
+  try { await DriverAPI.create(data); Toast.success('Driver added!'); closeModal('add-driver-modal'); loadDrivers(); } catch(e) { Toast.error(e.message); }
+}
+async function deleteDriver(id) { if (!confirm('Delete driver?')) return; try { await DriverAPI.delete(id); Toast.success('Driver deleted.'); loadDrivers(); } catch(e) { Toast.error(e.message); } }
+
+// ── Managers ───────────────────────────────────────────────────────────────────
+async function loadManagers() {
+  try {
+    const res = await ManagerAPI.getAll();
+    document.getElementById('managers-tbody').innerHTML = (res.data||[]).map(m => `
+      <tr>
+        <td><b>${m.name}</b></td>
+        <td>${m.email}</td>
+        <td>${m.phone||'—'}</td>
+        <td style="font-size:.75rem;color:var(--text-muted);">${new Date(m.created_at).toLocaleDateString()}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteManager(${m.manager_id})"><i class="fa-solid fa-trash-can"></i></button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No managers</td></tr>';
+  } catch(e) {}
+}
+async function addManager() {
+  const data = { name: document.getElementById('new-mgr-name').value, email: document.getElementById('new-mgr-email').value, phone: document.getElementById('new-mgr-phone').value, password: document.getElementById('new-mgr-pw').value||'Manager@123' };
+  if (!data.name || !data.email) { Toast.warning('Name and email required.'); return; }
+  try { await ManagerAPI.create(data); Toast.success('Manager added!'); closeModal('add-manager-modal'); loadManagers(); } catch(e) { Toast.error(e.message); }
+}
+async function deleteManager(id) { if (!confirm('Delete manager?')) return; try { await ManagerAPI.delete(id); Toast.success('Manager deleted.'); loadManagers(); } catch(e) { Toast.error(e.message); } }
+
+// ── Routes ─────────────────────────────────────────────────────────────────────
+async function loadRoutes() {
+  try {
+    const res = await RouteAPI.getAll();
+    const container = document.getElementById('routes-grid');
+    container.innerHTML = (res.data||[]).map(r => `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">${r.route_name}</div>
+          <button class="btn btn-danger btn-sm" onclick="deleteRoute(${r.route_id})"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+        <div class="card-body">
+          <div style="font-size:.875rem;color:var(--text-secondary);margin-bottom:12px;">${r.source} → ${r.destination} (${r.distance||'?'} km)</div>
+          <div class="stop-list">
+            ${(r.stops||[]).map((s,i)=>`<div class="stop-item"><div class="stop-dot ${i===0?'active':''}">${i+1}</div><div class="stop-info"><div class="stop-name">${s.stop_name}</div></div></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `).join('') || '<div style="color:var(--text-muted);">No routes found.</div>';
+  } catch(e) {}
+}
+async function addRoute() {
+  const data = { route_name: document.getElementById('new-rt-name').value, source: document.getElementById('new-rt-src').value, destination: document.getElementById('new-rt-dest').value, distance: document.getElementById('new-rt-dist').value };
+  if (!data.route_name) { Toast.warning('Route name required.'); return; }
+  try { await RouteAPI.create(data); Toast.success('Route added!'); closeModal('add-route-modal'); loadRoutes(); } catch(e) { Toast.error(e.message); }
+}
+async function deleteRoute(id) { if (!confirm('Delete route?')) return; try { await RouteAPI.delete(id); Toast.success('Route deleted.'); loadRoutes(); } catch(e) { Toast.error(e.message); } }
+
+// ── Schedule ───────────────────────────────────────────────────────────────────
+async function loadSchedule() {
+  try {
+    const res = await TripAPI.getToday();
+    document.getElementById('schedule-tbody').innerHTML = (res.data||[]).map(t => `
+      <tr>
+        <td><b>${t.bus_number}</b></td>
+        <td>${t.route_name||'—'}</td>
+        <td>${t.driver_name||'—'}</td>
+        <td>${t.start_time ? new Date(t.start_time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+        <td>${t.end_time ? new Date(t.end_time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+        <td><span class="badge badge-${t.status}">${t.status}</span></td>
+        <td>${t.available_seats??'—'}/${t.capacity??'—'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No trips today</td></tr>';
+  } catch(e) {}
+}
+
+// ── Reports ────────────────────────────────────────────────────────────────────
+let reportsData = {};
+async function loadReports() {
+  try {
+    const res = await AdminAPI.getReports();
+    reportsData = res.data || {};
+    renderUtilizationTab();
+    renderRouteStatsTab();
+    renderDeptReportTab();
+  } catch(e) {}
+}
+function switchReportTab(name) {
+  document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+function renderUtilizationTab() {
+  document.getElementById('util-tbody').innerHTML = (reportsData.busUtilization||[]).map(b => `
+    <tr>
+      <td><b>${b.bus_number}</b></td>
+      <td>${b.capacity}</td>
+      <td>${b.available_seats}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="progress-bar" style="width:100px;"><div class="progress-fill ${b.occupancy_percent>80?'high':b.occupancy_percent>50?'medium':'low'}" style="width:${b.occupancy_percent}%;"></div></div>
+          <span style="font-size:.8rem;font-weight:600;">${b.occupancy_percent}%</span>
+        </div>
+      </td>
+      <td><span class="badge badge-${b.status}">${b.status}</span></td>
+      <td>${b.total_trips}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No data</td></tr>';
+}
+function renderRouteStatsTab() {
+  document.getElementById('route-stats-tbody').innerHTML = (reportsData.routeStats||[]).map(r => `
+    <tr><td><b>${r.route_name}</b></td><td>${r.trip_count}</td><td>${r.buses_assigned}</td></tr>
+  `).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No data</td></tr>';
+}
+function renderDeptReportTab() {
+  const depts = reportsData.studentsByDept || [];
+  const ctx = document.getElementById('chart-dept-report');
+  if (deptReportChart) deptReportChart.destroy();
+  deptReportChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: depts.map(d=>d.department||'Unknown'), datasets: [{ label: 'Students', data: depts.map(d=>d.count), backgroundColor: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'], borderRadius: 8 }] },
+    options: { plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true } } }
+  });
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────────
+async function loadAllNotifs() {
+  try {
+    const res = await NotifAPI.getAll();
+    const el = document.getElementById('all-notifs-list');
+    el.innerHTML = (res.data||[]).map(n => `
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <i class="fa-solid fa-${n.is_emergency?'triangle-exclamation':'bell'}" style="color:${n.is_emergency?'var(--danger)':'var(--primary-500)'};font-size:.8rem;"></i>
+          <span style="font-weight:600;font-size:.875rem;">${n.title}</span>
+          <span class="badge" style="background:var(--primary-100);color:var(--primary-700);font-size:.65rem;">${n.receiver_type}</span>
+        </div>
+        <div style="font-size:.8125rem;color:var(--text-secondary);">${n.message}</div>
+        <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;">${new Date(n.created_at).toLocaleString()}</div>
+      </div>
+    `).join('') || '<div style="padding:24px;text-align:center;color:var(--text-muted);">No notifications</div>';
+  } catch(e) {}
+}
+async function sendAdminNotif(isEmergency) {
+  const title = document.getElementById('admin-notif-title').value;
+  const message = document.getElementById('admin-notif-msg').value;
+  const receiver_type = document.getElementById('admin-notif-type').value;
+  if (!title || !message) { Toast.warning('Title and message required.'); return; }
+  try {
+    await NotifAPI.create({ title, message, receiver_type, is_emergency: isEmergency });
+    Toast.success(isEmergency ? '🚨 Emergency alert sent!' : 'Notification sent!');
+    ['admin-notif-title','admin-notif-msg'].forEach(id => document.getElementById(id).value = '');
+    loadAllNotifs();
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── Activity Logs ──────────────────────────────────────────────────────────────
+async function loadLogs() {
+  try {
+    const res = await AdminAPI.getLogs();
+    document.getElementById('logs-tbody').innerHTML = (res.data||[]).map(l => `
+      <tr>
+        <td style="font-size:.75rem;white-space:nowrap;">${new Date(l.created_at).toLocaleString()}</td>
+        <td><span class="badge badge-primary" style="font-size:.7rem;">${l.user_type||'—'}</span></td>
+        <td style="font-size:.8rem;">${l.user_id||'—'}</td>
+        <td style="font-weight:600;font-size:.8125rem;">${l.action}</td>
+        <td style="font-size:.8rem;color:var(--text-secondary);">${l.details||'—'}</td>
+        <td style="font-size:.75rem;color:var(--text-muted);">${l.ip_address||'—'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No logs</td></tr>';
+  } catch(e) {}
+}
+
+// ── Settings ───────────────────────────────────────────────────────────────────
+async function changeAdminPw() {
+  const cur = document.getElementById('s-cur-pw').value;
+  const nw = document.getElementById('s-new-pw').value;
+  const conf = document.getElementById('s-conf-pw').value;
+  if (!cur || !nw) { Toast.warning('Fill all fields.'); return; }
+  if (nw !== conf) { Toast.error('Passwords do not match.'); return; }
+  try {
+    await API.put('/admin/change-password', { current_password: cur, new_password: nw });
+    Toast.success('Password changed!');
+    ['s-cur-pw','s-new-pw','s-conf-pw'].forEach(id => document.getElementById(id).value = '');
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  Theme.init(); Toast.init(); Sidebar.init(); UserMenu.init();
+  document.getElementById('logout-btn')?.addEventListener('click', Auth.logout);
+  document.getElementById('logout-btn-menu')?.addEventListener('click', Auth.logout);
+  document.getElementById('sidebar-toggle')?.addEventListener('click', () => Sidebar.toggle());
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const n = Theme.toggle();
+    document.getElementById('theme-toggle').innerHTML = n === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+  if (Theme.get() === 'dark') document.getElementById('theme-toggle').innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+  const user = Auth.getUser();
+  document.getElementById('user-avatar').textContent = (user?.username || 'A').charAt(0).toUpperCase();
+  document.getElementById('user-display-name').textContent = user?.username || 'Admin';
+
+  await loadDashboard();
+  SocketClient.connect();
+});
+</script>
+</body>
+</html>

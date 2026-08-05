@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manager Dashboard — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+  <style>
+    .sidebar { background: linear-gradient(180deg,#7c2d12 0%,#9a3412 100%); }
+    .nav-link.active { background:rgba(251,191,36,.25); }
+    .sidebar-logo { background:linear-gradient(135deg,#f59e0b,#d97706); }
+    .status-btn { padding:8px 16px; border-radius:var(--radius-md); font-size:.8125rem; font-weight:600; border:2px solid transparent; cursor:pointer; transition:all .2s; }
+    .status-btn.running     { border-color:var(--success); color:var(--success); }
+    .status-btn.delayed     { border-color:var(--warning); color:var(--warning); }
+    .status-btn.maintenance { border-color:var(--danger);  color:var(--danger);  }
+    .status-btn.cancelled   { border-color:var(--gray-400);color:var(--gray-500);}
+    .status-btn.active      { color:white; }
+    .status-btn.running.active     { background:var(--success); }
+    .status-btn.delayed.active     { background:var(--warning); }
+    .status-btn.maintenance.active { background:var(--danger);  }
+    .status-btn.cancelled.active   { background:var(--gray-400);}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🚌</div>
+      <div class="sidebar-brand">Bus Manager<br><span style="font-weight:400;opacity:.7;font-size:.8rem;">Control Panel</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Main</div>
+      <div class="nav-item"><a class="nav-link active" href="#" data-section="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="my-buses"><i class="fa-solid fa-bus"></i><span>My Buses</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="live-map"><i class="fa-solid fa-location-crosshairs"></i><span>Live Map</span></a></div>
+      <div class="nav-section-title">Trip Operations</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="trips"><i class="fa-solid fa-play-circle"></i><span>Trip Management</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="location"><i class="fa-solid fa-location-dot"></i><span>Update Location</span></a></div>
+      <div class="nav-section-title">Records</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="fuel"><i class="fa-solid fa-gas-pump"></i><span>Fuel Records</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="maintenance"><i class="fa-solid fa-wrench"></i><span>Maintenance</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="feedback"><i class="fa-solid fa-star"></i><span>Student Feedback</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="notify"><i class="fa-solid fa-broadcast-tower"></i><span>Broadcast</span></a></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-link" id="logout-btn" style="cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></div>
+    </div>
+  </aside>
+
+  <div class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+        <div>
+          <div class="topbar-title" id="page-title">Dashboard</div>
+          <div style="font-size:.75rem;color:var(--text-muted);" id="page-subtitle">Bus Manager Portal</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+        <div class="user-menu-wrapper">
+          <div class="user-avatar" id="user-avatar" style="background:linear-gradient(135deg,#f59e0b,#d97706);">M</div>
+          <div class="user-menu" id="user-menu">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+              <div style="font-weight:600;font-size:.9rem;" id="user-display-name">Manager</div>
+              <div style="font-size:.75rem;color:var(--text-muted);" id="user-display-role">Bus Manager</div>
+            </div>
+            <div class="user-menu-item danger" id="logout-btn-menu"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- DASHBOARD -->
+      <section id="section-dashboard" class="section fade-in">
+        <div class="page-header">
+          <div><h1 class="page-title">Manager Dashboard</h1><div class="page-subtitle">Welcome back, <span id="mgr-name">Manager</span>!</div></div>
+          <button class="btn btn-primary" onclick="refreshDashboard()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+        </div>
+        <div class="grid grid-4 mb-24">
+          <div class="stat-card blue"><div class="stat-icon blue"><i class="fa-solid fa-bus"></i></div><div class="stat-info"><div class="stat-value" id="stat-total-buses">–</div><div class="stat-label">My Buses</div></div></div>
+          <div class="stat-card green"><div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div><div class="stat-info"><div class="stat-value" id="stat-running">–</div><div class="stat-label">Running</div></div></div>
+          <div class="stat-card orange"><div class="stat-icon orange"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-info"><div class="stat-value" id="stat-delayed">–</div><div class="stat-label">Delayed</div></div></div>
+          <div class="stat-card red"><div class="stat-icon red"><i class="fa-solid fa-wrench"></i></div><div class="stat-info"><div class="stat-value" id="stat-maintenance">–</div><div class="stat-label">Maintenance</div></div></div>
+        </div>
+
+        <div class="grid grid-2 mb-24" style="grid-template-columns:2fr 1fr;">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-location-crosshairs" style="color:var(--primary-500);margin-right:8px;"></i>Live Bus Positions</div></div>
+            <div style="height:360px;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+              <div id="mgr-dash-map" style="height:100%;width:100%;border-radius:0 0 var(--radius-lg) var(--radius-lg);"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Today's Trips</div></div>
+            <div style="max-height:360px;overflow-y:auto;" id="mgr-trips-list">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Buses Grid -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">My Assigned Buses</div></div>
+          <div class="card-body"><div id="mgr-bus-grid" class="grid grid-3" style="gap:16px;"></div></div>
+        </div>
+      </section>
+
+      <!-- MY BUSES -->
+      <section id="section-my-buses" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">My Buses</h1></div>
+        <div id="full-bus-list" class="grid grid-3" style="gap:16px;"></div>
+      </section>
+
+      <!-- LIVE MAP -->
+      <section id="section-live-map" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Live Bus Map</h1></div>
+        <div class="map-container" style="height:560px;">
+          <div id="mgr-live-map" style="height:100%;width:100%;"></div>
+        </div>
+      </section>
+
+      <!-- TRIPS -->
+      <section id="section-trips" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Trip Management</h1></div>
+        <div class="grid grid-2 mb-24">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-play" style="color:var(--success);margin-right:8px;"></i>Start New Trip</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Select Bus</label><select id="trip-bus" class="form-control"><option value="">Choose bus...</option></select></div>
+              <div class="form-group"><label class="form-label">Route</label><select id="trip-route" class="form-control"><option value="">Choose route...</option></select></div>
+              <div class="form-group"><label class="form-label">Driver</label><select id="trip-driver" class="form-control"><option value="">Choose driver...</option></select></div>
+              <button class="btn btn-success w-full" onclick="startTrip()"><i class="fa-solid fa-play"></i> Start Trip</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Active Trips</div><button class="btn btn-outline btn-sm" onclick="loadTrips()"><i class="fa-solid fa-arrows-rotate"></i></button></div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Bus</th><th>Route</th><th>Status</th><th>Action</th></tr></thead>
+                  <tbody id="active-trips"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- UPDATE LOCATION -->
+      <section id="section-location" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Update Bus Location & Status</h1></div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Update Location</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Select Bus</label><select id="loc-bus" class="form-control"><option value="">Choose bus...</option></select></div>
+              <div class="grid grid-2" style="gap:16px;">
+                <div class="form-group"><label class="form-label">Latitude</label><input id="loc-lat" class="form-control" type="number" step="any" placeholder="12.9716"/></div>
+                <div class="form-group"><label class="form-label">Longitude</label><input id="loc-lng" class="form-control" type="number" step="any" placeholder="77.5946"/></div>
+              </div>
+              <div class="form-group"><label class="form-label">Speed (km/h)</label><input id="loc-speed" class="form-control" type="number" placeholder="30"/></div>
+              <button class="btn btn-primary w-full" onclick="updateLocation()"><i class="fa-solid fa-location-dot"></i> Update Location</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Update Bus Status</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Select Bus</label><select id="status-bus" class="form-control"><option value="">Choose bus...</option></select></div>
+              <div class="form-group">
+                <label class="form-label">New Status</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                  <button class="status-btn running" onclick="setStatus('running')"><i class="fa-solid fa-circle-play"></i> Running</button>
+                  <button class="status-btn delayed" onclick="setStatus('delayed')"><i class="fa-solid fa-clock"></i> Delayed</button>
+                  <button class="status-btn maintenance" onclick="setStatus('maintenance')"><i class="fa-solid fa-wrench"></i> Maintenance</button>
+                  <button class="status-btn cancelled" onclick="setStatus('cancelled')"><i class="fa-solid fa-ban"></i> Cancelled</button>
+                </div>
+              </div>
+              <div class="form-group"><label class="form-label">Available Seats</label>
+                <div style="display:flex;gap:10px;">
+                  <input id="loc-seats" class="form-control" type="number" min="0" placeholder="Available seats"/>
+                  <button class="btn btn-outline" onclick="updateSeats()"><i class="fa-solid fa-chair"></i> Update</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FUEL RECORDS -->
+      <section id="section-fuel" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Fuel Records</h1></div>
+        <div class="grid grid-2 mb-24">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Add Fuel Record</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Bus</label><select id="fuel-bus" class="form-control"><option value="">Choose bus...</option></select></div>
+              <div class="grid grid-2" style="gap:16px;">
+                <div class="form-group"><label class="form-label">Date</label><input id="fuel-date" class="form-control" type="date"/></div>
+                <div class="form-group"><label class="form-label">Liters</label><input id="fuel-liters" class="form-control" type="number" step="0.1"/></div>
+              </div>
+              <div class="grid grid-2" style="gap:16px;">
+                <div class="form-group"><label class="form-label">Cost (₹)</label><input id="fuel-cost" class="form-control" type="number"/></div>
+                <div class="form-group"><label class="form-label">Odometer (km)</label><input id="fuel-odo" class="form-control" type="number"/></div>
+              </div>
+              <button class="btn btn-primary w-full" onclick="addFuelRecord()"><i class="fa-solid fa-plus"></i> Add Record</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Recent Fuel Records</div><select id="fuel-view-bus" class="form-control" style="width:160px;" onchange="viewFuelRecords()"><option value="">Select Bus</option></select></div>
+            <div style="max-height:400px;overflow-y:auto;" id="fuel-records-list">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);">Select a bus to view records</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MAINTENANCE -->
+      <section id="section-maintenance" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Maintenance Records</h1></div>
+        <div class="grid grid-2 mb-24">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Add Maintenance Record</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Bus</label><select id="maint-bus" class="form-control"><option value="">Choose bus...</option></select></div>
+              <div class="form-group"><label class="form-label">Date</label><input id="maint-date" class="form-control" type="date"/></div>
+              <div class="form-group"><label class="form-label">Description</label><textarea id="maint-desc" class="form-control" rows="3" placeholder="Describe the maintenance work..."></textarea></div>
+              <div class="grid grid-2" style="gap:16px;">
+                <div class="form-group"><label class="form-label">Cost (₹)</label><input id="maint-cost" class="form-control" type="number"/></div>
+                <div class="form-group"><label class="form-label">Mechanic</label><input id="maint-mechanic" class="form-control" placeholder="Name"/></div>
+              </div>
+              <button class="btn btn-primary w-full" onclick="addMaintenanceRecord()"><i class="fa-solid fa-plus"></i> Add Record</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Maintenance History</div><select id="maint-view-bus" class="form-control" style="width:160px;" onchange="viewMaintenanceRecords()"><option value="">Select Bus</option></select></div>
+            <div style="max-height:400px;overflow-y:auto;" id="maint-records-list">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);">Select a bus to view records</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEEDBACK -->
+      <section id="section-feedback" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Student Feedback</h1></div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Feedback by Bus</div>
+            <select id="fb-view-bus" class="form-control" style="width:180px;" onchange="viewBusFeedback()"><option value="">Select Bus</option></select>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div id="feedback-list" style="max-height:500px;overflow-y:auto;">
+              <div style="padding:40px;text-align:center;color:var(--text-muted);">Select a bus to view student feedback</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BROADCAST -->
+      <section id="section-notify" class="section fade-in" style="display:none;">
+        <div class="page-header"><h1 class="page-title">Broadcast Notification</h1></div>
+        <div class="card" style="max-width:600px;">
+          <div class="card-header"><div class="card-title"><i class="fa-solid fa-broadcast-tower" style="color:var(--primary-500);margin-right:8px;"></i>Send Notification</div></div>
+          <div class="card-body">
+            <div class="form-group"><label class="form-label">Title</label><input id="notif-title" class="form-control" placeholder="Notification title"/></div>
+            <div class="form-group"><label class="form-label">Message</label><textarea id="notif-msg" class="form-control" rows="4" placeholder="Your message to students..."></textarea></div>
+            <div class="form-group">
+              <label class="form-label">Target</label>
+              <select id="notif-type" class="form-control">
+                <option value="all">All Students</option>
+                <option value="bus">Specific Bus</option>
+              </select>
+            </div>
+            <div class="form-group" id="notif-bus-row" style="display:none;">
+              <label class="form-label">Select Bus</label>
+              <select id="notif-bus" class="form-control"><option value="">Choose bus...</option></select>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-primary flex-1" onclick="sendNotification(false)"><i class="fa-solid fa-paper-plane"></i> Send</button>
+              <button class="btn btn-danger" onclick="sendNotification(true)"><i class="fa-solid fa-triangle-exclamation"></i> Emergency</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/socket-client.js"></script>
+<script src="../../assets/js/map.js"></script>
+<script>
+Auth.redirectIfNotRole('manager');
+let myBuses = [], allRoutes = [], allDrivers = [], mgrDashMap = null, mgrLiveMap = null;
+let selectedStatus = null;
+
+// Navigation
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById(`section-${name}`).style.display = 'block';
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
+  const titles = { dashboard:'Dashboard', 'my-buses':'My Buses', 'live-map':'Live Map', trips:'Trip Management', location:'Update Location', fuel:'Fuel Records', maintenance:'Maintenance', feedback:'Student Feedback', notify:'Broadcast' };
+  document.getElementById('page-title').textContent = titles[name] || name;
+  if (name === 'live-map' && !mgrLiveMap) initMgrLiveMap();
+  if (name === 'trips') loadTrips();
+  if (name === 'feedback') populateFeedbackBus();
+}
+
+document.querySelectorAll('.nav-link[data-section]').forEach(l => l.addEventListener('click', e => { e.preventDefault(); showSection(l.dataset.section); }));
+
+async function refreshDashboard() {
+  try {
+    const [busRes, routeRes, driverRes, tripRes] = await Promise.all([
+      BusAPI.getMyBuses(), RouteAPI.getAll(), DriverAPI.getAll(), TripAPI.getToday()
+    ]);
+    myBuses    = busRes.data || [];
+    allRoutes  = routeRes.data || [];
+    allDrivers = driverRes.data || [];
+
+    document.getElementById('stat-total-buses').textContent = myBuses.length;
+    document.getElementById('stat-running').textContent     = myBuses.filter(b=>b.status==='running').length;
+    document.getElementById('stat-delayed').textContent     = myBuses.filter(b=>b.status==='delayed').length;
+    document.getElementById('stat-maintenance').textContent = myBuses.filter(b=>b.status==='maintenance').length;
+
+    populateBusSelects();
+    renderMgrBusGrid('mgr-bus-grid', myBuses);
+    renderMgrBusGrid('full-bus-list', myBuses);
+    renderTodayTrips(tripRes.data || []);
+    initMgrDashMap();
+  } catch(e) { Toast.error(e.message); }
+}
+
+function populateBusSelects() {
+  const opts = myBuses.map(b => `<option value="${b.bus_id}">${b.bus_number}</option>`).join('');
+  ['trip-bus','loc-bus','status-bus','fuel-bus','fuel-view-bus','maint-bus','maint-view-bus','notif-bus','fb-view-bus'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = (el.id.includes('view') || el.id === 'fb-view-bus' ? '<option value="">Select Bus</option>' : '<option value="">Choose bus...</option>') + opts;
+  });
+  ['trip-route'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<option value="">Choose route...</option>' + allRoutes.map(r=>`<option value="${r.route_id}">${r.route_name}</option>`).join('');
+  });
+  ['trip-driver'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<option value="">Choose driver...</option>' + allDrivers.map(d=>`<option value="${d.driver_id}">${d.name}</option>`).join('');
+  });
+  document.getElementById('notif-type')?.addEventListener('change', function() {
+    document.getElementById('notif-bus-row').style.display = this.value === 'bus' ? 'block' : 'none';
+  });
+}
+
+function renderMgrBusGrid(containerId, buses) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = buses.map(bus => `
+    <div class="bus-card">
+      <div class="flex-between">
+        <div class="bus-number">${bus.bus_number}</div>
+        <span class="badge badge-${bus.status}">${bus.status}</span>
+      </div>
+      <div class="bus-route"><i class="fa-solid fa-route" style="margin-right:4px;color:var(--primary-400);"></i>${bus.route_name||'No route'}</div>
+      <div class="bus-route"><i class="fa-solid fa-user" style="margin-right:4px;color:var(--text-muted);"></i>${bus.driver_name||'No driver'}</div>
+      <div class="bus-seats"><span class="bus-seats-label">Seats</span><span class="bus-seats-val">${bus.available_seats}/${bus.capacity}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(((bus.capacity-bus.available_seats)/bus.capacity)*100)}%;"></div></div>
+      <div style="font-size:.75rem;color:var(--text-muted);">${bus.registration_number}</div>
+    </div>
+  `).join('');
+}
+
+function renderTodayTrips(trips) {
+  const el = document.getElementById('mgr-trips-list');
+  if (!trips.length) { el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);">No trips today</div>'; return; }
+  el.innerHTML = trips.map(t => `
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-weight:700;">${t.bus_number}</span>
+        <span class="badge badge-${t.status}">${t.status}</span>
+      </div>
+      <div style="font-size:.8125rem;color:var(--text-secondary);">${t.route_name||'—'}</div>
+      <div style="font-size:.75rem;color:var(--text-muted);">${t.start_time ? new Date(t.start_time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</div>
+    </div>
+  `).join('');
+}
+
+async function initMgrDashMap() {
+  if (!mgrDashMap) mgrDashMap = BusMap.init('mgr-dash-map', { zoom: 13 });
+  BusMap.clearMarkers();
+  myBuses.forEach(bus => {
+    if (bus.current_latitude) BusMap.addBusMarker(mgrDashMap, bus);
+  });
+  BusMap.fitToBuses(mgrDashMap);
+}
+
+async function initMgrLiveMap() {
+  mgrLiveMap = BusMap.init('mgr-live-map', { zoom: 13 });
+  try {
+    const busRes = await BusAPI.getAll();
+    (busRes.data || []).forEach(bus => { if (bus.current_latitude) BusMap.addBusMarker(mgrLiveMap, bus); });
+    const routeRes = await RouteAPI.getAll();
+    (routeRes.data || []).forEach(r => { if (r.stops?.length) BusMap.drawRoute(mgrLiveMap, r.stops, r.route_id); });
+    BusMap.fitToBuses(mgrLiveMap);
+  } catch(e) {}
+}
+
+async function loadTrips() {
+  try {
+    const res = await TripAPI.getToday();
+    const tbody = document.getElementById('active-trips');
+    const trips = res.data || [];
+    tbody.innerHTML = trips.map(t => `
+      <tr>
+        <td><b>${t.bus_number}</b></td>
+        <td>${t.route_name||'—'}</td>
+        <td><span class="badge badge-${t.status}">${t.status}</span></td>
+        <td>${t.status === 'running' ? `<button class="btn btn-danger btn-sm" onclick="endTrip(${t.trip_id})">End Trip</button>` : '—'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No active trips</td></tr>';
+  } catch(e) {}
+}
+
+async function startTrip() {
+  const bus_id = document.getElementById('trip-bus').value;
+  const route_id = document.getElementById('trip-route').value;
+  const driver_id = document.getElementById('trip-driver').value;
+  if (!bus_id) { Toast.warning('Please select a bus.'); return; }
+  try {
+    await TripAPI.start({ bus_id: parseInt(bus_id), route_id: parseInt(route_id)||null, driver_id: parseInt(driver_id)||null });
+    Toast.success('Trip started successfully!');
+    loadTrips();
+    refreshDashboard();
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function endTrip(tripId) {
+  if (!confirm('End this trip?')) return;
+  try {
+    await TripAPI.end(tripId);
+    Toast.success('Trip ended.');
+    loadTrips();
+    refreshDashboard();
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function updateLocation() {
+  const bus_id = document.getElementById('loc-bus').value;
+  const lat = parseFloat(document.getElementById('loc-lat').value);
+  const lng = parseFloat(document.getElementById('loc-lng').value);
+  const speed = parseFloat(document.getElementById('loc-speed').value) || 0;
+  if (!bus_id || isNaN(lat) || isNaN(lng)) { Toast.warning('Please fill all location fields.'); return; }
+  try {
+    await BusAPI.updateLocation(bus_id, { latitude: lat, longitude: lng, speed });
+    SocketClient.updateLocation(parseInt(bus_id), lat, lng, speed);
+    Toast.success('Bus location updated!');
+  } catch(e) { Toast.error(e.message); }
+}
+
+function setStatus(status) {
+  selectedStatus = status;
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.classList.contains(status)) btn.classList.add('active');
+  });
+  const bus_id = document.getElementById('status-bus').value;
+  if (bus_id) updateStatus(bus_id, status);
+}
+
+async function updateStatus(busId, status) {
+  try {
+    await BusAPI.updateStatus(busId, { status });
+    Toast.success(`Bus status set to: ${status}`);
+    refreshDashboard();
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function updateSeats() {
+  const bus_id = document.getElementById('status-bus').value;
+  const seats = parseInt(document.getElementById('loc-seats').value);
+  if (!bus_id || isNaN(seats)) { Toast.warning('Select a bus and enter seat count.'); return; }
+  try {
+    await BusAPI.updateSeats(bus_id, { available_seats: seats });
+    Toast.success('Seat availability updated!');
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function addFuelRecord() {
+  const bus_id = document.getElementById('fuel-bus').value;
+  const date = document.getElementById('fuel-date').value;
+  const liters = parseFloat(document.getElementById('fuel-liters').value);
+  const cost = parseFloat(document.getElementById('fuel-cost').value);
+  const odometer = parseFloat(document.getElementById('fuel-odo').value);
+  if (!bus_id || !date || isNaN(liters) || isNaN(cost)) { Toast.warning('Fill all required fields.'); return; }
+  try {
+    await BusAPI.addFuel(bus_id, { date, liters, cost, odometer });
+    Toast.success('Fuel record added!');
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function viewFuelRecords() {
+  const bus_id = document.getElementById('fuel-view-bus').value;
+  if (!bus_id) return;
+  const el = document.getElementById('fuel-records-list');
+  el.innerHTML = '<div style="padding:20px;text-align:center;"><span class="spinner"></span></div>';
+  try {
+    const res = await BusAPI.getFuel(bus_id);
+    const records = res.data || [];
+    el.innerHTML = records.length ? records.map(r => `
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:.875rem;">
+          <span>${r.date}</span><span>₹${r.cost}</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-secondary);">${r.liters}L • ${r.odometer||'?'} km</div>
+      </div>
+    `).join('') : '<div style="padding:24px;text-align:center;color:var(--text-muted);">No fuel records</div>';
+  } catch(e) { el.innerHTML = '<div style="padding:20px;color:var(--danger);">Failed to load records</div>'; }
+}
+
+async function addMaintenanceRecord() {
+  const bus_id = document.getElementById('maint-bus').value;
+  const date = document.getElementById('maint-date').value;
+  const description = document.getElementById('maint-desc').value;
+  const cost = parseFloat(document.getElementById('maint-cost').value);
+  const mechanic = document.getElementById('maint-mechanic').value;
+  if (!bus_id || !date || !description) { Toast.warning('Fill all required fields.'); return; }
+  try {
+    await BusAPI.addMaintenance(bus_id, { date, description, cost, mechanic });
+    Toast.success('Maintenance record added!');
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function viewMaintenanceRecords() {
+  const bus_id = document.getElementById('maint-view-bus').value;
+  if (!bus_id) return;
+  const el = document.getElementById('maint-records-list');
+  el.innerHTML = '<div style="padding:20px;text-align:center;"><span class="spinner"></span></div>';
+  try {
+    const res = await BusAPI.getMaintenance(bus_id);
+    const records = res.data || [];
+    el.innerHTML = records.length ? records.map(r => `
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:.875rem;">
+          <span>${r.date}</span><span>${r.cost ? `₹${r.cost}` : '—'}</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-primary);margin:4px 0;">${r.description}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);">Mechanic: ${r.mechanic||'—'}</div>
+      </div>
+    `).join('') : '<div style="padding:24px;text-align:center;color:var(--text-muted);">No maintenance records</div>';
+  } catch(e) {}
+}
+
+function populateFeedbackBus() {
+  const sel = document.getElementById('fb-view-bus');
+  if (sel) sel.innerHTML = '<option value="">Select Bus</option>' + myBuses.map(b=>`<option value="${b.bus_id}">${b.bus_number}</option>`).join('');
+}
+
+async function viewBusFeedback() {
+  const bus_id = document.getElementById('fb-view-bus').value;
+  if (!bus_id) return;
+  const el = document.getElementById('feedback-list');
+  el.innerHTML = '<div style="padding:20px;text-align:center;"><span class="spinner"></span></div>';
+  try {
+    const res = await FeedbackAPI.getByBus(bus_id);
+    const feedback = res.data || [];
+    el.innerHTML = feedback.length ? feedback.map(f => `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border-color);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:600;font-size:.875rem;">${f.student_name} <span style="color:var(--text-muted);font-weight:400;">(${f.roll_number})</span></span>
+          <span style="color:#f59e0b;">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</span>
+        </div>
+        <div style="font-size:.8125rem;color:var(--text-secondary);">${f.message||'—'}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">${new Date(f.created_at).toLocaleDateString()}</div>
+      </div>
+    `).join('') : '<div style="padding:40px;text-align:center;color:var(--text-muted);">No feedback for this bus</div>';
+  } catch(e) {}
+}
+
+async function sendNotification(isEmergency) {
+  const title = document.getElementById('notif-title').value;
+  const message = document.getElementById('notif-msg').value;
+  const receiver_type = document.getElementById('notif-type').value;
+  const receiver_id = document.getElementById('notif-bus').value || null;
+  if (!title || !message) { Toast.warning('Title and message are required.'); return; }
+  try {
+    await NotifAPI.create({ title, message, receiver_type, receiver_id: receiver_id ? parseInt(receiver_id) : null, is_emergency: isEmergency });
+    Toast.success(isEmergency ? '🚨 Emergency alert sent!' : 'Notification sent!');
+    document.getElementById('notif-title').value = '';
+    document.getElementById('notif-msg').value = '';
+  } catch(e) { Toast.error(e.message); }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Theme.init(); Toast.init(); Sidebar.init(); UserMenu.init();
+  document.getElementById('logout-btn')?.addEventListener('click', Auth.logout);
+  document.getElementById('logout-btn-menu')?.addEventListener('click', Auth.logout);
+  document.getElementById('sidebar-toggle')?.addEventListener('click', () => Sidebar.toggle());
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const n = Theme.toggle();
+    document.getElementById('theme-toggle').innerHTML = n === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+  if (Theme.get() === 'dark') document.getElementById('theme-toggle').innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+  const user = Auth.getUser();
+  document.getElementById('user-avatar').textContent = (user?.name || 'M').charAt(0).toUpperCase();
+  document.getElementById('user-display-name').textContent = user?.name || 'Manager';
+  document.getElementById('mgr-name').textContent = user?.name?.split(' ')[0] || 'Manager';
+
+  document.getElementById('fuel-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('maint-date').value = new Date().toISOString().split('T')[0];
+
+  await refreshDashboard();
+  SocketClient.connect();
+
+  document.addEventListener('bus:location', (e) => {
+    const d = e.detail;
+    if (mgrDashMap && BusMap.markers[d.bus_id]) BusMap.updateMarker(d);
+    if (mgrLiveMap && BusMap.markers[d.bus_id]) BusMap.updateMarker(d);
+  });
+});
+</script>
+</body>
+</html>

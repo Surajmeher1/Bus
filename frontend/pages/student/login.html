@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Login — Smart Bus Tracker</title>
+  <meta name="description" content="Login to your Smart Bus Tracker student account to track university buses in real time." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+</head>
+<body>
+<div class="auth-page">
+  <!-- Left Panel -->
+  <div class="auth-left">
+    <div class="auth-illustration">
+      <div class="hero-badge" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.9);border-radius:99px;padding:6px 16px;font-size:.8125rem;font-weight:600;margin-bottom:28px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse-dot 1.5s infinite;display:inline-block;"></span>
+        Live Tracking Active
+      </div>
+      <h1 class="auth-hero-title">Track Your Campus Bus in Real Time</h1>
+      <p class="auth-hero-sub">Know exactly when your bus arrives, how many seats are available, and get instant delay notifications — all from your phone or computer.</p>
+      <div class="auth-feature">
+        <div class="auth-feature-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <span>Live GPS location updated every 3 seconds</span>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon"><i class="fa-solid fa-clock"></i></div>
+        <span>Real-time ETA for every bus stop</span>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon"><i class="fa-solid fa-chair"></i></div>
+        <span>Live seat availability indicator</span>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon"><i class="fa-solid fa-bell"></i></div>
+        <span>Instant notifications for delays & alerts</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="auth-right">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">🚌</div>
+      <div>
+        <div class="auth-brand-name">Smart Bus Tracker</div>
+        <div class="auth-brand-sub">University Transit System</div>
+      </div>
+    </div>
+
+    <h2 class="auth-title">Welcome back!</h2>
+    <p class="auth-subtitle">Login with your student credentials</p>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <div class="input-group">
+          <i class="fa-solid fa-envelope input-icon"></i>
+          <input id="email" type="email" class="form-control" placeholder="your@student.edu" required autocomplete="email" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input id="password" type="password" class="form-control" placeholder="Enter your password" required autocomplete="current-password" />
+          <i class="fa-solid fa-eye input-toggle" id="pw-toggle" onclick="togglePw()"></i>
+        </div>
+      </div>
+
+      <div id="error-msg" class="form-error" style="display:none; margin-bottom:16px;"></div>
+
+      <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn">
+        <i class="fa-solid fa-right-to-bracket"></i> Login to Dashboard
+      </button>
+    </form>
+
+    <div class="auth-divider">or</div>
+
+    <a href="register.html" class="btn btn-outline w-full btn-lg">
+      <i class="fa-solid fa-user-plus"></i> Create New Account
+    </a>
+
+    <div class="auth-footer">
+      <div style="margin-bottom:10px;">
+        <a href="../../index.html" style="color:var(--text-muted);font-size:.8125rem;">
+          <i class="fa-solid fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+      <div>Other portals:
+        <a href="../manager/login.html">Bus Manager</a> ·
+        <a href="../admin/login.html">Admin</a>
+      </div>
+      <div style="margin-top:12px;padding:12px;background:var(--bg-base);border-radius:var(--radius-md);font-size:.8rem;color:var(--text-muted);">
+        <b>Demo:</b> arjun@student.edu / Student@123
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="../../assets/js/api.js"></script>
+<script>
+  Theme.init();
+  if (Auth.isLoggedIn() && Auth.getRole() === 'student') {
+    window.location.href = 'dashboard.html';
+  }
+
+  function togglePw() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    document.getElementById('pw-toggle').className = `fa-solid fa-eye${inp.type === 'text' ? '-slash' : ''} input-toggle`;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+      errEl.textContent = 'Please fill in all fields.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Logging in...';
+
+    try {
+      const data = await AuthAPI.studentLogin({ email, password });
+      if (data.success) {
+        Auth.setAuth(data.token, data.user);
+        Toast.success('Login successful! Redirecting...');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      }
+    } catch (err) {
+      errEl.textContent = err.message || 'Login failed. Please check your credentials.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login to Dashboard';
+    }
+  });
+</script>
+</body>
+</html>

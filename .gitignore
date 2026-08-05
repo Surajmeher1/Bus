@@ -1,0 +1,94 @@
+# ============================================================
+# Smart University Bus Tracking System - .gitignore
+# ============================================================
+
+# ─── Environment & Secrets ───────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+# Keep the example template
+!.env.example
+
+# ─── Node.js / npm ───────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ─── Database Files ──────────────────────────────────────────
+# SQLite / better-sqlite3
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# ─── Logs ────────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ─── Build / Distribution ────────────────────────────────────
+dist/
+build/
+out/
+.cache/
+
+# ─── OS & System Files ───────────────────────────────────────
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+
+# ─── IDE & Editor Files ──────────────────────────────────────
+# VS Code (keep workspace settings but ignore personal/local ones)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim / Neovim
+*.swp
+*.swo
+Session.vim
+
+# ─── Testing & Coverage ──────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ─── Temporary Files ─────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig

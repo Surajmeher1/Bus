@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Register — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-illustration">
+      <h1 class="auth-hero-title">Join Your Campus Transit Community</h1>
+      <p class="auth-hero-sub">Register with your university roll number to get access to live bus tracking, seat alerts, and real-time notifications.</p>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-id-card"></i></div><span>Register using your University Roll Number</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-shield-check"></i></div><span>Secure account with bcrypt password hashing</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-heart"></i></div><span>Save favorite bus routes for quick access</span></div>
+    </div>
+  </div>
+  <div class="auth-right" style="overflow-y:auto;">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">🚌</div>
+      <div><div class="auth-brand-name">Smart Bus Tracker</div><div class="auth-brand-sub">Student Registration</div></div>
+    </div>
+
+    <h2 class="auth-title">Create Account</h2>
+    <p class="auth-subtitle">Register with your university credentials</p>
+
+    <form id="register-form" novalidate>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <div class="input-group">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input id="name" type="text" class="form-control" placeholder="Full name" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Roll Number *</label>
+          <div class="input-group">
+            <i class="fa-solid fa-id-badge input-icon"></i>
+            <input id="roll_number" type="text" class="form-control" placeholder="CS2024001" required />
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address *</label>
+        <div class="input-group">
+          <i class="fa-solid fa-envelope input-icon"></i>
+          <input id="email" type="email" class="form-control" placeholder="your@student.edu" required />
+        </div>
+      </div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <div class="input-group">
+            <i class="fa-solid fa-phone input-icon"></i>
+            <input id="phone" type="tel" class="form-control" placeholder="9876543210" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <select id="semester" class="form-control">
+            <option value="">Select Semester</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <select id="department" class="form-control">
+          <option value="">Select Department</option>
+          <option>Computer Science</option><option>Electronics</option>
+          <option>Mechanical</option><option>Civil</option>
+          <option>Electrical</option><option>Information Technology</option>
+          <option>Chemical</option><option>Biotechnology</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password *</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input id="password" type="password" class="form-control" placeholder="Min 8 characters" required />
+          <i class="fa-solid fa-eye input-toggle" id="pw-toggle" onclick="togglePw('password','pw-toggle')"></i>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password *</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input id="confirm_password" type="password" class="form-control" placeholder="Confirm password" required />
+          <i class="fa-solid fa-eye input-toggle" id="cpw-toggle" onclick="togglePw('confirm_password','cpw-toggle')"></i>
+        </div>
+      </div>
+
+      <div id="error-msg" class="form-error" style="display:none; margin-bottom:16px;"></div>
+
+      <button type="submit" class="btn btn-primary w-full btn-lg" id="reg-btn">
+        <i class="fa-solid fa-user-plus"></i> Create Account
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? <a href="login.html">Login here</a>
+      <div style="margin-top:10px;"><a href="../../index.html" style="color:var(--text-muted);font-size:.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Home</a></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="../../assets/js/api.js"></script>
+<script>
+  Theme.init();
+  function togglePw(id, toggleId) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    document.getElementById(toggleId).className = `fa-solid fa-eye${inp.type === 'text' ? '-slash' : ''} input-toggle`;
+  }
+
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('reg-btn');
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+
+    const name = document.getElementById('name').value.trim();
+    const roll_number = document.getElementById('roll_number').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const semester = document.getElementById('semester').value;
+    const department = document.getElementById('department').value;
+    const password = document.getElementById('password').value;
+    const confirm_password = document.getElementById('confirm_password').value;
+
+    if (!name || !roll_number || !email || !password) {
+      errEl.textContent = 'Please fill in all required fields.'; errEl.style.display = 'block'; return;
+    }
+    if (password.length < 8) {
+      errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return;
+    }
+    if (password !== confirm_password) {
+      errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating account...';
+
+    try {
+      const data = await AuthAPI.studentRegister({ name, roll_number, email, phone, semester, department, password });
+      if (data.success) {
+        Auth.setAuth(data.token, data.user);
+        Toast.success('Account created successfully! Redirecting...');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      }
+    } catch (err) {
+      errEl.textContent = err.message || 'Registration failed. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+    }
+  });
+</script>
+</body>
+</html>

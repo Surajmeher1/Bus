@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart University Bus Tracking System</title>
+  <meta name="description" content="Track university buses in real time. View routes, ETAs, seat availability, and receive live notifications — Smart Bus Tracking for Students, Managers, and Admins." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <style>
+    /* ── Landing Specific ── */
+    body { overflow-x: hidden; }
+
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 60px;
+      transition: all 0.3s ease;
+    }
+    .nav.scrolled {
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
+      box-shadow: 0 1px 20px rgba(0,0,0,0.08);
+    }
+    [data-theme="dark"] .nav.scrolled { background: rgba(6,13,31,0.92); }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-icon {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; box-shadow: 0 4px 15px rgba(59,130,246,0.4);
+    }
+    .nav-logo-text { font-size: 1rem; font-weight: 800; color: white; line-height: 1.2; }
+    .nav.scrolled .nav-logo-text { color: var(--text-primary); }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-link-item { font-size: 0.9rem; font-weight: 500; color: rgba(255,255,255,0.85); transition: color 0.2s; cursor: pointer; }
+    .nav.scrolled .nav-link-item { color: var(--text-secondary); }
+    .nav-link-item:hover { color: white; }
+    .nav.scrolled .nav-link-item:hover { color: var(--primary-600); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a1628 0%, #0f2460 30%, #1e3a8a 60%, #1d4ed8 85%, #3b82f6 100%);
+      display: flex; align-items: center;
+      padding: 100px 60px 60px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 80% 50%, rgba(59,130,246,0.15), transparent 60%);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.9); border-radius: 99px;
+      padding: 6px 16px; font-size: 0.8125rem; font-weight: 600;
+      margin-bottom: 24px; backdrop-filter: blur(8px);
+    }
+    .hero-title {
+      font-size: 3.5rem; font-weight: 900; color: white;
+      line-height: 1.1; margin-bottom: 24px;
+    }
+    .hero-title .gradient-text {
+      background: linear-gradient(90deg, #60a5fa, #93c5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle { font-size: 1.125rem; color: rgba(255,255,255,0.75); line-height: 1.7; margin-bottom: 40px; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .hero-stats { display: flex; gap: 40px; margin-top: 56px; }
+    .hero-stat-val { font-size: 2rem; font-weight: 800; color: white; }
+    .hero-stat-lab { font-size: 0.8125rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+    /* Hero Visual */
+    .hero-visual { position: relative; }
+    .hero-map-card {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px; padding: 24px; backdrop-filter: blur(12px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .hero-map-title { color: rgba(255,255,255,0.9); font-size: 0.9rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse-dot 1.5s infinite; }
+    #hero-map { height: 280px; border-radius: 16px; overflow: hidden; }
+
+    .floating-bus-card {
+      position: absolute; bottom: -16px; left: -24px;
+      background: white; border-radius: 16px;
+      padding: 14px 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      display: flex; align-items: center; gap: 12px;
+      animation: float 3s ease-in-out infinite;
+      min-width: 200px;
+    }
+    .floating-card-icon { width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .floating-card-title { font-size: 0.8rem; font-weight: 700; color: #1e293b; }
+    .floating-card-sub   { font-size: 0.75rem; color: #64748b; }
+
+    .eta-card {
+      position: absolute; top: -16px; right: -20px;
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: white; border-radius: 16px;
+      padding: 14px 18px; box-shadow: 0 10px 30px rgba(59,130,246,0.4);
+      animation: float 3s ease-in-out infinite 1.5s;
+    }
+    .eta-card-val { font-size: 1.75rem; font-weight: 900; }
+    .eta-card-lab { font-size: 0.75rem; opacity: 0.85; }
+
+    /* FEATURES */
+    .features-section { padding: 100px 60px; }
+    .section-label { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--primary-500); margin-bottom: 12px; }
+    .section-title { font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 16px; }
+    .section-subtitle { font-size: 1.0625rem; color: var(--text-secondary); max-width: 560px; line-height: 1.7; }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 60px; }
+    .feature-card {
+      background: var(--bg-surface); border: 1px solid var(--border-color);
+      border-radius: 20px; padding: 28px;
+      transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: -50%; right: -50%;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(59,130,246,0.06), transparent);
+      transition: transform 0.4s ease;
+    }
+    .feature-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); border-color: var(--primary-200); }
+    .feature-card:hover::before { transform: scale(1.4); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: white; margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+    }
+    .feature-title { font-size: 1.0625rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); }
+    .feature-desc  { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; }
+
+    /* PORTALS */
+    .portals-section {
+      padding: 100px 60px;
+      background: linear-gradient(135deg, #0f2460, #1e3a8a, #1d4ed8);
+      position: relative; overflow: hidden;
+    }
+    .portals-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .portals-section .section-title,
+    .portals-section .section-label { color: white; }
+    .portals-section .section-subtitle { color: rgba(255,255,255,0.7); }
+    .portals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 60px; position: relative; }
+    .portal-card {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px; padding: 36px; backdrop-filter: blur(12px);
+      transition: all 0.35s ease; cursor: pointer; text-align: center;
+    }
+    .portal-card:hover {
+      background: rgba(255,255,255,0.14); transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.3);
+    }
+    .portal-icon {
+      width: 72px; height: 72px; border-radius: 20px; margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.75rem;
+    }
+    .portal-icon.student { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .portal-icon.manager { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .portal-icon.admin   { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .portal-title { font-size: 1.25rem; font-weight: 800; color: white; margin-bottom: 10px; }
+    .portal-desc  { font-size: 0.875rem; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 24px; }
+    .portal-features { text-align: left; margin-bottom: 28px; }
+    .portal-feature {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; font-size: 0.8125rem; color: rgba(255,255,255,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .portal-feature:last-child { border-bottom: none; }
+    .portal-feature i { color: #60a5fa; font-size: 0.75rem; width: 14px; }
+
+    /* HOW IT WORKS */
+    .how-section { padding: 100px 60px; }
+    .steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 60px; position: relative; }
+    .steps-grid::before {
+      content: ''; position: absolute; top: 40px; left: 10%; right: 10%;
+      height: 2px; background: linear-gradient(90deg, var(--primary-200), var(--primary-400), var(--primary-200));
+      z-index: 0;
+    }
+    .step-card { text-align: center; position: relative; z-index: 1; }
+    .step-num {
+      width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px;
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 900; color: white;
+      box-shadow: 0 8px 25px rgba(59,130,246,0.4);
+    }
+    .step-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+    .step-desc  { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* FOOTER */
+    .footer {
+      background: #060d1f; color: rgba(255,255,255,0.7);
+      padding: 60px 60px 32px;
+    }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+    .footer-brand-name { font-size: 1rem; font-weight: 800; color: white; margin-bottom: 10px; }
+    .footer-brand-desc { font-size: 0.875rem; line-height: 1.7; }
+    .footer-title { font-size: 0.875rem; font-weight: 700; color: white; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .footer-link { display: block; font-size: 0.875rem; margin-bottom: 10px; color: rgba(255,255,255,0.6); transition: color 0.2s; cursor: pointer; }
+    .footer-link:hover { color: var(--primary-400); }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 28px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; }
+
+    @media (max-width: 1024px) {
+      .hero-content { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .portals-grid { grid-template-columns: 1fr; max-width: 480px; margin: 60px auto 0; }
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .hero, .features-section, .portals-section, .how-section, .footer { padding-left: 20px; padding-right: 20px; }
+      .hero-title { font-size: 2.25rem; }
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .steps-grid::before { display: none; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────────── -->
+<nav class="nav" id="main-nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🚌</div>
+    <div>
+      <div class="nav-logo-text">Smart Bus Tracker</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#features" class="nav-link-item">Features</a>
+    <a href="#portals" class="nav-link-item">Portals</a>
+    <a href="#how" class="nav-link-item">How It Works</a>
+  </div>
+  <div class="nav-actions">
+    <button id="theme-toggle" class="theme-toggle" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;" title="Toggle Theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <a href="pages/student/login.html" class="btn btn-white btn-sm">Student Login</a>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="hero-badge">
+        <div class="live-dot"></div>
+        Live GPS Tracking Active
+      </div>
+      <h1 class="hero-title">
+        Smart University<br>
+        <span class="gradient-text">Bus Tracking</span><br>
+        System
+      </h1>
+      <p class="hero-subtitle">
+        Real-time GPS tracking, live ETAs, seat availability, and instant notifications — 
+        all in one platform for students, managers, and administrators.
+      </p>
+      <div class="hero-actions">
+        <a href="pages/student/login.html" class="btn btn-white btn-lg">
+          <i class="fa-solid fa-graduation-cap"></i> Student Portal
+        </a>
+        <a href="pages/manager/login.html" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,0.4);color:white;">
+          <i class="fa-solid fa-bus"></i> Manager Portal
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-val">3</div>
+          <div class="hero-stat-lab">Active Buses</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">5</div>
+          <div class="hero-stat-lab">Students</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">2</div>
+          <div class="hero-stat-lab">Routes</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">24/7</div>
+          <div class="hero-stat-lab">Live Tracking</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-map-card">
+        <div class="hero-map-title">
+          <div class="live-dot"></div>
+          Live Bus Locations
+        </div>
+        <div id="hero-map"></div>
+      </div>
+      <div class="floating-bus-card">
+        <div class="floating-card-icon">🚌</div>
+        <div>
+          <div class="floating-card-title">BUS-001 — Route A</div>
+          <div class="floating-card-sub" style="color:#22c55e; font-weight:600;">● Running On Time</div>
+        </div>
+      </div>
+      <div class="eta-card">
+        <div class="eta-card-val" id="hero-eta">4</div>
+        <div class="eta-card-lab">Minutes Away</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────────── -->
+<section class="features-section" id="features">
+  <div style="max-width:1280px; margin:0 auto;">
+    <div class="section-label">Why Choose Us</div>
+    <h2 class="section-title">Everything You Need<br>for Smart Transit</h2>
+    <p class="section-subtitle">A complete university bus management ecosystem designed for the modern campus.</p>
+    <div class="features-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <div class="feature-title">Real-Time GPS Tracking</div>
+        <div class="feature-desc">Watch buses move live on an interactive map. Updated every 3 seconds via WebSocket for pinpoint accuracy.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-clock"></i></div>
+        <div class="feature-title">Accurate ETA Calculation</div>
+        <div class="feature-desc">Smart ETA for every stop based on real-time position and speed. Never miss your bus again.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
+        <div class="feature-title">Instant Notifications</div>
+        <div class="feature-desc">Real-time push alerts for delays, cancellations, and emergency announcements direct to your dashboard.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-chair"></i></div>
+        <div class="feature-title">Seat Availability</div>
+        <div class="feature-desc">Live seat occupancy indicators so you know if there's space before the bus arrives.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-route"></i></div>
+        <div class="feature-title">Full Route Mapping</div>
+        <div class="feature-desc">View complete routes with all stops plotted on the map. Interactive polylines with stop tooltips.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="feature-title">Secure & Role-Based</div>
+        <div class="feature-desc">JWT authentication, bcrypt encryption, and strict role-based access control for students, managers, and admins.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="feature-title">Analytics & Reports</div>
+        <div class="feature-desc">Comprehensive admin reports on bus utilization, delays, route statistics, and student ridership trends.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-qrcode"></i></div>
+        <div class="feature-title">QR Bus Identification</div>
+        <div class="feature-desc">Each bus has a unique QR code for quick identification and attendance tracking on campus.</div>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon"><i class="fa-solid fa-moon"></i></div>
+        <div class="feature-title">Dark Mode & Responsive</div>
+        <div class="feature-desc">Beautiful dark mode and fully responsive design — works perfectly on phones, tablets, and desktops.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Portals ─────────────────────────────────────────────────────── -->
+<section class="portals-section" id="portals">
+  <div style="max-width:1280px; margin:0 auto; position:relative; z-index:1;">
+    <div class="section-label" style="color:rgba(255,255,255,0.6);">Three Dedicated Portals</div>
+    <h2 class="section-title" style="color:white;">Built for Every Role</h2>
+    <p class="section-subtitle" style="color:rgba(255,255,255,0.7);">Each portal is tailored to the specific needs of students, bus managers, and system administrators.</p>
+    <div class="portals-grid">
+      <!-- Student Portal -->
+      <div class="portal-card" onclick="window.location.href='pages/student/login.html'">
+        <div class="portal-icon student"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="portal-title">Student Portal</div>
+        <div class="portal-desc">Track buses, view routes, check ETAs, and manage your profile.</div>
+        <div class="portal-features">
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Live bus tracking on map</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Real-time ETA per stop</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Seat availability indicator</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Favorite bus & notifications</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Emergency SOS button</div>
+        </div>
+        <button class="btn btn-white w-full">
+          <i class="fa-solid fa-arrow-right"></i> Enter Student Portal
+        </button>
+      </div>
+
+      <!-- Manager Portal -->
+      <div class="portal-card" onclick="window.location.href='pages/manager/login.html'">
+        <div class="portal-icon manager"><i class="fa-solid fa-bus-simple"></i></div>
+        <div class="portal-title">Bus Manager Portal</div>
+        <div class="portal-desc">Manage buses, start trips, update locations, and view feedback.</div>
+        <div class="portal-features">
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Start & end trips</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Update bus location & status</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Manage seat capacity</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Fuel & maintenance records</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Broadcast notifications</div>
+        </div>
+        <button class="btn btn-white w-full" style="color:#d97706;">
+          <i class="fa-solid fa-arrow-right"></i> Enter Manager Portal
+        </button>
+      </div>
+
+      <!-- Admin Portal -->
+      <div class="portal-card" onclick="window.location.href='pages/admin/login.html'">
+        <div class="portal-icon admin"><i class="fa-solid fa-user-shield"></i></div>
+        <div class="portal-title">Admin Portal</div>
+        <div class="portal-desc">Full system control — users, buses, routes, reports, and settings.</div>
+        <div class="portal-features">
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> User & bus management</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Route & schedule creation</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Analytics & reports</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Emergency alerts</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Activity logs & settings</div>
+        </div>
+        <button class="btn btn-white w-full" style="color:#dc2626;">
+          <i class="fa-solid fa-arrow-right"></i> Enter Admin Portal
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ────────────────────────────────────────────────── -->
+<section class="how-section" id="how">
+  <div style="max-width:1280px; margin:0 auto; text-align:center;">
+    <div class="section-label">Simple & Fast</div>
+    <h2 class="section-title">Get Started in Minutes</h2>
+    <p class="section-subtitle" style="margin:0 auto 0;">Four simple steps to start tracking your campus bus in real time.</p>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-num">1</div><div class="step-title">Register</div><div class="step-desc">Create your account using your university roll number and email.</div></div>
+      <div class="step-card"><div class="step-num">2</div><div class="step-title">Login</div><div class="step-desc">Securely log in to your personalized student dashboard.</div></div>
+      <div class="step-card"><div class="step-num">3</div><div class="step-title">Track</div><div class="step-desc">View live bus locations on the interactive map with ETAs.</div></div>
+      <div class="step-card"><div class="step-num">4</div><div class="step-title">Ride</div><div class="step-desc">Get notified when your bus is near and never miss a ride.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div style="max-width:1280px; margin:0 auto;">
+    <div class="footer-grid">
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🚌</div>
+          <div class="footer-brand-name">Smart Bus Tracker</div>
+        </div>
+        <div class="footer-brand-desc">A modern, real-time university bus tracking system built for students, managers, and administrators.</div>
+      </div>
+      <div>
+        <div class="footer-title">Portals</div>
+        <a href="pages/student/login.html"  class="footer-link">Student Portal</a>
+        <a href="pages/manager/login.html"  class="footer-link">Manager Portal</a>
+        <a href="pages/admin/login.html"    class="footer-link">Admin Portal</a>
+      </div>
+      <div>
+        <div class="footer-title">Features</div>
+        <span class="footer-link">Live GPS Tracking</span>
+        <span class="footer-link">Real-Time ETAs</span>
+        <span class="footer-link">Seat Availability</span>
+        <span class="footer-link">Smart Notifications</span>
+      </div>
+      <div>
+        <div class="footer-title">Tech Stack</div>
+        <span class="footer-link">Node.js + Express</span>
+        <span class="footer-link">Socket.IO WebSocket</span>
+        <span class="footer-link">Leaflet.js Maps</span>
+        <span class="footer-link">JWT Authentication</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2024 Smart University Bus Tracking System. Academic Project.</div>
+      <div style="display:flex; gap:16px;">
+        <span class="footer-link">Default Credentials in README</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/map.js"></script>
+
+<script>
+  // Nav scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Theme toggle on landing (dark bg)
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next = Theme.toggle();
+    document.getElementById('theme-toggle').innerHTML = next === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+
+  // Hero Map
+  const heroMap = L.map('hero-map', {
+    center: [12.9716, 77.5946], zoom: 13,
+    zoomControl: false, scrollWheelZoom: false, dragging: false,
+    attributionControl: false
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heroMap);
+
+  // Animated demo buses on hero map
+  const demoBuses = [
+    { id: 1, lat: 12.9716, lng: 77.5946, name: 'BUS-001', color: '#22c55e' },
+    { id: 2, lat: 12.9720, lng: 77.5940, name: 'BUS-002', color: '#3b82f6' },
+    { id: 3, lat: 12.9740, lng: 77.5970, name: 'BUS-003', color: '#f59e0b' },
+  ];
+  const heroMarkers = {};
+
+  demoBuses.forEach(b => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:28px;height:28px;border-radius:50%;background:${b.color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:11px;">🚌</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14]
+    });
+    heroMarkers[b.id] = L.marker([b.lat, b.lng], { icon }).addTo(heroMap);
+  });
+
+  // Animate hero buses
+  let etaCount = 4;
+  setInterval(() => {
+    demoBuses.forEach(b => {
+      b.lat += (Math.random() - 0.5) * 0.002;
+      b.lng += (Math.random() - 0.5) * 0.002;
+      heroMarkers[b.id].setLatLng([b.lat, b.lng]);
+    });
+    etaCount = Math.max(1, Math.min(8, etaCount + (Math.random() > 0.5 ? -1 : 1)));
+    document.getElementById('hero-eta').textContent = etaCount;
+  }, 2000);
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

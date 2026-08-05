@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-illustration">
+      <h1 class="auth-hero-title">System Administrator Control Center</h1>
+      <p class="auth-hero-sub">Full control over the university bus network — manage users, buses, routes, schedules, and system settings.</p>
+      <div class="auth-feature"><div class="auth-feature-icon" style="background:rgba(239,68,68,.2);"><i class="fa-solid fa-users-gear"></i></div><span>Complete user & access management</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon" style="background:rgba(239,68,68,.2);"><i class="fa-solid fa-chart-line"></i></div><span>Analytics, reports & utilization stats</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon" style="background:rgba(239,68,68,.2);"><i class="fa-solid fa-shield-halved"></i></div><span>Security, permissions & activity logs</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon" style="background:rgba(239,68,68,.2);"><i class="fa-solid fa-triangle-exclamation"></i></div><span>Emergency alerts to entire campus</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-brand">
+      <div class="auth-brand-icon" style="background:linear-gradient(135deg,#ef4444,#b91c1c);">🛡️</div>
+      <div><div class="auth-brand-name">Admin Portal</div><div class="auth-brand-sub">Smart Bus Tracking System</div></div>
+    </div>
+    <h2 class="auth-title">Admin Login</h2>
+    <p class="auth-subtitle">Restricted access — Admin credentials only</p>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <div class="input-group">
+          <i class="fa-solid fa-user-shield input-icon"></i>
+          <input id="username" type="text" class="form-control" placeholder="admin" required autocomplete="username"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input id="password" type="password" class="form-control" placeholder="Admin password" required/>
+          <i class="fa-solid fa-eye input-toggle" id="pw-toggle" onclick="togglePw()"></i>
+        </div>
+      </div>
+      <div id="error-msg" class="form-error" style="display:none;margin-bottom:16px;"></div>
+      <button type="submit" class="btn btn-lg w-full" id="login-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;">
+        <i class="fa-solid fa-right-to-bracket"></i> Login as Administrator
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <div style="margin-bottom:10px;"><a href="../../index.html" style="color:var(--text-muted);font-size:.8125rem;"><i class="fa-solid fa-arrow-left"></i> Back to Home</a></div>
+      Other portals: <a href="../student/login.html">Student</a> · <a href="../manager/login.html">Manager</a>
+      <div style="margin-top:12px;padding:12px;background:var(--bg-base);border-radius:var(--radius-md);font-size:.8rem;color:var(--text-muted);">
+        <b>Demo:</b> username: admin / password: Admin@123
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast-container" class="toast-container"></div>
+<script src="../../assets/js/api.js"></script>
+<script>
+  Theme.init();
+  if (Auth.isLoggedIn() && Auth.getRole() === 'admin') window.location.href = 'dashboard.html';
+  function togglePw() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    document.getElementById('pw-toggle').className = `fa-solid fa-eye${inp.type === 'text' ? '-slash' : ''} input-toggle`;
+  }
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Authenticating...';
+    try {
+      const data = await AuthAPI.adminLogin({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      });
+      if (data.success) { Auth.setAuth(data.token, data.user); window.location.href = 'dashboard.html'; }
+    } catch(err) {
+      errEl.textContent = err.message; errEl.style.display = 'block';
+      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login as Administrator';
+    }
+  });
+</script>
+</body>
+</html>

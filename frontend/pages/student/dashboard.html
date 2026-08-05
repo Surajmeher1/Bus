@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ─────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🚌</div>
+      <div class="sidebar-brand">Smart Bus<br><span style="font-weight:400;opacity:.7;font-size:.8rem;">Student Portal</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Main</div>
+      <div class="nav-item"><a class="nav-link active" href="#" data-section="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="live-tracking"><i class="fa-solid fa-location-crosshairs"></i><span>Live Tracking</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="routes"><i class="fa-solid fa-route"></i><span>Bus Routes</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="schedule"><i class="fa-solid fa-calendar-days"></i><span>Schedule</span></a></div>
+      <div class="nav-section-title">My Bus</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="favorite"><i class="fa-solid fa-heart"></i><span>Favorite Bus</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span><span id="notif-sidebar-badge" style="margin-left:auto;background:var(--danger);color:white;font-size:.65rem;padding:2px 7px;border-radius:99px;display:none;"></span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="feedback"><i class="fa-solid fa-star"></i><span>Rate & Report</span></a></div>
+      <div class="nav-section-title">Account</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="profile"><i class="fa-solid fa-user"></i><span>My Profile</span></a></div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="nav-link" id="logout-btn" style="cursor:pointer;">
+        <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ─────────────────────── -->
+  <div class="main-content" id="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+        <div>
+          <div class="topbar-title" id="page-title">Dashboard</div>
+          <div style="font-size:.75rem;color:var(--text-muted);" id="page-subtitle">Welcome back!</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+        <button class="notif-btn" id="notif-btn" title="Notifications" data-section="notifications">
+          <i class="fa-solid fa-bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+        </button>
+        <div class="user-menu-wrapper">
+          <div class="user-avatar" id="user-avatar">S</div>
+          <div class="user-menu" id="user-menu">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+              <div style="font-weight:600;font-size:.9rem;" id="user-display-name">Student</div>
+              <div style="font-size:.75rem;color:var(--text-muted);" id="user-display-role">Student</div>
+            </div>
+            <div class="user-menu-item" data-section="profile"><i class="fa-solid fa-user"></i> My Profile</div>
+            <div class="user-menu-item danger" id="logout-btn-menu"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Sections -->
+    <main class="page-content">
+
+      <!-- ═══ DASHBOARD SECTION ═══ -->
+      <section id="section-dashboard" class="section fade-in">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <div class="page-subtitle" id="dash-welcome">Loading...</div>
+          </div>
+          <button class="btn btn-primary" onclick="refreshDashboard()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-4 mb-24">
+          <div class="stat-card blue">
+            <div class="stat-icon blue"><i class="fa-solid fa-bus"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-active-buses">–</div>
+              <div class="stat-label">Active Buses</div>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-on-time">–</div>
+              <div class="stat-label">On Time</div>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-delayed">–</div>
+              <div class="stat-label">Delayed</div>
+            </div>
+          </div>
+          <div class="stat-card cyan">
+            <div class="stat-icon cyan"><i class="fa-solid fa-route"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-routes">–</div>
+              <div class="stat-label">Routes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Map + Notifications -->
+        <div class="grid grid-2 mb-24" style="grid-template-columns:2fr 1fr;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-location-crosshairs" style="color:var(--primary-500);margin-right:8px;"></i>Live Bus Map</div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:.75rem;color:var(--success);">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse-dot 1.5s infinite;display:inline-block;"></span>
+                LIVE
+              </div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div class="map-container" style="height:360px;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+                <div id="dash-map" style="height:100%;width:100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-bell" style="color:var(--warning);margin-right:8px;"></i>Notifications</div>
+            </div>
+            <div style="max-height:360px;overflow-y:auto;">
+              <div id="dash-notifications">
+                <div style="padding:24px;text-align:center;color:var(--text-muted);"><span class="spinner"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bus Grid + Today's Schedule -->
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-bus" style="color:var(--primary-500);margin-right:8px;"></i>All Buses</div>
+            </div>
+            <div class="card-body">
+              <div id="dash-buses" class="grid grid-2" style="gap:12px;">
+                <div class="skeleton" style="height:100px;"></div>
+                <div class="skeleton" style="height:100px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-calendar-day" style="color:var(--primary-500);margin-right:8px;"></i>Today's Schedule</div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Bus</th><th>Route</th><th>Status</th><th>Seats</th></tr></thead>
+                  <tbody id="today-schedule">
+                    <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOS Button -->
+        <div style="margin-top:24px;text-align:center;">
+          <button class="sos-btn" onclick="triggerSOS()" id="sos-btn">
+            <i class="fa-solid fa-triangle-exclamation"></i> EMERGENCY SOS
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══ LIVE TRACKING SECTION ═══ -->
+      <section id="section-live-tracking" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Live Tracking</h1>
+            <div class="page-subtitle">Real-time bus positions with ETA</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <select id="bus-filter" class="form-control" style="width:180px;" onchange="filterBus()">
+              <option value="">All Buses</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:2fr 1fr;gap:20px;">
+          <div>
+            <div class="map-container" style="height:520px;">
+              <div id="live-map" style="height:100%;width:100%;"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Bus Details</div></div>
+            <div id="bus-detail-panel" style="padding:16px;">
+              <div style="text-align:center;padding:40px 0;color:var(--text-muted);">
+                <i class="fa-solid fa-bus" style="font-size:2rem;margin-bottom:12px;opacity:.4;display:block;"></i>
+                Click a bus on the map to see details
+              </div>
+            </div>
+            <div class="card-header" style="margin-top:8px;"><div class="card-title">Stop Timeline</div></div>
+            <div id="stop-timeline" style="padding:16px;max-height:300px;overflow-y:auto;">
+              <div class="stop-list" id="stop-list"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ ROUTES SECTION ═══ -->
+      <section id="section-routes" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Bus Routes</h1>
+        </div>
+        <div id="routes-container" class="grid grid-2">
+          <div class="skeleton" style="height:200px;"></div>
+          <div class="skeleton" style="height:200px;"></div>
+        </div>
+      </section>
+
+      <!-- ═══ SCHEDULE SECTION ═══ -->
+      <section id="section-schedule" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Today's Bus Schedule</h1>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Bus No.</th><th>Route</th><th>Driver</th><th>Start Time</th><th>Status</th><th>Seats</th></tr></thead>
+                <tbody id="full-schedule">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading schedule...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ FAVORITE BUS SECTION ═══ -->
+      <section id="section-favorite" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">My Favorite Bus</h1>
+        </div>
+        <div id="favorite-section">
+          <div class="grid grid-2">
+            <div class="card" id="fav-bus-card">
+              <div class="card-header"><div class="card-title"><i class="fa-solid fa-heart" style="color:var(--danger);margin-right:8px;"></i>Saved Bus</div></div>
+              <div class="card-body" id="fav-bus-body"><div style="text-align:center;color:var(--text-muted);padding:40px;">No favorite bus saved</div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Set Favorite Bus</div></div>
+              <div class="card-body">
+                <p style="font-size:.875rem;color:var(--text-secondary);margin-bottom:16px;">Choose a bus to save as your favorite for quick access.</p>
+                <select id="fav-bus-select" class="form-control mb-16"><option value="">Select a Bus</option></select>
+                <button class="btn btn-primary w-full" onclick="saveFavoriteBus()"><i class="fa-solid fa-heart"></i> Save as Favorite</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ NOTIFICATIONS SECTION ═══ -->
+      <section id="section-notifications" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Notifications</h1>
+          <button class="btn btn-outline" onclick="loadNotifications()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+        </div>
+        <div id="notif-list" class="grid" style="grid-template-columns:1fr;gap:12px;">
+          <div style="text-align:center;padding:40px;color:var(--text-muted);">Loading notifications...</div>
+        </div>
+      </section>
+
+      <!-- ═══ FEEDBACK SECTION ═══ -->
+      <section id="section-feedback" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">Rate & Report</h1>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-star" style="color:#f59e0b;margin-right:8px;"></i>Submit Feedback</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Select Bus</label>
+                <select id="fb-bus" class="form-control"><option value="">Choose a bus...</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Rating</label>
+                <div class="stars" id="star-rating">
+                  <span class="star" data-val="1" onclick="setRating(1)">★</span>
+                  <span class="star" data-val="2" onclick="setRating(2)">★</span>
+                  <span class="star" data-val="3" onclick="setRating(3)">★</span>
+                  <span class="star" data-val="4" onclick="setRating(4)">★</span>
+                  <span class="star" data-val="5" onclick="setRating(5)">★</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Your Feedback</label>
+                <textarea id="fb-message" class="form-control" rows="4" placeholder="Share your experience..."></textarea>
+              </div>
+              <button class="btn btn-primary w-full" onclick="submitFeedback()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">My Past Feedback</div></div>
+            <div id="my-feedback-list" style="max-height:400px;overflow-y:auto;">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PROFILE SECTION ═══ -->
+      <section id="section-profile" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <h1 class="page-title">My Profile</h1>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-user" style="color:var(--primary-500);margin-right:8px;"></i>Edit Profile</div></div>
+            <div class="card-body">
+              <form id="profile-form">
+                <div class="form-group"><label class="form-label">Full Name</label><input id="prof-name" class="form-control" type="text"/></div>
+                <div class="form-group"><label class="form-label">Email</label><input id="prof-email" class="form-control" type="email"/></div>
+                <div class="form-group"><label class="form-label">Phone</label><input id="prof-phone" class="form-control" type="tel"/></div>
+                <div class="grid grid-2" style="gap:16px;">
+                  <div class="form-group"><label class="form-label">Department</label><input id="prof-dept" class="form-control" type="text"/></div>
+                  <div class="form-group"><label class="form-label">Semester</label><input id="prof-sem" class="form-control" type="number" min="1" max="8"/></div>
+                </div>
+                <div class="form-group"><label class="form-label">Roll Number</label><input id="prof-roll" class="form-control" type="text" readonly style="opacity:.6;"/></div>
+                <button type="button" class="btn btn-primary w-full" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-lock" style="color:var(--warning);margin-right:8px;"></i>Change Password</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Current Password</label><input id="cur-pw" class="form-control" type="password" placeholder="Current password"/></div>
+              <div class="form-group"><label class="form-label">New Password</label><input id="new-pw" class="form-control" type="password" placeholder="New password (min 8 chars)"/></div>
+              <div class="form-group"><label class="form-label">Confirm New Password</label><input id="conf-pw" class="form-control" type="password" placeholder="Confirm new password"/></div>
+              <button class="btn btn-warning w-full" onclick="changePassword()"><i class="fa-solid fa-key"></i> Change Password</button>
+            </div>
+            <div class="card-header" style="margin-top:12px;"><div class="card-title">Quick Actions</div></div>
+            <div class="card-body">
+              <button class="sos-btn w-full" onclick="triggerSOS()"><i class="fa-solid fa-triangle-exclamation"></i> Emergency SOS</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/socket-client.js"></script>
+<script src="../../assets/js/map.js"></script>
+<script>
+// ── Auth Guard ────────────────────────────────────────────────────────────────
+Auth.redirectIfNotRole('student');
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allBuses = [], allRoutes = [], notifications = [], selectedRating = 0;
+let dashMap = null, liveMap = null;
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById(`section-${name}`).style.display = 'block';
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
+
+  const titles = {
+    dashboard: ['Dashboard', 'Overview of all buses'],
+    'live-tracking': ['Live Tracking', 'Real-time bus positions'],
+    routes: ['Bus Routes', 'View all available routes'],
+    schedule: ['Today\'s Schedule', 'All trips for today'],
+    favorite: ['Favorite Bus', 'Your saved bus'],
+    notifications: ['Notifications', 'System alerts and updates'],
+    feedback: ['Rate & Report', 'Submit feedback'],
+    profile: ['My Profile', 'Manage your account'],
+  };
+  const [title, sub] = titles[name] || ['Dashboard', ''];
+  document.getElementById('page-title').textContent = title;
+  document.getElementById('page-subtitle').textContent = sub;
+
+  if (name === 'live-tracking' && !liveMap) initLiveMap();
+  if (name === 'routes') loadRoutes();
+  if (name === 'schedule') loadFullSchedule();
+  if (name === 'favorite') loadFavoriteSection();
+  if (name === 'notifications') loadNotifications();
+  if (name === 'feedback') loadFeedbackSection();
+  if (name === 'profile') loadProfile();
+}
+
+document.querySelectorAll('.nav-link[data-section], .user-menu-item[data-section]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    showSection(link.dataset.section);
+    document.getElementById('user-menu')?.classList.remove('open');
+  });
+});
+
+document.getElementById('notif-btn')?.addEventListener('click', () => showSection('notifications'));
+
+// ── Initialize Dashboard ───────────────────────────────────────────────────────
+async function refreshDashboard() {
+  try {
+    const [busesRes, tripsRes, notifRes, routesRes] = await Promise.all([
+      BusAPI.getAll(), TripAPI.getToday(), NotifAPI.getAll(), RouteAPI.getAll()
+    ]);
+    allBuses = busesRes.data || [];
+    allRoutes = routesRes.data || [];
+    notifications = notifRes.data || [];
+
+    // Stats
+    const active = allBuses.filter(b => b.status === 'running').length;
+    const delayed = allBuses.filter(b => b.status === 'delayed').length;
+    document.getElementById('stat-active-buses').textContent = active;
+    document.getElementById('stat-on-time').textContent = allBuses.filter(b => b.status === 'running').length;
+    document.getElementById('stat-delayed').textContent = delayed;
+    document.getElementById('stat-routes').textContent = allRoutes.length;
+
+    // Welcome
+    const user = Auth.getUser();
+    document.getElementById('dash-welcome').textContent = `Welcome back, ${user?.name?.split(' ')[0] || 'Student'}!`;
+
+    // Bus cards
+    renderDashBuses(allBuses);
+
+    // Schedule
+    renderSchedule(tripsRes.data || [], 'today-schedule');
+
+    // Notifications
+    renderDashNotifications(notifications.slice(0, 6));
+    updateNotifBadge(notifications.filter(n => n.is_emergency).length);
+
+    // Populate bus filter
+    const filterSel = document.getElementById('bus-filter');
+    if (filterSel) {
+      filterSel.innerHTML = '<option value="">All Buses</option>' +
+        allBuses.map(b => `<option value="${b.bus_id}">${b.bus_number}</option>`).join('');
+    }
+
+  } catch (err) {
+    Toast.error('Failed to load data: ' + err.message);
+  }
+}
+
+function renderDashBuses(buses) {
+  const container = document.getElementById('dash-buses');
+  if (!buses.length) { container.innerHTML = '<div style="color:var(--text-muted);text-align:center;grid-column:1/-1;">No buses available</div>'; return; }
+  container.innerHTML = buses.map(bus => `
+    <div class="bus-card" onclick="showSection('live-tracking')">
+      <div class="flex-between">
+        <div class="bus-number">${bus.bus_number}</div>
+        <span class="badge badge-${bus.status}">${bus.status}</span>
+      </div>
+      <div class="bus-route"><i class="fa-solid fa-route" style="margin-right:4px;color:var(--primary-400);"></i>${bus.route_name || 'No route'}</div>
+      <div class="bus-route"><i class="fa-solid fa-user" style="margin-right:4px;color:var(--text-muted);"></i>${bus.driver_name || 'No driver'}</div>
+      <div class="bus-seats">
+        <span class="bus-seats-label">Seats</span>
+        <span class="bus-seats-val">${bus.available_seats}/${bus.capacity}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${getOccClass(bus)}" style="width:${Math.round(((bus.capacity-bus.available_seats)/bus.capacity)*100)}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getOccClass(bus) {
+  const pct = ((bus.capacity - bus.available_seats) / bus.capacity) * 100;
+  return pct > 80 ? 'high' : pct > 50 ? 'medium' : 'low';
+}
+
+function renderSchedule(trips, tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  if (!trips.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No trips today</td></tr>'; return; }
+  tbody.innerHTML = trips.map(t => `
+    <tr>
+      <td><b>${t.bus_number}</b></td>
+      <td>${t.route_name || '—'}</td>
+      <td>${t.driver_name || '—'}</td>
+      <td>${t.start_time ? new Date(t.start_time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+      <td><span class="badge badge-${t.status}">${t.status}</span></td>
+      <td>${t.available_seats ?? '—'}/${t.capacity ?? '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderDashNotifications(notifs) {
+  const container = document.getElementById('dash-notifications');
+  if (!notifs.length) { container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);">No notifications</div>'; return; }
+  container.innerHTML = notifs.map(n => `
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border-color);${n.is_emergency ? 'background:rgba(239,68,68,.04);' : ''}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <i class="fa-solid fa-${n.is_emergency ? 'triangle-exclamation' : 'bell'}" style="color:${n.is_emergency ? 'var(--danger)' : 'var(--primary-500)'};font-size:.8rem;"></i>
+        <span style="font-weight:600;font-size:.875rem;">${n.title}</span>
+      </div>
+      <div style="font-size:.8125rem;color:var(--text-secondary);">${n.message}</div>
+      <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;">${new Date(n.created_at).toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+function updateNotifBadge(count) {
+  ['notif-badge','notif-sidebar-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = count;
+    el.style.display = count > 0 ? 'flex' : 'none';
+  });
+}
+
+// ── Dashboard Map ──────────────────────────────────────────────────────────────
+async function initDashMap() {
+  dashMap = BusMap.init('dash-map', { zoom: 13 });
+  try {
+    const res = await BusAPI.getLocations();
+    (res.data || []).forEach(bus => {
+      if (bus.current_latitude && bus.current_longitude) {
+        BusMap.addBusMarker(dashMap, bus);
+      }
+    });
+    BusMap.fitToBuses(dashMap);
+  } catch (e) {}
+}
+
+// ── Live Tracking Map ──────────────────────────────────────────────────────────
+async function initLiveMap() {
+  liveMap = BusMap.init('live-map', { zoom: 13 });
+  try {
+    const [busRes, routeRes] = await Promise.all([BusAPI.getAll(), RouteAPI.getAll()]);
+    const buses = busRes.data || [];
+    const routes = routeRes.data || [];
+
+    buses.forEach(bus => {
+      if (bus.current_latitude) BusMap.addBusMarker(liveMap, bus);
+    });
+
+    routes.forEach(r => {
+      if (r.stops && r.stops.length) BusMap.drawRoute(liveMap, r.stops, r.route_id);
+    });
+
+    BusMap.fitToBuses(liveMap);
+  } catch(e) {}
+}
+
+function filterBus() {
+  const busId = document.getElementById('bus-filter')?.value;
+  if (busId) SocketClient.subscribeBus(busId);
+}
+
+// ── Routes Section ─────────────────────────────────────────────────────────────
+async function loadRoutes() {
+  const container = document.getElementById('routes-container');
+  try {
+    const res = await RouteAPI.getAll();
+    const routes = res.data || [];
+    container.innerHTML = routes.map(r => `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-route" style="color:var(--primary-500);margin-right:8px;"></i>${r.route_name}</div>
+          <span class="badge badge-primary">${r.stops?.length || 0} stops</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:16px;margin-bottom:16px;font-size:.875rem;color:var(--text-secondary);">
+            <span><i class="fa-solid fa-circle-dot" style="color:var(--success);margin-right:4px;"></i>${r.source}</span>
+            <span>→</span>
+            <span><i class="fa-solid fa-location-dot" style="color:var(--danger);margin-right:4px;"></i>${r.destination}</span>
+          </div>
+          <div style="font-size:.8125rem;color:var(--text-muted);margin-bottom:16px;">Distance: ${r.distance || '?'} km</div>
+          <div class="stop-list">
+            ${(r.stops || []).map((s,i) => `
+              <div class="stop-item">
+                <div class="stop-dot ${i === 0 ? 'active' : ''}">${i+1}</div>
+                <div class="stop-info"><div class="stop-name">${s.stop_name}</div><div class="stop-eta" style="font-size:.75rem;color:var(--text-muted);">Lat: ${s.latitude.toFixed(4)}, Lng: ${s.longitude.toFixed(4)}</div></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { container.innerHTML = '<div style="color:var(--danger);">Failed to load routes.</div>'; }
+}
+
+// ── Full Schedule ──────────────────────────────────────────────────────────────
+async function loadFullSchedule() {
+  try {
+    const res = await TripAPI.getToday();
+    renderSchedule(res.data || [], 'full-schedule');
+  } catch(e) {}
+}
+
+// ── Favorite Bus ───────────────────────────────────────────────────────────────
+async function loadFavoriteSection() {
+  try {
+    const [busRes, profileRes] = await Promise.all([BusAPI.getAll(), StudentAPI.getProfile()]);
+    const buses = busRes.data || [];
+    const profile = profileRes.data || {};
+
+    const sel = document.getElementById('fav-bus-select');
+    sel.innerHTML = '<option value="">Select a Bus</option>' + buses.map(b => `<option value="${b.bus_id}">${b.bus_number} — ${b.route_name || 'No route'}</option>`).join('');
+
+    const fav = buses.find(b => b.bus_id === profile.favorite_bus);
+    const body = document.getElementById('fav-bus-body');
+    if (fav) {
+      body.innerHTML = `
+        <div class="bus-card">
+          <div class="flex-between">
+            <div class="bus-number">${fav.bus_number}</div>
+            <span class="badge badge-${fav.status}">${fav.status}</span>
+          </div>
+          <div class="bus-route">${fav.route_name || '—'}</div>
+          <div class="bus-route"><i class="fa-solid fa-user" style="margin-right:4px;"></i>${fav.driver_name || '—'}</div>
+          <div class="bus-seats"><span>Seats</span><span>${fav.available_seats}/${fav.capacity}</span></div>
+          <div class="progress-bar"><div class="progress-fill ${getOccClass(fav)}" style="width:${Math.round(((fav.capacity-fav.available_seats)/fav.capacity)*100)}%"></div></div>
+        </div>`;
+    } else {
+      body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;">No favorite bus saved. Choose one from the list.</div>';
+    }
+  } catch(e) {}
+}
+
+async function saveFavoriteBus() {
+  const busId = document.getElementById('fav-bus-select').value;
+  if (!busId) { Toast.warning('Please select a bus.'); return; }
+  try {
+    await StudentAPI.setFavorite({ bus_id: parseInt(busId) });
+    Toast.success('Favorite bus saved!');
+    loadFavoriteSection();
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────────
+async function loadNotifications() {
+  try {
+    const res = await NotifAPI.getAll();
+    const notifs = res.data || [];
+    notifications = notifs;
+    const container = document.getElementById('notif-list');
+    if (!notifs.length) { container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No notifications</div>'; return; }
+    container.innerHTML = notifs.map(n => `
+      <div class="card" style="${n.is_emergency ? 'border-color:var(--danger);background:rgba(239,68,68,.02);' : ''}">
+        <div class="card-body">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:var(--radius-md);background:${n.is_emergency ? 'rgba(239,68,68,.1)' : 'var(--primary-100)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fa-solid fa-${n.is_emergency ? 'triangle-exclamation' : 'bell'}" style="color:${n.is_emergency ? 'var(--danger)' : 'var(--primary-600)'};"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;margin-bottom:4px;">${n.title} ${n.is_emergency ? '<span class="badge badge-maintenance">EMERGENCY</span>' : ''}</div>
+              <div style="font-size:.875rem;color:var(--text-secondary);margin-bottom:8px;">${n.message}</div>
+              <div style="font-size:.75rem;color:var(--text-muted);">${new Date(n.created_at).toLocaleString()}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── Feedback ───────────────────────────────────────────────────────────────────
+async function loadFeedbackSection() {
+  try {
+    const [busRes, fbRes] = await Promise.all([BusAPI.getAll(), FeedbackAPI.getMy()]);
+    const buses = busRes.data || [];
+    const fb = fbRes.data || [];
+
+    const fbSel = document.getElementById('fb-bus');
+    fbSel.innerHTML = '<option value="">Choose a bus...</option>' + buses.map(b => `<option value="${b.bus_id}">${b.bus_number}</option>`).join('');
+
+    const myList = document.getElementById('my-feedback-list');
+    myList.innerHTML = fb.length ? fb.map(f => `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border-color);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:600;font-size:.875rem;">${f.bus_number}</span>
+          <span style="color:#f59e0b;">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</span>
+        </div>
+        <div style="font-size:.8125rem;color:var(--text-secondary);">${f.message || '—'}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">${new Date(f.created_at).toLocaleDateString()}</div>
+      </div>
+    `).join('') : '<div style="text-align:center;padding:40px;color:var(--text-muted);">No feedback submitted yet</div>';
+  } catch(e) {}
+}
+
+function setRating(val) {
+  selectedRating = val;
+  document.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('filled', i < val));
+}
+
+async function submitFeedback() {
+  const bus_id = document.getElementById('fb-bus').value;
+  const message = document.getElementById('fb-message').value.trim();
+  if (!bus_id) { Toast.warning('Please select a bus.'); return; }
+  if (!selectedRating) { Toast.warning('Please give a rating.'); return; }
+  try {
+    await FeedbackAPI.submit({ bus_id: parseInt(bus_id), message, rating: selectedRating });
+    Toast.success('Thank you for your feedback!');
+    document.getElementById('fb-message').value = '';
+    setRating(0);
+    loadFeedbackSection();
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── Profile ────────────────────────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const res = await StudentAPI.getProfile();
+    const p = res.data || {};
+    document.getElementById('prof-name').value  = p.name || '';
+    document.getElementById('prof-email').value = p.email || '';
+    document.getElementById('prof-phone').value = p.phone || '';
+    document.getElementById('prof-dept').value  = p.department || '';
+    document.getElementById('prof-sem').value   = p.semester || '';
+    document.getElementById('prof-roll').value  = p.roll_number || '';
+  } catch(e) {}
+}
+
+async function saveProfile() {
+  try {
+    const data = {
+      name:       document.getElementById('prof-name').value,
+      email:      document.getElementById('prof-email').value,
+      phone:      document.getElementById('prof-phone').value,
+      department: document.getElementById('prof-dept').value,
+      semester:   document.getElementById('prof-sem').value,
+    };
+    await StudentAPI.updateProfile(data);
+    Toast.success('Profile updated successfully!');
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function changePassword() {
+  const cur = document.getElementById('cur-pw').value;
+  const nw = document.getElementById('new-pw').value;
+  const conf = document.getElementById('conf-pw').value;
+  if (!cur || !nw) { Toast.warning('Fill all password fields.'); return; }
+  if (nw !== conf) { Toast.error('Passwords do not match.'); return; }
+  if (nw.length < 8) { Toast.warning('Min 8 characters required.'); return; }
+  try {
+    await StudentAPI.changePassword({ current_password: cur, new_password: nw });
+    Toast.success('Password changed!');
+    ['cur-pw','new-pw','conf-pw'].forEach(id => document.getElementById(id).value = '');
+  } catch(e) { Toast.error(e.message); }
+}
+
+// ── SOS ────────────────────────────────────────────────────────────────────────
+function triggerSOS() {
+  if (confirm('🚨 Send Emergency SOS Alert?\n\nThis will notify university security and all campus personnel.')) {
+    Toast.error('🚨 Emergency SOS Sent! Help is on the way.', 8000);
+    NotifAPI.create({ title: '🚨 EMERGENCY SOS', message: `Emergency alert from student ${Auth.getUser()?.name}`, receiver_type: 'all', is_emergency: true }).catch(() => {});
+  }
+}
+
+// ── Socket Real-time Updates ───────────────────────────────────────────────────
+document.addEventListener('bus:location', (e) => {
+  const data = e.detail;
+  // Update bus card info if visible
+  const busCards = document.querySelectorAll('.bus-card');
+  busCards.forEach(card => {
+    const numEl = card.querySelector('.bus-number');
+    if (numEl?.textContent === data.bus_number) {
+      const seatsEl = card.querySelectorAll('.bus-seats-val');
+      if (seatsEl.length) seatsEl[0].textContent = `${data.available_seats}/${data.capacity}`;
+    }
+  });
+});
+
+document.addEventListener('notification:new', (e) => {
+  loadNotifications();
+  const count = parseInt(document.getElementById('notif-badge')?.textContent || '0') + 1;
+  updateNotifBadge(count);
+});
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  Theme.init();
+  Toast.init();
+  Sidebar.init();
+  UserMenu.init();
+
+  document.getElementById('logout-btn')?.addEventListener('click', Auth.logout);
+  document.getElementById('logout-btn-menu')?.addEventListener('click', Auth.logout);
+  document.getElementById('sidebar-toggle')?.addEventListener('click', () => Sidebar.toggle());
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const n = Theme.toggle();
+    document.getElementById('theme-toggle').innerHTML = n === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+  if (Theme.get() === 'dark') document.getElementById('theme-toggle').innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('user-avatar').textContent = (user.name || 'S').charAt(0).toUpperCase();
+    document.getElementById('user-display-name').textContent = user.name || 'Student';
+    document.getElementById('user-display-role').textContent = 'Student';
+    document.getElementById('dash-welcome').textContent = `Welcome back, ${user.name?.split(' ')[0] || 'Student'}!`;
+  }
+
+  await refreshDashboard();
+  await initDashMap();
+
+  SocketClient.connect();
+});
+</script>
+</body>
+</html>
