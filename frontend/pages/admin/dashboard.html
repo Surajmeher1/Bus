@@ -36,6 +36,7 @@
     <nav class="sidebar-nav">
       <div class="nav-section-title">Overview</div>
       <div class="nav-item"><a class="nav-link active" href="#" data-section="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="live-tracking"><i class="fa-solid fa-location-crosshairs"></i><span>Live Tracking</span></a></div>
       <div class="nav-section-title">Management</div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="buses"><i class="fa-solid fa-bus"></i><span>Buses</span></a></div>
@@ -109,7 +110,14 @@
         </div>
 
         <!-- Quick Access -->
-        <div class="grid grid-4">
+        <div class="grid grid-4 mb-24">
+          <div class="card" style="cursor:pointer;" onclick="showSection('live-tracking')">
+            <div class="card-body" style="text-align:center;padding:28px;">
+              <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#d1fae5;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-location-crosshairs" style="color:#059669;font-size:1.3rem;"></i></div>
+              <div style="font-weight:700;margin-bottom:4px;">Live Fleet Map</div>
+              <div style="font-size:.8rem;color:var(--text-secondary);">Track all buses in real time</div>
+            </div>
+          </div>
           <div class="card" style="cursor:pointer;" onclick="showSection('students')">
             <div class="card-body" style="text-align:center;padding:28px;">
               <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary-100);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-graduation-cap" style="color:var(--primary-600);font-size:1.3rem;"></i></div>
@@ -131,11 +139,29 @@
               <div style="font-size:.8rem;color:var(--text-secondary);">Add/edit bus routes</div>
             </div>
           </div>
-          <div class="card" style="cursor:pointer;" onclick="showSection('reports')">
-            <div class="card-body" style="text-align:center;padding:28px;">
-              <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-chart-pie" style="color:#dc2626;font-size:1.3rem;"></i></div>
-              <div style="font-weight:700;margin-bottom:4px;">View Reports</div>
-              <div style="font-size:.8rem;color:var(--text-secondary);">Analytics & statistics</div>
+        </div>
+      </section>
+
+      <!-- ═══ LIVE TRACKING SECTION (ADMIN) ═══ -->
+      <section id="section-live-tracking" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Live Fleet Tracking</h1>
+            <div class="page-subtitle">Monitor all buses, driver GPS streams, and student pickup locations</div>
+          </div>
+          <button class="btn btn-primary" onclick="initAdminLiveMap()"><i class="fa-solid fa-arrows-rotate"></i> Refresh Map</button>
+        </div>
+
+        <div class="grid" style="grid-template-columns:2fr 1fr;gap:20px;">
+          <div>
+            <div class="map-container" style="height:540px;border-radius:var(--radius-lg);overflow:hidden;">
+              <div id="admin-live-map" style="height:100%;width:100%;"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-bus" style="color:var(--primary-500);margin-right:8px;"></i>All Buses Fleet Status</div></div>
+            <div id="admin-bus-fleet-list" style="padding:16px;max-height:460px;overflow-y:auto;">
+              <div style="text-align:center;padding:40px 0;color:var(--text-muted);"><span class="spinner"></span> Loading fleet...</div>
             </div>
           </div>
         </div>
@@ -189,15 +215,18 @@
       <!-- ═══ DRIVERS ═══ -->
       <section id="section-drivers" class="section fade-in" style="display:none;">
         <div class="page-header">
-          <h1 class="page-title">Driver Management</h1>
+          <div>
+            <h1 class="page-title">Driver Management</h1>
+            <div class="page-subtitle">Manage bus drivers and their login credentials</div>
+          </div>
           <button class="btn btn-primary" onclick="openModal('add-driver-modal')"><i class="fa-solid fa-plus"></i> Add Driver</button>
         </div>
         <div class="card">
           <div class="card-body" style="padding:0;">
             <div class="table-wrapper">
               <table>
-                <thead><tr><th>Name</th><th>Phone</th><th>License No.</th><th>Address</th><th>Actions</th></tr></thead>
-                <tbody id="drivers-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+                <thead><tr><th>Name</th><th>Email (Login)</th><th>Phone</th><th>License No.</th><th>Assigned Bus</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="drivers-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -412,12 +441,16 @@
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add New Driver</div><span class="modal-close" onclick="closeModal('add-driver-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Full Name *</label><input id="new-drv-name" class="form-control"/></div>
+      <div class="form-group"><label class="form-label">Full Name *</label><input id="new-drv-name" class="form-control" placeholder="Driver Full Name"/></div>
       <div class="grid grid-2" style="gap:16px;">
-        <div class="form-group"><label class="form-label">Phone</label><input id="new-drv-phone" class="form-control"/></div>
-        <div class="form-group"><label class="form-label">License Number</label><input id="new-drv-lic" class="form-control"/></div>
+        <div class="form-group"><label class="form-label">Login Email *</label><input id="new-drv-email" class="form-control" type="email" placeholder="driver@university.edu"/></div>
+        <div class="form-group"><label class="form-label">Password *</label><input id="new-drv-pw" class="form-control" type="password" placeholder="Driver@123"/></div>
       </div>
-      <div class="form-group"><label class="form-label">Address</label><textarea id="new-drv-addr" class="form-control" rows="2"></textarea></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Phone</label><input id="new-drv-phone" class="form-control" placeholder="9876543210"/></div>
+        <div class="form-group"><label class="form-label">License Number</label><input id="new-drv-lic" class="form-control" placeholder="KA-1234567"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Address</label><textarea id="new-drv-addr" class="form-control" rows="2" placeholder="Address..."></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-driver-modal')">Cancel</button><button class="btn btn-primary" onclick="addDriver()">Add Driver</button></div>
   </div>
@@ -475,7 +508,7 @@ function showSection(name) {
     managers:'Managers', routes:'Routes', schedule:'Schedule', reports:'Reports',
     notifications:'Notifications', logs:'Activity Logs', settings:'Settings'
   }[name] || name;
-  const actions = { students: loadStudents, buses: loadBuses, drivers: loadDrivers, managers: loadManagers, routes: loadRoutes, schedule: loadSchedule, reports: loadReports, notifications: loadAllNotifs, logs: loadLogs };
+  const actions = { dashboard: loadDashboard, 'live-tracking': initAdminLiveMap, students: loadStudents, buses: loadBuses, drivers: loadDrivers, managers: loadManagers, routes: loadRoutes, schedule: loadSchedule, reports: loadReports, notifications: loadAllNotifs, logs: loadLogs };
   if (actions[name]) actions[name]();
   document.getElementById('user-menu')?.classList.remove('open');
 }
@@ -611,21 +644,39 @@ async function deleteBus(id) { if (!confirm('Delete this bus?')) return; try { a
 async function loadDrivers() {
   try {
     const res = await DriverAPI.getAll();
-    document.getElementById('drivers-tbody').innerHTML = (res.data||[]).map(d => `
+    const drivers = res.data || [];
+    document.getElementById('drivers-tbody').innerHTML = drivers.length ? drivers.map(d => `
       <tr>
         <td><b>${d.name}</b></td>
+        <td style="font-size:.8125rem;font-family:monospace;">${d.email || '—'}</td>
         <td>${d.phone||'—'}</td>
-        <td>${d.license_number||'—'}</td>
-        <td>${d.address||'—'}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteDriver(${d.driver_id})"><i class="fa-solid fa-trash-can"></i></button></td>
+        <td style="font-size:.8rem;">${d.license_number||'—'}</td>
+        <td>${d.bus_number ? `<span class="badge badge-primary">${d.bus_number}</span>` : '<span style="color:var(--text-muted);">Unassigned</span>'}</td>
+        <td><span class="badge badge-${d.is_active ? 'running' : 'inactive'}">${d.is_active ? 'Active' : 'Disabled'}</span></td>
+        <td><div class="table-actions">
+          <button class="btn btn-sm ${d.is_active ? 'btn-outline' : 'btn-primary'}" onclick="toggleDriver(${d.driver_id})" title="${d.is_active ? 'Disable Account' : 'Enable Account'}">
+            <i class="fa-solid fa-${d.is_active ? 'user-slash' : 'user-check'}"></i> ${d.is_active ? 'Disable' : 'Enable'}
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteDriver(${d.driver_id})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+        </div></td>
       </tr>
-    `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No drivers</td></tr>';
+    `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No drivers found</td></tr>';
   } catch(e) {}
 }
 async function addDriver() {
-  const data = { name: document.getElementById('new-drv-name').value, phone: document.getElementById('new-drv-phone').value, license_number: document.getElementById('new-drv-lic').value, address: document.getElementById('new-drv-addr').value };
-  if (!data.name) { Toast.warning('Name is required.'); return; }
+  const data = {
+    name: document.getElementById('new-drv-name').value,
+    email: document.getElementById('new-drv-email').value,
+    password: document.getElementById('new-drv-pw').value,
+    phone: document.getElementById('new-drv-phone').value,
+    license_number: document.getElementById('new-drv-lic').value,
+    address: document.getElementById('new-drv-addr').value
+  };
+  if (!data.name || !data.email || !data.password) { Toast.warning('Name, email, and password are required.'); return; }
   try { await DriverAPI.create(data); Toast.success('Driver added!'); closeModal('add-driver-modal'); loadDrivers(); } catch(e) { Toast.error(e.message); }
+}
+async function toggleDriver(id) {
+  try { const res = await DriverAPI.toggle(id); Toast.success(res.message); loadDrivers(); } catch(e) { Toast.error(e.message); }
 }
 async function deleteDriver(id) { if (!confirm('Delete driver?')) return; try { await DriverAPI.delete(id); Toast.success('Driver deleted.'); loadDrivers(); } catch(e) { Toast.error(e.message); } }
 
@@ -828,6 +879,80 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadDashboard();
   SocketClient.connect();
 });
+// ── Admin Live Tracking Map ───────────────────────────────────────────────────
+let adminLiveMap = null;
+
+async function initAdminLiveMap() {
+  if (!adminLiveMap) {
+    adminLiveMap = BusMap.init('admin-live-map', { zoom: 13 });
+  }
+  try {
+    const [busRes, routeRes, pickupRes] = await Promise.all([
+      BusAPI.getAll(), RouteAPI.getAll(), PickupAPI.getAll()
+    ]);
+    const buses = busRes.data || [];
+    const routes = routeRes.data || [];
+    const pickups = pickupRes.data || [];
+
+    // Plot bus markers
+    buses.forEach(bus => {
+      if (bus.current_latitude) BusMap.addBusMarker(adminLiveMap, bus);
+    });
+
+    // Draw route lines
+    routes.forEach(r => {
+      if (r.stops && r.stops.length) BusMap.drawRoute(adminLiveMap, r.stops, r.route_id);
+    });
+
+    // Draw pickup markers
+    pickups.forEach(p => {
+      const icon = L.divIcon({
+        html: `<div style="background:#f59e0b;color:white;padding:3px 7px;border-radius:12px;font-size:10px;font-weight:700;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);white-space:nowrap;">📍 ${p.name}</div>`,
+        iconAnchor: [0, 14], className: ''
+      });
+      L.marker([p.latitude, p.longitude], { icon })
+        .bindPopup(`<b>📍 Pickup Point: ${p.name}</b><br>${p.description || ''}`)
+        .addTo(adminLiveMap);
+    });
+
+    BusMap.fitToBuses(adminLiveMap);
+    renderAdminFleetList(buses);
+  } catch(e) {}
+}
+
+function renderAdminFleetList(buses) {
+  const container = document.getElementById('admin-bus-fleet-list');
+  if (!container) return;
+  if (!buses.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">No buses found</div>';
+    return;
+  }
+  container.innerHTML = buses.map(b => {
+    const badge = b.mode === 'LIVE'
+      ? '<span class="badge" style="background:#d1fae5;color:#065f46;font-weight:700;">🟢 LIVE GPS</span>'
+      : b.status === 'running'
+        ? '<span class="badge badge-warning">🟡 DEMO</span>'
+        : b.status === 'inactive'
+          ? '<span class="badge badge-secondary">⚫ TRIP DONE</span>'
+          : '<span class="badge badge-danger">🔴 OFFLINE</span>';
+
+    return `
+      <div style="padding:12px;border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:10px;background:var(--bg-surface);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-weight:800;font-size:1rem;">${b.bus_number}</div>
+          ${badge}
+        </div>
+        <div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:4px;">
+          <i class="fa-solid fa-route" style="margin-right:4px;"></i>${b.route_name || 'No route'}
+        </div>
+        <div style="font-size:.78rem;color:var(--text-muted);display:flex;justify-content:space-between;">
+          <span><i class="fa-solid fa-user" style="margin-right:4px;"></i>${b.driver_name || 'No driver'}</span>
+          <span>${b.current_latitude ? `${b.current_latitude.toFixed(4)}, ${b.current_longitude.toFixed(4)}` : 'No GPS'}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 </script>
 </body>
 </html>

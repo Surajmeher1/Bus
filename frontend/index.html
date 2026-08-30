@@ -286,8 +286,11 @@
         <a href="pages/student/login.html" class="btn btn-white btn-lg">
           <i class="fa-solid fa-graduation-cap"></i> Student Portal
         </a>
-        <a href="pages/manager/login.html" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,0.4);color:white;">
-          <i class="fa-solid fa-bus"></i> Manager Portal
+        <a href="pages/driver/login.html" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,0.4);color:white;">
+          <i class="fa-solid fa-bus"></i> Driver Portal
+        </a>
+        <a href="pages/admin/login.html" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,0.4);color:white;">
+          <i class="fa-solid fa-user-shield"></i> Admin
         </a>
       </div>
       <div class="hero-stats">
@@ -412,20 +415,20 @@
         </button>
       </div>
 
-      <!-- Manager Portal -->
-      <div class="portal-card" onclick="window.location.href='pages/manager/login.html'">
-        <div class="portal-icon manager"><i class="fa-solid fa-bus-simple"></i></div>
-        <div class="portal-title">Bus Manager Portal</div>
-        <div class="portal-desc">Manage buses, start trips, update locations, and view feedback.</div>
+      <!-- Driver Portal -->
+      <div class="portal-card" onclick="window.location.href='pages/driver/login.html'">
+        <div class="portal-icon" style="background:linear-gradient(135deg,#10b981,#047857);"><i class="fa-solid fa-bus-simple"></i></div>
+        <div class="portal-title">Bus Driver Portal</div>
+        <div class="portal-desc">Use your phone as a GPS device — share live location with students in real time.</div>
         <div class="portal-features">
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Start & end trips</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Update bus location & status</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Manage seat capacity</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Fuel & maintenance records</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Broadcast notifications</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Real mobile GPS tracking</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Start &amp; end trips</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Add pickup points on map</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Live broadcast to students</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> View assigned bus &amp; route</div>
         </div>
-        <button class="btn btn-white w-full" style="color:#d97706;">
-          <i class="fa-solid fa-arrow-right"></i> Enter Manager Portal
+        <button class="btn btn-white w-full" style="color:#047857;">
+          <i class="fa-solid fa-arrow-right"></i> Enter Driver Portal
         </button>
       </div>
 
@@ -452,14 +455,25 @@
 <!-- ── How It Works ────────────────────────────────────────────────── -->
 <section class="how-section" id="how">
   <div style="max-width:1280px; margin:0 auto; text-align:center;">
-    <div class="section-label">Simple & Fast</div>
-    <h2 class="section-title">Get Started in Minutes</h2>
-    <p class="section-subtitle" style="margin:0 auto 0;">Four simple steps to start tracking your campus bus in real time.</p>
-    <div class="steps-grid">
-      <div class="step-card"><div class="step-num">1</div><div class="step-title">Register</div><div class="step-desc">Create your account using your university roll number and email.</div></div>
-      <div class="step-card"><div class="step-num">2</div><div class="step-title">Login</div><div class="step-desc">Securely log in to your personalized student dashboard.</div></div>
-      <div class="step-card"><div class="step-num">3</div><div class="step-title">Track</div><div class="step-desc">View live bus locations on the interactive map with ETAs.</div></div>
-      <div class="step-card"><div class="step-num">4</div><div class="step-title">Ride</div><div class="step-desc">Get notified when your bus is near and never miss a ride.</div></div>
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">One System, Three Roles</h2>
+    <p class="section-subtitle" style="margin:0 auto 0;">Real-time coordination between university administration, bus drivers, and students.</p>
+    <div class="steps-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="step-card">
+        <div class="step-num" style="background:linear-gradient(135deg,#ef4444,#dc2626);">01</div>
+        <div class="step-title">ADMIN</div>
+        <div class="step-desc">Manage buses, drivers, routes, and student pickup stops from a central control panel.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background:linear-gradient(135deg,#10b981,#047857);">02</div>
+        <div class="step-title">DRIVER</div>
+        <div class="step-desc">Log in on a smartphone, start the trip, and stream real mobile GPS directly to the bus map.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">03</div>
+        <div class="step-title">STUDENT</div>
+        <div class="step-desc">Watch the bus move live on an interactive map, view pickup points with ETAs, and catch the bus.</div>
+      </div>
     </div>
   </div>
 </section>
@@ -478,7 +492,7 @@
       <div>
         <div class="footer-title">Portals</div>
         <a href="pages/student/login.html"  class="footer-link">Student Portal</a>
-        <a href="pages/manager/login.html"  class="footer-link">Manager Portal</a>
+        <a href="pages/driver/login.html"   class="footer-link">Driver Portal</a>
         <a href="pages/admin/login.html"    class="footer-link">Admin Portal</a>
       </div>
       <div>
@@ -527,17 +541,17 @@
 
   // Hero Map
   const heroMap = L.map('hero-map', {
-    center: [12.9716, 77.5946], zoom: 13,
+    center: [19.0435, 83.8138], zoom: 14,
     zoomControl: false, scrollWheelZoom: false, dragging: false,
     attributionControl: false
   });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heroMap);
 
-  // Animated demo buses on hero map
+  // Animated demo buses on hero map (Gunupur, Odisha)
   const demoBuses = [
-    { id: 1, lat: 12.9716, lng: 77.5946, name: 'BUS-001', color: '#22c55e' },
-    { id: 2, lat: 12.9720, lng: 77.5940, name: 'BUS-002', color: '#3b82f6' },
-    { id: 3, lat: 12.9740, lng: 77.5970, name: 'BUS-003', color: '#f59e0b' },
+    { id: 1, lat: 19.0435, lng: 83.8138, name: 'BUS-001', color: '#22c55e' },
+    { id: 2, lat: 19.0470, lng: 83.8165, name: 'BUS-002', color: '#3b82f6' },
+    { id: 3, lat: 19.0620, lng: 83.8115, name: 'BUS-003', color: '#f59e0b' },
   ];
   const heroMarkers = {};
 

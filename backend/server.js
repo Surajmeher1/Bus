@@ -56,6 +56,7 @@ app.use('/api/v1/students', require('./routes/student'));
 app.use('/api/v1/buses',    require('./routes/bus'));
 app.use('/api/v1/routes',   require('./routes/route'));
 app.use('/api/v1/trips',    require('./routes/trip'));
+app.use('/api/v1/driver',   require('./routes/driver'));   // ← Review 1: Driver GPS portal
 app.use('/api/v1',          require('./routes/admin'));
 app.use('/api/v1',          require('./routes/misc'));
 

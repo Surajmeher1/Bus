@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="description" content="Bus Driver Dashboard — Smart Bus Tracking System"/>
+  <title>Driver Dashboard — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+  <style>
+    /* ── Mobile-first Driver Dashboard ────────────────────────────────────── */
+    body { background: #f0fdf4; }
+
+    .driver-header {
+      background: linear-gradient(135deg,#064e3b,#047857);
+      color: white; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    }
+    .driver-header-left { display: flex; align-items: center; gap: 12px; }
+    .driver-logo { font-size: 1.5rem; }
+    .driver-name { font-size: .875rem; font-weight: 700; }
+    .driver-role { font-size: .7rem; opacity: .8; }
+
+    .driver-content { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+    /* Status Banner */
+    .status-banner {
+      border-radius: 16px; padding: 20px; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all .3s;
+    }
+    .status-banner.waiting  { background: linear-gradient(135deg,#fef3c7,#fde68a); color: #92400e; }
+    .status-banner.live     { background: linear-gradient(135deg,#d1fae5,#a7f3d0); color: #065f46; animation: pulse-banner 2s infinite; }
+    .status-banner.completed{ background: linear-gradient(135deg,#f3f4f6,#e5e7eb); color: #374151; }
+    .status-banner.offline  { background: linear-gradient(135deg,#fee2e2,#fca5a5); color: #991b1b; }
+
+    @keyframes pulse-banner {
+      0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.3); }
+      50%      { box-shadow: 0 0 0 12px rgba(16,185,129,.0); }
+    }
+
+    .status-emoji { font-size: 2rem; }
+    .status-text { font-size: 1.25rem; font-weight: 800; }
+    .status-sub  { font-size: .8rem; opacity: .8; }
+
+    /* Bus Info Card */
+    .bus-info-card {
+      background: white; border-radius: 16px; padding: 20px;
+      margin-bottom: 16px; border: 1px solid #d1fae5;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .bus-info-card h2 { font-size: 1.5rem; font-weight: 900; color: #064e3b; margin-bottom: 4px; }
+    .bus-detail { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: #6b7280; margin-top: 8px; }
+    .bus-detail i { color: #10b981; width: 16px; }
+
+    /* Trip Controls */
+    .trip-controls { margin-bottom: 16px; display: flex; gap: 12px; }
+    .btn-start {
+      flex: 1; padding: 18px; font-size: 1.125rem; font-weight: 800;
+      background: linear-gradient(135deg,#10b981,#059669); color: white;
+      border-radius: 16px; border: none; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(16,185,129,.4);
+      transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-start:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 8px 30px rgba(16,185,129,.5); }
+    .btn-start:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .btn-stop {
+      flex: 1; padding: 18px; font-size: 1.125rem; font-weight: 800;
+      background: linear-gradient(135deg,#ef4444,#dc2626); color: white;
+      border-radius: 16px; border: none; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(239,68,68,.4);
+      transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+      display: none;
+    }
+    .btn-stop.visible { display: flex; }
+    .btn-stop:hover { transform: scale(1.02); }
+
+    /* GPS Status Card */
+    .gps-card {
+      background: white; border-radius: 16px; padding: 16px;
+      margin-bottom: 16px; border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+    .gps-card-title { font-size: .8125rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: #6b7280; margin-bottom: 12px; }
+    .gps-stat { display: flex; justify-content: space-between; padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6; font-size: .8125rem; }
+    .gps-stat:last-child { border-bottom: none; }
+    .gps-stat-label { color: #9ca3af; }
+    .gps-stat-value { font-weight: 600; color: #1f2937; font-family: monospace; }
+    .gps-dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db;
+      display: inline-block; margin-right: 6px; transition: background .3s; }
+    .gps-dot.active { background: #10b981; animation: pulse-dot 1.5s infinite; }
+
+    /* GPS Permission Error */
+    .gps-error-card {
+      background: #fee2e2; border: 1px solid #fca5a5; border-radius: 16px;
+      padding: 20px; margin-bottom: 16px; display: none;
+    }
+    .gps-error-card.visible { display: block; }
+    .gps-error-title { font-weight: 800; color: #991b1b; font-size: 1rem; margin-bottom: 8px; }
+    .gps-error-body  { color: #7f1d1d; font-size: .875rem; line-height: 1.6; }
+
+    /* Map */
+    .map-card { background: white; border-radius: 16px; overflow: hidden;
+      margin-bottom: 16px; border: 1px solid #d1fae5; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .map-card-header { padding: 14px 16px; font-size: .875rem; font-weight: 700;
+      color: #065f46; border-bottom: 1px solid #d1fae5;
+      display: flex; align-items: center; justify-content: space-between; }
+    #driver-map { height: 320px; width: 100%; }
+
+    /* Pickup Points */
+    .pickup-card {
+      background: white; border-radius: 16px; padding: 16px;
+      margin-bottom: 16px; border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+    .pickup-card-header { display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; }
+    .pickup-card-title { font-size: .8125rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: #6b7280; }
+    .pickup-hint { font-size: .75rem; color: #9ca3af; margin-bottom: 12px;
+      padding: 8px 12px; background: #f0fdf4; border-radius: 8px; }
+    .pickup-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border-radius: 10px; background: #f9fafb;
+      margin-bottom: 8px; border: 1px solid #e5e7eb;
+    }
+    .pickup-icon { width: 32px; height: 32px; border-radius: 8px; background: #d1fae5;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pickup-name { font-weight: 600; font-size: .875rem; color: #1f2937; }
+    .pickup-desc { font-size: .75rem; color: #9ca3af; }
+    .pickup-delete { margin-left: auto; color: #ef4444; cursor: pointer; padding: 6px;
+      border-radius: 6px; transition: background .2s; }
+    .pickup-delete:hover { background: #fee2e2; }
+    .no-pickups { text-align: center; color: #9ca3af; font-size: .875rem; padding: 20px 0; }
+
+    /* Add Pickup Modal (bottom sheet style on mobile) */
+    .modal-overlay { background: rgba(0,0,0,.5); }
+    .pickup-modal { background: white; border-radius: 24px 24px 0 0;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+      padding: 24px; transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 -8px 40px rgba(0,0,0,.2); }
+    .pickup-modal.open { transform: translateY(0); }
+    .modal-drag-handle { width: 40px; height: 4px; background: #d1d5db;
+      border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-size: 1.125rem; font-weight: 800; color: #1f2937; margin-bottom: 20px; }
+    .pickup-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      z-index: 599; display: none; }
+    .pickup-modal-overlay.open { display: block; }
+
+    /* Route selector */
+    .route-select-card { background: white; border-radius: 16px; padding: 16px;
+      margin-bottom: 16px; border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="driver-header">
+  <div class="driver-header-left">
+    <span class="driver-logo">🚌</span>
+    <div>
+      <div class="driver-name" id="header-driver-name">Driver</div>
+      <div class="driver-role">Driver Portal</div>
+    </div>
+  </div>
+  <button onclick="Auth.logout()" style="background:rgba(255,255,255,.15);border:none;color:white;padding:8px 14px;border-radius:10px;font-size:.8rem;cursor:pointer;">
+    <i class="fa-solid fa-right-from-bracket"></i> Logout
+  </button>
+</div>
+
+<div class="driver-content">
+
+  <!-- Status Banner -->
+  <div class="status-banner waiting" id="status-banner">
+    <div>
+      <div class="status-text" id="status-text">⏳ NOT STARTED</div>
+      <div class="status-sub" id="status-sub">Start your trip to begin tracking</div>
+    </div>
+    <div class="status-emoji" id="status-emoji">🟡</div>
+  </div>
+
+  <!-- GPS Permission Error -->
+  <div class="gps-error-card" id="gps-error-card">
+    <div class="gps-error-title">📍 Location Access Required</div>
+    <div class="gps-error-body" id="gps-error-body">
+      Location permission is required to start live bus tracking.<br>
+      Please allow location access when your browser asks, then try again.
+    </div>
+  </div>
+
+  <!-- Bus Info -->
+  <div class="bus-info-card" id="bus-info-card">
+    <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#10b981;margin-bottom:8px;">ASSIGNED BUS</div>
+    <h2 id="bus-number">Loading...</h2>
+    <div class="bus-detail"><i class="fa-solid fa-route"></i><span id="bus-route">No route assigned</span></div>
+    <div class="bus-detail"><i class="fa-solid fa-car-side"></i><span id="bus-reg">—</span></div>
+    <div class="bus-detail"><i class="fa-solid fa-users"></i><span id="bus-seats">— seats</span></div>
+  </div>
+
+  <!-- Route Selector -->
+  <div class="route-select-card" id="route-selector" style="display:none;">
+    <div style="font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:10px;">SELECT ROUTE (Optional)</div>
+    <select id="route-select" class="form-control">
+      <option value="">— Use bus default route —</option>
+    </select>
+  </div>
+
+  <!-- Trip Controls -->
+  <div class="trip-controls">
+    <button class="btn-start" id="btn-start-trip" onclick="startTrip()">
+      <i class="fa-solid fa-play"></i> START TRIP
+    </button>
+    <button class="btn-stop" id="btn-stop-trip" onclick="endTrip()">
+      <i class="fa-solid fa-stop"></i> END TRIP
+    </button>
+  </div>
+
+  <!-- Next Stop Highlight Card (Active Trip) -->
+  <div class="card mb-16" id="next-stop-card" style="display:none;background:linear-gradient(135deg,#064e3b,#047857);color:white;border:none;">
+    <div class="card-body" style="padding:16px;">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-bottom:4px;">NEXT STOP</div>
+      <div style="font-size:1.25rem;font-weight:900;margin-bottom:4px;" id="next-stop-name">📍 Library</div>
+      <div style="font-size:.8rem;opacity:.9;" id="next-stop-dist">Distance: ~1.2 km away</div>
+    </div>
+  </div>
+
+  <!-- GPS Status -->
+  <div class="gps-card" id="gps-card" style="display:none;">
+    <div class="gps-card-title flex-between">
+      <span><span class="gps-dot" id="gps-dot"></span> GPS STATUS</span>
+      <span id="gps-badge-status" class="status-badge-live">🟢 LIVE GPS</span>
+    </div>
+    <div class="gps-stat"><span class="gps-stat-label">Latitude</span><span class="gps-stat-value" id="gps-lat">—</span></div>
+    <div class="gps-stat"><span class="gps-stat-label">Longitude</span><span class="gps-stat-value" id="gps-lng">—</span></div>
+    <div class="gps-stat"><span class="gps-stat-label">Accuracy</span><span class="gps-stat-value" id="gps-acc">—</span></div>
+    <div class="gps-stat"><span class="gps-stat-label">Last Update</span><span class="gps-stat-value" id="gps-time">—</span></div>
+    <div class="gps-stat"><span class="gps-stat-label">Updates Sent</span><span class="gps-stat-value" id="gps-count">0</span></div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-card" id="map-card">
+    <div class="map-card-header">
+      <span><i class="fa-solid fa-map" style="color:#10b981;margin-right:6px;"></i>Live Map</span>
+      <span style="font-size:.75rem;color:#9ca3af;" id="map-hint">Tap map to add a pickup point</span>
+    </div>
+    <div id="driver-map"></div>
+  </div>
+
+  <!-- Pickup Points -->
+  <div class="pickup-card">
+    <div class="pickup-card-header">
+      <div class="pickup-card-title"><i class="fa-solid fa-map-pin" style="color:#10b981;margin-right:6px;"></i>Pickup Points</div>
+      <button class="btn btn-primary btn-sm" id="btn-add-pickup" onclick="openPickupModal(null,null)" style="background:linear-gradient(135deg,#10b981,#059669);font-size:.75rem;padding:6px 12px;">
+        <i class="fa-solid fa-plus"></i> Add
+      </button>
+    </div>
+    <div class="pickup-hint">📍 Tap any point on the map to quickly add a pickup location there, or click Add above.</div>
+    <div id="pickup-list">
+      <div class="no-pickups">No pickup points added yet</div>
+  </div>
+
+</div>
+
+<!-- Mobile Bottom Navigation (Driver) -->
+<div class="mobile-bottom-nav">
+  <div class="mobile-nav-item active" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fa-solid fa-house"></i><span>Home</span></div>
+  <div class="mobile-nav-item" onclick="document.getElementById('map-card').scrollIntoView({behavior:'smooth'})"><i class="fa-solid fa-map"></i><span>Route</span></div>
+  <div class="mobile-nav-item" onclick="document.getElementById('btn-start-trip').scrollIntoView({behavior:'smooth'})"><i class="fa-solid fa-play"></i><span>Trip</span></div>
+  <div class="mobile-nav-item" onclick="Auth.logout()"><i class="fa-solid fa-user"></i><span>Logout</span></div>
+</div>
+
+<!-- Pickup Point Bottom Sheet Modal -->
+<div class="pickup-modal-overlay" id="pickup-modal-overlay" onclick="closePickupModal()"></div>
+<div class="pickup-modal" id="pickup-modal">
+  <div class="modal-drag-handle"></div>
+  <div class="modal-title">📍 Add Pickup Location</div>
+  <div class="form-group">
+    <label class="form-label">Pickup Location Name *</label>
+    <input id="pickup-name" class="form-control" placeholder="e.g. Hostel Gate, Library, Main Gate"/>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Description (optional)</label>
+    <input id="pickup-desc" class="form-control" placeholder="e.g. Near the north entrance"/>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px;">
+      <div style="font-size:.7rem;color:#6b7280;margin-bottom:2px;">LATITUDE</div>
+      <div style="font-weight:700;font-family:monospace;font-size:.875rem;" id="modal-lat">—</div>
+    </div>
+    <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px;">
+      <div style="font-size:.7rem;color:#6b7280;margin-bottom:2px;">LONGITUDE</div>
+      <div style="font-weight:700;font-family:monospace;font-size:.875rem;" id="modal-lng">—</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <button class="btn btn-outline flex-1" onclick="closePickupModal()">Cancel</button>
+    <button class="btn flex-1" style="background:linear-gradient(135deg,#10b981,#059669);color:white;" onclick="savePickupPoint()">
+      <i class="fa-solid fa-check"></i> Save Pickup Point
+    </button>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script>
+// ── Auth Guard ────────────────────────────────────────────────────────────────
+Auth.redirectIfNotRole('driver');
+Toast.init();
+Theme.init();
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let socket = null;
+let watchId = null;
+let driverMap = null;
+let driverMarker = null;
+let routePolyline = null;
+let pickupMarkers = {};
+let pendingPickupLatLng = null;
+let tripActive = false;
+let busData = null;
+let updateCount = 0;
+const user = Auth.getUser();
+const token = Auth.getToken();
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.getElementById('header-driver-name').textContent = user?.name || 'Driver';
+
+async function init() {
+  initMap();
+  await loadMyBus();
+  await loadRoutes();
+  connectSocket();
+}
+
+// ── Map Init ──────────────────────────────────────────────────────────────────
+function initMap() {
+  driverMap = L.map('driver-map', { zoomControl: true }).setView([19.0435, 83.8138], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(driverMap);
+
+  // Click to add pickup point
+  driverMap.on('click', (e) => {
+    openPickupModal(e.latlng.lat, e.latlng.lng);
+  });
+}
+
+// ── Load My Bus ───────────────────────────────────────────────────────────────
+async function loadMyBus() {
+  try {
+    const res = await API.get('/driver/my-bus');
+    busData = res.data;
+    document.getElementById('bus-number').textContent = busData.bus_number;
+    document.getElementById('bus-route').textContent  = busData.route_name
+      ? `${busData.route_name} (${busData.source} → ${busData.destination})`
+      : 'No route assigned';
+    document.getElementById('bus-reg').textContent   = busData.registration_number;
+    document.getElementById('bus-seats').textContent = `${busData.available_seats} / ${busData.capacity} seats`;
+
+    // Draw route stops on map
+    if (busData.stops && busData.stops.length > 0) {
+      drawRoute(busData.stops);
+    }
+
+    // Show existing pickup points
+    renderPickupPoints(busData.pickup_points || []);
+    drawPickupMarkers(busData.pickup_points || []);
+
+    // Check if trip already running
+    if (busData.active_trip_id && busData.status === 'running') {
+      setTripActiveUI(true, true); // already running
+    }
+  } catch (err) {
+    document.getElementById('bus-number').textContent = 'No Bus Assigned';
+    document.getElementById('bus-route').textContent  = err.message;
+    Toast.error(err.message);
+  }
+}
+
+// ── Draw Route ────────────────────────────────────────────────────────────────
+function drawRoute(stops) {
+  if (routePolyline) { driverMap.removeLayer(routePolyline); }
+  const latlngs = stops.map(s => [s.latitude, s.longitude]);
+  routePolyline = L.polyline(latlngs, { color: '#10b981', weight: 4, opacity: .8, dashArray: '8,6' }).addTo(driverMap);
+
+  stops.forEach((stop, i) => {
+    const icon = L.divIcon({
+      html: `<div style="background:#065f46;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">${i+1}</div>`,
+      iconSize: [24, 24], iconAnchor: [12, 12], className: ''
+    });
+    L.marker([stop.latitude, stop.longitude], { icon })
+      .bindPopup(`<b>${stop.stop_name}</b><br>Stop ${i+1}`)
+      .addTo(driverMap);
+  });
+
+  if (stops.length > 0) {
+    driverMap.fitBounds(routePolyline.getBounds(), { padding: [30, 30] });
+  }
+}
+
+// ── Draw Pickup Markers ───────────────────────────────────────────────────────
+function drawPickupMarkers(points) {
+  Object.values(pickupMarkers).forEach(m => driverMap.removeLayer(m));
+  pickupMarkers = {};
+  points.forEach(p => addPickupMarker(p));
+}
+
+function addPickupMarker(p) {
+  const icon = L.divIcon({
+    html: `<div style="background:#f59e0b;color:white;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);white-space:nowrap">📍${p.name}</div>`,
+    iconAnchor: [0, 16], className: ''
+  });
+  const m = L.marker([p.latitude, p.longitude], { icon })
+    .bindPopup(`<b>📍 ${p.name}</b>${p.description ? `<br>${p.description}` : ''}`)
+    .addTo(driverMap);
+  pickupMarkers[p.pickup_id] = m;
+}
+
+// ── Render Pickup List ────────────────────────────────────────────────────────
+function renderPickupPoints(points) {
+  const container = document.getElementById('pickup-list');
+  if (!points || points.length === 0) {
+    container.innerHTML = '<div class="no-pickups">No pickup points added yet.<br>Tap the map to add one.</div>';
+    return;
+  }
+  container.innerHTML = points.map(p => `
+    <div class="pickup-item" id="pickup-item-${p.pickup_id}">
+      <div class="pickup-icon"><i class="fa-solid fa-location-dot" style="color:#10b981;"></i></div>
+      <div>
+        <div class="pickup-name">${p.name}</div>
+        ${p.description ? `<div class="pickup-desc">${p.description}</div>` : ''}
+        <div class="pickup-desc">${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</div>
+      </div>
+      <div class="pickup-delete" onclick="removePickupPoint(${p.pickup_id})">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Load Routes ───────────────────────────────────────────────────────────────
+async function loadRoutes() {
+  try {
+    const res = await RouteAPI.getAll();
+    const select = document.getElementById('route-select');
+    (res.data || []).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.route_id;
+      opt.textContent = r.route_name;
+      select.appendChild(opt);
+    });
+  } catch (_) {}
+}
+
+// ── Socket.IO ─────────────────────────────────────────────────────────────────
+function connectSocket() {
+  socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
+  socket.on('connect', () => console.log('🔌 Socket connected'));
+  socket.on('driver:trip-started', (data) => {
+    Toast.success(`Trip started — ${data.bus_number} is now LIVE`);
+  });
+  socket.on('driver:trip-ended', () => {
+    Toast.info('Trip ended.');
+  });
+  socket.on('driver:error', (data) => {
+    Toast.error(data.message);
+  });
+  socket.on('disconnect', () => {
+    if (tripActive) Toast.warning('Connection lost. Reconnecting...');
+  });
+}
+
+// ── START TRIP ────────────────────────────────────────────────────────────────
+async function startTrip() {
+  if (!busData) { Toast.error('No bus assigned.'); return; }
+
+  document.getElementById('gps-error-card').classList.remove('visible');
+
+  if (!navigator.geolocation) {
+    showGpsError('GPS is not available in this browser. Please use a modern mobile browser.');
+    return;
+  }
+
+  // Call REST API to create trip record
+  try {
+    const routeId = document.getElementById('route-select').value || null;
+    await API.post('/driver/start-trip', { route_id: routeId ? parseInt(routeId) : null });
+  } catch (err) {
+    if (!err.message.includes('already in progress')) {
+      Toast.error('Failed to start trip: ' + err.message);
+      return;
+    }
+  }
+
+  // Notify socket that driver started
+  socket.emit('driver:start-trip', { token, busId: busData.bus_id });
+
+  // Request GPS — this shows the browser permission prompt
+  watchId = navigator.geolocation.watchPosition(
+    onGpsSuccess,
+    onGpsError,
+    { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+  );
+
+  setTripActiveUI(true, false);
+}
+
+function onGpsSuccess(position) {
+  const { latitude, longitude, accuracy } = position.coords;
+  updateCount++;
+
+  // Update GPS card
+  document.getElementById('gps-lat').textContent  = latitude.toFixed(6);
+  document.getElementById('gps-lng').textContent  = longitude.toFixed(6);
+  document.getElementById('gps-acc').textContent  = accuracy ? `${Math.round(accuracy)}m` : '—';
+  document.getElementById('gps-time').textContent = new Date().toLocaleTimeString();
+  document.getElementById('gps-count').textContent = updateCount;
+  document.getElementById('gps-dot').classList.add('active');
+
+  // Move driver marker on map
+  if (!driverMarker) {
+    const icon = L.divIcon({
+      html: `<div style="background:#10b981;color:white;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid white;box-shadow:0 4px 16px rgba(0,0,0,.4);animation:pulse-dot 1.5s infinite;">🚌</div>`,
+      iconSize: [42, 42], iconAnchor: [21, 21], className: ''
+    });
+    driverMarker = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 })
+      .bindPopup('<b>📍 Your Location (Bus)</b>')
+      .addTo(driverMap);
+  } else {
+    driverMarker.setLatLng([latitude, longitude]);
+  }
+  driverMap.setView([latitude, longitude], 15);
+
+  // Send to backend via Socket.IO
+  if (socket && socket.connected) {
+    socket.emit('driver:location-update', {
+      token,
+      busId: busData.bus_id,
+      latitude,
+      longitude,
+      accuracy,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+function onGpsError(error) {
+  let message = '';
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      message = '📍 Location permission was denied.\n\nTo start live tracking, please:\n1. Click the lock/info icon in your browser address bar\n2. Set Location to "Allow"\n3. Refresh the page and try again.';
+      break;
+    case error.POSITION_UNAVAILABLE:
+      message = '📍 GPS signal not found. Please move to an open area and try again.';
+      break;
+    case error.TIMEOUT:
+      message = '📍 GPS is taking too long. Please ensure location services are enabled and try again.';
+      break;
+    default:
+      message = '📍 Unable to get location: ' + error.message;
+  }
+  showGpsError(message);
+  setTripActiveUI(false, false);
+  // End trip if started
+  endTrip(true);
+}
+
+function showGpsError(message) {
+  const card = document.getElementById('gps-error-card');
+  document.getElementById('gps-error-body').textContent = message;
+  card.classList.add('visible');
+}
+
+// ── END TRIP ──────────────────────────────────────────────────────────────────
+async function endTrip(skipApi = false) {
+  // Stop GPS
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+
+  // Notify socket
+  if (socket && socket.connected && busData) {
+    socket.emit('driver:end-trip', { token, busId: busData.bus_id });
+  }
+
+  // Call REST API
+  if (!skipApi) {
+    try {
+      await API.post('/driver/end-trip', {});
+    } catch (_) {}
+  }
+
+  setTripActiveUI(false, false);
+  document.getElementById('gps-dot').classList.remove('active');
+  document.getElementById('gps-count').textContent = '0';
+  updateCount = 0;
+
+  Toast.success('Trip ended. Bus is now offline.');
+}
+
+// ── UI State ──────────────────────────────────────────────────────────────────
+function setTripActiveUI(active, wasAlreadyRunning) {
+  tripActive = active;
+  const startBtn = document.getElementById('btn-start-trip');
+  const stopBtn  = document.getElementById('btn-stop-trip');
+  const gpsBanner = document.getElementById('status-banner');
+  const gpsCard  = document.getElementById('gps-card');
+
+  if (active) {
+    startBtn.style.display = 'none';
+    stopBtn.classList.add('visible');
+    gpsCard.style.display = 'block';
+    if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'block';
+    gpsBanner.className   = 'status-banner live';
+    document.getElementById('status-emoji').textContent = '🟢';
+    document.getElementById('status-text').textContent  = '🟢 LIVE GPS ACTIVE';
+    document.getElementById('status-sub').textContent   = wasAlreadyRunning
+      ? 'Trip is currently in progress'
+      : 'Broadcasting live location to students...';
+    document.getElementById('route-selector').style.display = 'none';
+  } else {
+    startBtn.style.display = 'flex';
+    stopBtn.classList.remove('visible');
+    gpsCard.style.display = 'none';
+    if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'none';
+    gpsBanner.className   = 'status-banner waiting';
+    document.getElementById('status-emoji').textContent = '⚫';
+    document.getElementById('status-text').textContent  = '⚫ TRIP STOPPED';
+    document.getElementById('status-sub').textContent   = 'Start a new trip when ready';
+  }
+}
+
+// ── Pickup Modal ──────────────────────────────────────────────────────────────
+function openPickupModal(lat, lng) {
+  pendingPickupLatLng = lat !== null ? { lat, lng } : null;
+  document.getElementById('modal-lat').textContent = lat !== null ? lat.toFixed(6) : '(current position)';
+  document.getElementById('modal-lng').textContent = lng !== null ? lng.toFixed(6) : '';
+  document.getElementById('pickup-name').value = '';
+  document.getElementById('pickup-desc').value = '';
+  document.getElementById('pickup-modal').classList.add('open');
+  document.getElementById('pickup-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('pickup-name').focus(), 300);
+}
+
+function closePickupModal() {
+  document.getElementById('pickup-modal').classList.remove('open');
+  document.getElementById('pickup-modal-overlay').classList.remove('open');
+  pendingPickupLatLng = null;
+}
+
+async function savePickupPoint() {
+  const name = document.getElementById('pickup-name').value.trim();
+  const desc = document.getElementById('pickup-desc').value.trim();
+
+  if (!name) { Toast.warning('Please enter a pickup location name.'); return; }
+
+  let lat, lng;
+  if (pendingPickupLatLng) {
+    lat = pendingPickupLatLng.lat;
+    lng = pendingPickupLatLng.lng;
+  } else if (driverMarker) {
+    const pos = driverMarker.getLatLng();
+    lat = pos.lat; lng = pos.lng;
+  } else {
+    Toast.warning('No location selected. Tap the map first.');
+    return;
+  }
+
+  try {
+    const res = await API.post('/driver/pickup-points', {
+      name, description: desc,
+      latitude: lat, longitude: lng,
+      route_id: busData?.route_id || null,
+      trip_id: busData?.active_trip_id || null
+    });
+
+    closePickupModal();
+    Toast.success(`📍 "${name}" added!`);
+
+    // Add to map
+    addPickupMarker(res.data);
+
+    // Refresh pickup list
+    const current = Array.from(document.querySelectorAll('.pickup-item')).map(el => ({
+      pickup_id: parseInt(el.id.replace('pickup-item-','')),
+    }));
+    const newPoint = res.data;
+    const allPickups = [...(busData.pickup_points || []), newPoint];
+    busData.pickup_points = allPickups;
+    renderPickupPoints(allPickups);
+  } catch (err) {
+    Toast.error(err.message);
+  }
+}
+
+async function removePickupPoint(id) {
+  if (!confirm('Remove this pickup point?')) return;
+  try {
+    await API.delete(`/driver/pickup-points/${id}`);
+    if (pickupMarkers[id]) { driverMap.removeLayer(pickupMarkers[id]); delete pickupMarkers[id]; }
+    busData.pickup_points = (busData.pickup_points || []).filter(p => p.pickup_id !== id);
+    renderPickupPoints(busData.pickup_points);
+    Toast.success('Pickup point removed.');
+  } catch (err) {
+    Toast.error(err.message);
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

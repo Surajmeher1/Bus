@@ -4,6 +4,7 @@ const jwtConfig = require('../config/jwt');
 const AdminModel   = require('../models/adminModel');
 const StudentModel = require('../models/studentModel');
 const ManagerModel = require('../models/managerModel');
+const db = require('../config/db');
 
 const generateToken = (payload) =>
   jwt.sign(payload, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
@@ -24,6 +25,57 @@ const adminLogin = async (req, res) => {
       success: true,
       token,
       user: { id: admin.admin_id, username: admin.username, email: admin.email, role: 'admin' }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error.', error: err.message });
+  }
+};
+
+// ── DRIVER LOGIN ─────────────────────────────────────────────────────────────
+const driverLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    const driver = db.prepare('SELECT * FROM drivers WHERE email = ?').get(email);
+    if (!driver) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+    if (!driver.is_active) {
+      return res.status(403).json({ success: false, message: 'Account disabled. Contact admin.' });
+    }
+    if (!driver.password) {
+      return res.status(401).json({ success: false, message: 'Driver login not configured. Contact admin.' });
+    }
+
+    const valid = await bcrypt.compare(password, driver.password);
+    if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+    // Get assigned bus
+    const assignedBus = db.prepare(`
+      SELECT b.bus_id, b.bus_number, b.registration_number, b.status, b.route_id,
+             b.capacity, b.available_seats, r.route_name, r.source, r.destination
+      FROM buses b
+      LEFT JOIN routes r ON b.route_id = r.route_id
+      WHERE b.driver_id = ?
+    `).get(driver.driver_id);
+
+    const token = generateToken({ id: driver.driver_id, role: 'driver', email: driver.email });
+    req.logActivity?.('driver_login', `Driver ${driver.name} logged in`);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: driver.driver_id,
+        name: driver.name,
+        email: driver.email,
+        phone: driver.phone,
+        license_number: driver.license_number,
+        role: 'driver',
+        assigned_bus: assignedBus || null
+      }
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error.', error: err.message });
@@ -106,4 +158,4 @@ const getMe = (req, res) => {
   res.json({ success: true, user: req.user });
 };
 
-module.exports = { adminLogin, managerLogin, studentRegister, studentLogin, getMe };
+module.exports = { adminLogin, driverLogin, managerLogin, studentRegister, studentLogin, getMe };

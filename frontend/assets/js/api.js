@@ -76,6 +76,7 @@ const API = {
   get:    (url)          => apiFetch(url, { method: 'GET' }),
   post:   (url, body)    => apiFetch(url, { method: 'POST',   body: JSON.stringify(body) }),
   put:    (url, body)    => apiFetch(url, { method: 'PUT',    body: JSON.stringify(body) }),
+  patch:  (url, body)    => apiFetch(url, { method: 'PATCH',  body: JSON.stringify(body) }),
   delete: (url)          => apiFetch(url, { method: 'DELETE' }),
 };
 
@@ -83,6 +84,7 @@ const API = {
 const AuthAPI = {
   studentLogin:   (data) => API.post('/auth/student/login', data),
   studentRegister:(data) => API.post('/auth/student/register', data),
+  driverLogin:    (data) => API.post('/auth/driver/login', data),   // Review 1
   managerLogin:   (data) => API.post('/auth/manager/login', data),
   adminLogin:     (data) => API.post('/auth/admin/login', data),
 };
@@ -138,11 +140,27 @@ const StudentAPI = {
 
 // ── Driver Endpoints ───────────────────────────────────────────────────────────
 const DriverAPI = {
-  getAll:   ()         => API.get('/drivers'),
-  getOne:   (id)       => API.get(`/drivers/${id}`),
-  create:   (data)     => API.post('/drivers', data),
-  update:   (id, data) => API.put(`/drivers/${id}`, data),
-  delete:   (id)       => API.delete(`/drivers/${id}`),
+  // Admin management
+  getAll:        ()         => API.get('/drivers'),
+  getOne:        (id)       => API.get(`/drivers/${id}`),
+  create:        (data)     => API.post('/drivers', data),
+  update:        (id, data) => API.put(`/drivers/${id}`, data),
+  toggle:        (id)       => API.patch(`/drivers/${id}/toggle`, {}),
+  delete:        (id)       => API.delete(`/drivers/${id}`),
+  // Driver self-service (Review 1)
+  getMyBus:      ()         => API.get('/driver/my-bus'),
+  startTrip:     (data)     => API.post('/driver/start-trip', data),
+  endTrip:       ()         => API.post('/driver/end-trip', {}),
+};
+
+// ── Pickup Point Endpoints (Review 1) ─────────────────────────────────────────
+const PickupAPI = {
+  getAll:   (params = {}) => {
+    const q = Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
+    return API.get(`/driver/pickup-points${q ? '?' + q : ''}`);
+  },
+  create:   (data)     => API.post('/driver/pickup-points', data),
+  delete:   (id)       => API.delete(`/driver/pickup-points/${id}`),
 };
 
 // ── Manager Endpoints ──────────────────────────────────────────────────────────

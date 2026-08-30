@@ -1,59 +1,66 @@
 # 🚌 Smart University Bus Tracking System
 
-A full-stack real-time bus tracking web application built for university campuses. Students can live-track buses on a map, managers control their fleet and log fuel/maintenance records, and admins oversee the entire system — all through role-based dashboards.
+A full-stack, real-time university bus tracking system with three dedicated portals — **Student**, **Bus Manager**, and **Admin** — built with Node.js, Express, Socket.IO, SQLite, and Leaflet.js.
 
 ---
 
-## 📌 Project Status
+## 🚀 Quick Start
 
-> **Active Development** — Core backend + frontend dashboards are complete. Real-time GPS simulation via Socket.IO is working. Below is a snapshot of what is done and what is still in progress.
+### Prerequisites
+- **Node.js** v18+ (v24 recommended)
+- **npm** v9+
 
-| Module | Status |
-|---|---|
-| Backend REST API (Express + SQLite) | ✅ Complete |
-| JWT Authentication & Role Guards | ✅ Complete |
-| Real-time bus tracking (Socket.IO) | ✅ Complete |
-| Admin Dashboard | ✅ Complete |
-| Manager Dashboard | ✅ Complete |
-| Student Dashboard (map + tracking) | ✅ Complete |
-| Student Registration & Login | ✅ Complete |
-| Feedback & Notifications system | ✅ Complete |
-| Fuel & Maintenance records | ✅ Complete |
-| Activity Logs | ✅ Complete |
-| Driver mobile interface | 🔲 Planned |
-| Push notifications | 🔲 Planned |
-| Production deployment config | 🔲 Planned |
+### 1. Install Dependencies
+```bash
+cd backend
+npm install
+```
 
----
+### 2. Initialize the Database (first time only)
+```bash
+npm run init-db
+```
+This creates `backend/database/bustrack.db` with all tables and demo seed data.
 
-## 🛠️ Tech Stack
+### 3. Start the Server
+```bash
+npm start
+# OR for development with auto-reload:
+npm run dev
+```
 
-| Layer | Technology |
-|---|---|
-| **Backend** | Node.js, Express.js |
-| **Database** | SQLite (via `better-sqlite3`) — file-based, zero config |
-| **Auth** | JSON Web Tokens (JWT) + bcryptjs |
-| **Real-time** | Socket.IO |
-| **Frontend** | Vanilla HTML, CSS, JavaScript |
-| **Maps** | Leaflet.js (loaded from CDN) |
-| **Rate Limiting** | `express-rate-limit` |
-| **Dev Server** | Nodemon |
+### 4. Open the Application
+Visit: **http://localhost:5000**
 
 ---
 
-## 📁 Project Structure
+## 🔑 Default Login Credentials
+
+| Portal | Email / Username | Password |
+|--------|-----------------|----------|
+| **Admin** | `admin` | `Admin@123` |
+| **Bus Manager 1** | `rajesh@university.edu` | `Manager@123` |
+| **Bus Manager 2** | `priya@university.edu` | `Manager@123` |
+| **Student 1** | `arjun@student.edu` | `Student@123` |
+| **Student 2** | `sneha@student.edu` | `Student@123` |
+| **Student 3** | `rahul@student.edu` | `Student@123` |
+| **Student 4** | `ananya@student.edu` | `Student@123` |
+| **Student 5** | `karthik@student.edu` | `Student@123` |
+
+---
+
+## 🗂️ Project Structure
 
 ```
 Smart University Bus Tracking System Project/
-│
-├── backend/                        # Node.js / Express API server
+├── backend/
 │   ├── config/
-│   │   ├── db.js                   # SQLite connection & initialization
-│   │   └── jwt.js                  # JWT secret & expiry config
-│   ├── controllers/                # Business logic for each resource
-│   │   ├── authController.js       # Login / logout for all roles
+│   │   ├── db.js              # SQLite database connection
+│   │   └── jwt.js             # JWT configuration
+│   ├── controllers/
 │   │   ├── adminController.js
-│   │   ├── busController.js        # Bus CRUD, location, fuel, maintenance
+│   │   ├── authController.js
+│   │   ├── busController.js
 │   │   ├── driverController.js
 │   │   ├── feedbackController.js
 │   │   ├── managerController.js
@@ -62,284 +69,182 @@ Smart University Bus Tracking System Project/
 │   │   ├── studentController.js
 │   │   └── tripController.js
 │   ├── database/
-│   │   ├── initDb.js               # Creates all tables + seeds demo data
-│   │   └── bustrack.db             # SQLite database file (auto-created)
+│   │   └── initDb.js          # Schema + seed data
 │   ├── middleware/
-│   │   ├── auth.js                 # JWT verify, role guard, activity logger
-│   │   └── validate.js             # express-validator rules
-│   ├── models/                     # DB query helpers for each entity
-│   ├── routes/                     # Express routers mapped to controllers
-│   │   ├── auth.js
-│   │   ├── admin.js
-│   │   ├── bus.js
-│   │   ├── route.js
-│   │   ├── student.js
-│   │   ├── trip.js
-│   │   └── misc.js                 # Notifications, feedback, drivers, logs
+│   │   ├── auth.js            # JWT auth + role guard + activity logger
+│   │   └── validate.js        # Input validation middleware
+│   ├── models/                # Thin data access layer (SQLite)
+│   ├── routes/
+│   │   ├── admin.js           # /drivers, /managers
+│   │   ├── auth.js            # /auth/student/login, /register, /manager/login, /admin/login
+│   │   ├── bus.js             # /buses
+│   │   ├── misc.js            # /notifications, /feedback, /stats, /reports, /activity-logs
+│   │   ├── route.js           # /routes
+│   │   ├── student.js         # /students
+│   │   └── trip.js            # /trips
 │   ├── socket/
-│   │   └── trackingSocket.js       # Socket.IO real-time GPS event handlers
-│   ├── .env                        # Local environment variables (not committed)
-│   ├── .env.example                # Template for environment variables
+│   │   └── trackingSocket.js  # Socket.IO real-time GPS simulation + broadcasting
+│   ├── .env                   # Environment variables
 │   ├── package.json
-│   └── server.js                   # App entry point
+│   └── server.js              # Express + Socket.IO entry point
 │
-└── frontend/                       # Static HTML/CSS/JS frontend
-    ├── index.html                  # Landing page / role selector
+└── frontend/
     ├── assets/
     │   ├── css/
-    │   │   └── main.css            # Global styles
+    │   │   └── main.css        # Complete design system (CSS variables, dark mode, components)
     │   └── js/
-    │       ├── api.js              # Centralised fetch wrapper (all API calls)
-    │       ├── map.js              # Leaflet map helper functions
-    │       └── socket-client.js   # Socket.IO client for live bus updates
-    └── pages/
-        ├── admin/
-        │   ├── login.html
-        │   └── dashboard.html      # Full admin control panel
-        ├── manager/
-        │   ├── login.html
-        │   └── dashboard.html      # Fleet & driver management
-        └── student/
-            ├── login.html
-            ├── register.html
-            └── dashboard.html      # Live map + bus info
+    │       ├── api.js           # Fetch wrapper + all API endpoint groups + Auth/Toast/Theme
+    │       ├── map.js           # Leaflet map utilities + animated bus markers
+    │       └── socket-client.js # Socket.IO client wrapper
+    ├── pages/
+    │   ├── student/
+    │   │   ├── login.html
+    │   │   ├── register.html
+    │   │   └── dashboard.html   # Full student dashboard
+    │   ├── manager/
+    │   │   ├── login.html
+    │   │   └── dashboard.html   # Bus manager control panel
+    │   └── admin/
+    │       ├── login.html
+    │       └── dashboard.html   # Full admin panel
+    └── index.html               # Landing page
 ```
 
 ---
 
-## ⚙️ Setup & Running Locally
+## ✨ Features
 
-### Prerequisites
+### 🎓 Student Portal
+| Feature | Description |
+|---------|-------------|
+| Live GPS Tracking | Watch buses move in real time on Leaflet map |
+| ETA Per Stop | Estimated arrival time for each bus stop |
+| Seat Availability | Live occupancy with progress bar |
+| Bus Routes | Full route map with stop timeline |
+| Schedule | Today's trips with status |
+| Favorite Bus | Save and quick-track your usual bus |
+| Notifications | Real-time alerts for delays/emergencies |
+| Rate & Report | Star ratings and feedback submission |
+| Emergency SOS | One-click campus emergency alert |
+| Profile Management | Edit profile + change password |
 
-Make sure you have the following installed:
+### 🚌 Bus Manager Portal
+| Feature | Description |
+|---------|-------------|
+| My Buses | View and manage assigned buses |
+| Live Map | Real-time bus position view |
+| Trip Management | Start/end trips with route + driver |
+| Update Location | Manually update bus GPS coordinates |
+| Update Status | Running / Delayed / Maintenance / Cancelled |
+| Seat Management | Update available seat count |
+| Fuel Records | Log fuel fill-ups with cost and odometer |
+| Maintenance Records | Track servicing history |
+| Student Feedback | View ratings per bus |
+| Broadcast | Send notifications to all students |
 
-- [Node.js](https://nodejs.org/) **v18 or higher**
-- npm (comes with Node.js)
-- A code editor (VS Code recommended)
-- A browser (Chrome / Edge)
+### 🛡️ Admin Portal
+| Feature | Description |
+|---------|-------------|
+| Dashboard | System-wide stats + Chart.js charts |
+| Student Management | Add / search / delete students |
+| Bus Management | Add / configure / delete buses |
+| Driver Management | Add / delete drivers |
+| Manager Management | Add / delete bus managers |
+| Route Management | Create routes (stops added via DB) |
+| Schedule | Today's full trip schedule |
+| Reports | Bus utilization, route stats, dept chart |
+| Notifications | Send to all/students/managers + emergency |
+| Activity Logs | Full audit trail of all actions |
+| Settings | Change admin password + system info |
 
 ---
 
-### Step 1 — Clone or Download the Project
+## 🛠️ Technology Stack
 
-```bash
-git clone https://github.com/shreeshashish/Smart-University-Bus-Tracking-System.git
-cd "Smart University Bus Tracking System Project"
-```
-
-Or simply download and extract the ZIP and open the folder.
-
----
-
-### Step 2 — Install Backend Dependencies
-
-```bash
-cd backend
-npm install
-```
-
-This installs all packages listed in `package.json` (Express, Socket.IO, bcryptjs, etc.).
+| Layer | Technology |
+|-------|-----------|
+| Frontend | HTML5, Vanilla CSS (CSS Variables), JavaScript |
+| Maps | Leaflet.js + OpenStreetMap (free, no API key) |
+| Real-time | Socket.IO WebSocket |
+| Charts | Chart.js (CDN) |
+| Backend | Node.js + Express.js |
+| Database | SQLite via `better-sqlite3` |
+| Authentication | JWT (jsonwebtoken) + bcryptjs |
+| Validation | express-validator |
+| Dev Server | nodemon |
 
 ---
 
-### Step 3 — Configure Environment Variables
+## 🔌 API Endpoints
 
-Copy the example env file and edit it:
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/student/login` | Student login |
+| POST | `/api/v1/auth/student/register` | Student registration |
+| POST | `/api/v1/auth/manager/login` | Manager login |
+| POST | `/api/v1/auth/admin/login` | Admin login |
 
-```bash
-# Windows (Command Prompt)
-copy .env.example .env
+### Buses
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET | `/api/v1/buses` | All |
+| GET | `/api/v1/buses/locations` | All |
+| GET | `/api/v1/buses/my-buses` | Manager |
+| POST | `/api/v1/buses` | Admin |
+| PUT | `/api/v1/buses/:id/location` | Manager |
+| PUT | `/api/v1/buses/:id/status` | Manager |
+| PUT | `/api/v1/buses/:id/seats` | Manager |
+| GET/POST | `/api/v1/buses/:id/fuel` | Manager |
+| GET/POST | `/api/v1/buses/:id/maintenance` | Manager |
 
-# Windows (PowerShell)
-Copy-Item .env.example .env
-```
+### Real-time Socket.IO Events
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `bus-location-update` | Server → Client | GPS position broadcast every 3s |
+| `bus-status-change` | Server → Client | Status change broadcast |
+| `seat-update` | Server → Client | Available seat count change |
+| `notification` | Server → Client | New notification pushed |
+| `subscribe-bus` | Client → Server | Subscribe to a specific bus feed |
+| `update-location` | Client → Server | Manager manually pushes location |
 
-Open `backend/.env` and review the defaults — **no changes needed to run locally**:
+---
+
+## 🌐 Environment Variables
+
+Edit `backend/.env`:
 
 ```env
 PORT=5000
 NODE_ENV=development
-
-JWT_SECRET=your_super_secret_jwt_key_change_in_production_min_32_chars
-JWT_EXPIRES_IN=2h
-
-CLIENT_URL=http://127.0.0.1:5500
-
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=Admin@123
-
-GPS_SIMULATION_INTERVAL=3000
-```
-
-> ⚠️ **Production note:** Always change `JWT_SECRET` and default passwords before deploying publicly.
-
----
-
-### Step 4 — Initialize the Database
-
-```bash
-# Still inside the backend/ folder
-npm run init-db
-```
-
-This command will:
-- Create the SQLite database file at `backend/database/bustrack.db`
-- Create all tables (buses, students, routes, trips, etc.)
-- **Seed demo data** including sample buses, routes, drivers, students, and managers
-
-You should see output like:
-```
-🗄️  Initializing database...
-✅ Tables created successfully
-🌱 Seeding initial data...
-✅ Seed data inserted successfully
-✅ Database initialization complete!
-```
-
-> ℹ️ If you run `init-db` a second time, it will skip seeding (data already exists).
-
----
-
-### Step 5 — Start the Backend Server
-
-```bash
-# Development mode (auto-restarts on file changes)
-npm run dev
-
-# OR: Production mode
-npm start
-```
-
-You should see:
-```
-🚌 Smart University Bus Tracking System
-   Server running at: http://localhost:5000
-   Environment: development
-   Frontend: http://localhost:5000/index.html
+JWT_SECRET=your_super_secret_key_change_in_production
+JWT_EXPIRES_IN=24h
 ```
 
 ---
 
-### Step 6 — Open the Frontend
+## 🚦 GPS Simulation
 
-The backend also **serves the frontend** as static files. Simply open your browser and go to:
-
-```
-http://localhost:5000
-```
-
-Or open `frontend/index.html` directly using a Live Server extension in VS Code (also works, since the API calls are handled separately).
+The server automatically simulates GPS movement for all buses:
+- Buses move along their route stops in sequence
+- Position is broadcast to all connected clients every **3 seconds**
+- ETA is calculated dynamically based on distance and simulated speed
+- Markers animate smoothly on the map using `requestAnimationFrame`
 
 ---
 
-## 🔐 Default Login Credentials (Demo Data)
+## 🎨 Design
 
-These are created automatically when you run `npm run init-db`:
-
-| Role | Login Field | Value | Password |
-|---|---|---|---|
-| **Admin** | Username | `admin` | `Admin@123` |
-| **Manager 1** | Email | `rajesh@university.edu` | `Manager@123` |
-| **Manager 2** | Email | `priya@university.edu` | `Manager@123` |
-| **Student 1** | Email | `arjun@student.edu` | `Student@123` |
-| **Student 2** | Email | `sneha@student.edu` | `Student@123` |
+- **Theme**: Blue & white university theme with dark mode support
+- **CSS**: Custom design system using CSS variables — no frameworks
+- **Typography**: Inter (Google Fonts)
+- **Icons**: Font Awesome 6
+- **Layout**: Collapsible sidebar dashboard, responsive grid
+- **Effects**: Glassmorphism, micro-animations, smooth transitions
 
 ---
 
-## 🗺️ User Roles & What They Can Do
+## 📝 License
 
-### 👨‍🎓 Student
-- Register and log in
-- View live bus locations on a Leaflet map
-- See available seats, bus status, and route info
-- Set a favourite bus for quick tracking
-- Submit feedback and ratings for buses
-
-### 🧑‍💼 Manager
-- Log in to a dedicated dashboard
-- View and manage buses assigned to them
-- Update bus status (running, delayed, maintenance)
-- Log fuel consumption and maintenance records
-- View trip history and driver info
-- Send notifications to students
-
-### 🛡️ Admin
-- Full system access
-- Create / update / delete buses, routes, drivers, managers
-- View all students, buses, trips system-wide
-- Manage notifications (including emergency alerts)
-- View activity logs
-- Dashboard with system-wide statistics
-
----
-
-## 🔌 API Reference (v1)
-
-Base URL: `http://localhost:5000/api/v1`
-
-| Method | Endpoint | Role | Description |
-|---|---|---|---|
-| `POST` | `/auth/login` | All | Login (returns JWT) |
-| `POST` | `/auth/register` | Public | Student self-registration |
-| `GET` | `/buses` | All | List all buses |
-| `GET` | `/buses/locations` | All | Get all live bus locations |
-| `GET` | `/buses/:id` | All | Get single bus details |
-| `POST` | `/buses` | Admin | Add a new bus |
-| `PUT` | `/buses/:id` | Admin | Update bus details |
-| `DELETE`| `/buses/:id` | Admin | Remove a bus |
-| `PUT` | `/buses/:id/location` | Manager/Admin | Update GPS coordinates |
-| `PUT` | `/buses/:id/status` | Manager/Admin | Change bus status |
-| `GET` | `/buses/:id/fuel` | Manager/Admin | Get fuel records |
-| `POST` | `/buses/:id/fuel` | Manager/Admin | Add fuel record |
-| `GET` | `/buses/:id/maintenance` | Manager/Admin | Get maintenance records |
-| `POST` | `/buses/:id/maintenance` | Manager/Admin | Add maintenance record |
-| `GET` | `/routes` | All | List all routes with stops |
-| `GET` | `/students` | Admin | List all students |
-| `GET` | `/trips` | Admin/Manager | List trips |
-| `GET` | `/api/health` | Public | API health check |
-
-All protected routes require a `Bearer <token>` header.
-
----
-
-## 📡 Real-Time Events (Socket.IO)
-
-The server emits and listens on these Socket.IO events:
-
-| Event | Direction | Description |
-|---|---|---|
-| `join_bus_room` | Client → Server | Subscribe to updates for a specific bus |
-| `location_update` | Server → Client | New GPS coordinates for a bus |
-| `bus_status_change` | Server → Client | Bus status changed (running/delayed/etc.) |
-| `new_notification` | Server → Client | New notification broadcast |
-| `seat_update` | Server → Client | Available seat count changed |
-
-Connect to: `http://localhost:5000`
-
----
-
-## 🔧 Available npm Scripts
-
-Run from inside the `backend/` folder:
-
-```bash
-npm run dev       # Start server with nodemon (hot reload)
-npm start         # Start server with node
-npm run init-db   # Initialize and seed the database
-```
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m "feat: add your feature"`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is for educational purposes. Feel free to use and adapt it.
+Academic project — Smart University Bus Tracking System  
+Final Year Engineering Project

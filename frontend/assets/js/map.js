@@ -66,8 +66,8 @@ const BusMap = {
 
   init(containerId, options = {}) {
     const defaults = {
-      center: [12.9716, 77.5946], // Bangalore default
-      zoom: 13,
+      center: [19.0435, 83.8138], // Gunupur, Odisha default
+      zoom: 14,
       zoomControl: true,
     };
     const map = L.map(containerId, { ...defaults, ...options });

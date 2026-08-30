@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Driver Login — Smart Bus Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+  <style>
+    /* Override auth-page for driver — green theme */
+    .auth-page { background: linear-gradient(135deg,#064e3b 0%,#065f46 40%,#047857 70%,#059669 100%); }
+    .auth-brand-icon { background: linear-gradient(135deg,#10b981,#047857) !important; }
+    .btn-driver { background: linear-gradient(135deg,#10b981,#059669); color:white;
+      box-shadow: 0 4px 15px rgba(16,185,129,.4); }
+    .btn-driver:hover { background: linear-gradient(135deg,#059669,#047857);
+      transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,.5); }
+    .auth-feature-icon { background: rgba(16,185,129,.2) !important; }
+    @media (max-width: 600px) {
+      .auth-left { display: none; }
+      .auth-right { width: 100%; padding: 32px 24px; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-illustration">
+      <h1 class="auth-hero-title">Bus Driver Portal</h1>
+      <p class="auth-hero-sub">Log in with your driver credentials to start live GPS tracking. Your phone becomes the bus tracker.</p>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-location-dot"></i></div><span>Real mobile GPS — your phone is the tracker</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-route"></i></div><span>View and select your route</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-map-pin"></i></div><span>Add student pickup points on the map</span></div>
+      <div class="auth-feature"><div class="auth-feature-icon"><i class="fa-solid fa-broadcast-tower"></i></div><span>Live location broadcast to students</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">🚌</div>
+      <div><div class="auth-brand-name">Driver Portal</div><div class="auth-brand-sub">Smart Bus Tracking System</div></div>
+    </div>
+    <h2 class="auth-title">Driver Login</h2>
+    <p class="auth-subtitle">Use your driver email and password</p>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label">Driver Email</label>
+        <div class="input-group">
+          <i class="fa-solid fa-envelope input-icon"></i>
+          <input id="email" type="email" class="form-control" placeholder="rahul@driver.edu" required autocomplete="email"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input id="password" type="password" class="form-control" placeholder="Your password" required/>
+          <i class="fa-solid fa-eye input-toggle" id="pw-toggle" onclick="togglePw()"></i>
+        </div>
+      </div>
+      <div id="error-msg" class="form-error" style="display:none;margin-bottom:16px;padding:10px 14px;background:#fee2e2;border-radius:8px;"></div>
+      <button type="submit" class="btn btn-driver btn-lg w-full" id="login-btn">
+        <i class="fa-solid fa-right-to-bracket"></i> Login as Driver
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <div style="margin-bottom:10px;"><a href="../../index.html" style="color:var(--text-muted);font-size:.8125rem;"><i class="fa-solid fa-arrow-left"></i> Back to Home</a></div>
+      Other portals: <a href="../admin/login.html">Admin</a> · <a href="../student/login.html">Student</a>
+      <div style="margin-top:12px;padding:12px;background:var(--bg-base);border-radius:var(--radius-md);font-size:.8rem;color:var(--text-muted);">
+        <b>Demo:</b> rahul@driver.edu / Driver@123
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast-container" class="toast-container"></div>
+<script src="../../assets/js/api.js"></script>
+<script>
+  Theme.init();
+  // Redirect if already logged in as driver
+  if (Auth.isLoggedIn() && Auth.getRole() === 'driver') {
+    window.location.href = 'dashboard.html';
+  }
+
+  function togglePw() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    document.getElementById('pw-toggle').className = `fa-solid fa-eye${inp.type === 'text' ? '-slash' : ''} input-toggle`;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Authenticating...';
+    try {
+      const data = await API.post('/auth/driver/login', {
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      });
+      if (data.success) {
+        Auth.setAuth(data.token, data.user);
+        window.location.href = 'dashboard.html';
+      }
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login as Driver';
+    }
+  });
+</script>
+</body>
+</html>
