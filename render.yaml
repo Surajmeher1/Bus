@@ -6,8 +6,8 @@ services:
     region: oregon
     branch: feature/production-deployment
     rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: npm install && node --experimental-sqlite database/initDb.js
+    startCommand: node --experimental-sqlite server.js
     healthCheckPath: /health
     disk:
       name: busdata
@@ -24,6 +24,8 @@ services:
         value: 2h
       - key: DB_PATH
         value: /var/data/bustrack.db
+      - key: DATABASE_URL
+        sync: false
       - key: CLIENT_URL
         sync: false
       - key: APP_URL
@@ -44,3 +46,11 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         value: Admin@123
+      - key: GPS_SIMULATION_INTERVAL
+        value: 3000
+      - key: ENABLE_GPS_SIMULATION
+        value: false
+      - key: GPS_TIMEOUT_SECONDS
+        value: 45
+      - key: ANDROID_APP_URL
+        sync: false
