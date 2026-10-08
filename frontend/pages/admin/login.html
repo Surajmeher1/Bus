@@ -63,7 +63,7 @@
 <script src="../../assets/js/api.js"></script>
 <script>
   Theme.init();
-  if (Auth.isLoggedIn() && Auth.getRole() === 'admin') window.location.href = 'dashboard.html';
+  Auth.checkAlreadyLoggedInAndRedirect();
   function togglePw() {
     const inp = document.getElementById('password');
     inp.type = inp.type === 'password' ? 'text' : 'password';
@@ -80,7 +80,11 @@
         username: document.getElementById('username').value,
         password: document.getElementById('password').value
       });
-      if (data.success) { Auth.setAuth(data.token, data.user); window.location.href = 'dashboard.html'; }
+      if (data.success) {
+        Auth.setAuth(data.token, data.user);
+        Auth.redirectAfterLogin(data.user);
+      }
+
     } catch(err) {
       errEl.textContent = err.message; errEl.style.display = 'block';
       btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login as Administrator';

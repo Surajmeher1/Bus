@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const { isValidGietEmail, generateSystemUserId, generateTempPassword } = require('../utils/validation');
 const emailService = require('../services/emailService');
+const { ROLES, normalizeRole } = require('../utils/roles');
 
 /**
  * GET /api/v1/admin/users
@@ -18,21 +19,21 @@ const getAllUsers = (req, res) => {
 
     const students = db.prepare(`
       SELECT student_id as id, system_user_id, name, email, roll_number as identifier,
-             phone, department, 'student' as role, 1 as is_active,
+             phone, department, '${ROLES.STUDENT}' as role, 1 as is_active,
              must_change_password, created_at
       FROM students
     `).all();
 
     const drivers = db.prepare(`
       SELECT driver_id as id, system_user_id, name, email, license_number as identifier,
-             phone, '' as department, 'driver' as role, is_active,
+             phone, '' as department, '${ROLES.DRIVER}' as role, is_active,
              must_change_password, created_at
       FROM drivers
     `).all();
 
     const managers = db.prepare(`
       SELECT manager_id as id, system_user_id, name, email, '' as identifier,
-             phone, '' as department, 'manager' as role, 1 as is_active,
+             phone, '' as department, '${ROLES.MANAGER}' as role, 1 as is_active,
              must_change_password, created_at
       FROM managers
     `).all();
@@ -40,8 +41,10 @@ const getAllUsers = (req, res) => {
     let all = [...students, ...drivers, ...managers];
 
     if (role && role !== 'all') {
-      all = all.filter(u => u.role.toLowerCase() === role.toLowerCase());
+      const searchRole = normalizeRole(role);
+      all = all.filter(u => normalizeRole(u.role) === searchRole);
     }
+
 
     if (search) {
       const q = search.toLowerCase();
@@ -79,14 +82,16 @@ const createUser = async (req, res) => {
     const license_number = req.body.license_number || req.body.licenseNumber;
     const address = req.body.address;
 
-    // 1. Mandatory role validation
-    const validRoles = ['student', 'driver', 'manager'];
-    if (!role || !validRoles.includes(role.toLowerCase())) {
+    // 1. Mandatory role validation (Only STUDENT, DRIVER, MANAGER allowed. Normal users/admins cannot create ADMIN accounts)
+    const normalizedTargetRole = normalizeRole(role);
+    const validRoles = [ROLES.STUDENT, ROLES.DRIVER, ROLES.MANAGER];
+    if (!role || !validRoles.includes(normalizedTargetRole)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Role must be one of: student, driver, manager.'
+        message: 'Invalid role. Role must be one of: STUDENT, DRIVER, MANAGER.'
       });
     }
+
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Full name is required.' });
@@ -203,9 +208,8 @@ const createUser = async (req, res) => {
       insertedId = result.lastInsertRowid;
     }
 
-    console.log('[USER CREATE] database insert completed for user_id:', systemUserId);
+    req.logActivity?.('USER_CREATED', `Admin created ${normalizedTargetRole} ${name} (${cleanEmail}) [ID: ${systemUserId}]`);
 
-    req.logActivity?.('create_user', `Admin created ${role} ${name} (${cleanEmail}) [ID: ${systemUserId}]`);
 
     const simulateConfigured = (req.headers['x-simulate-smtp-configured'] === 'true' || req.headers['x-test-smtp'] === 'configured') && process.env.NODE_ENV !== 'production';
 
@@ -354,10 +358,10 @@ const changeTempPassword = async (req, res) => {
 const deleteUser = (req, res) => {
   try {
     // 1. Double check admin role
-    if (!req.user || req.user.role !== 'admin') {
+    if (!req.user || normalizeRole(req.user.role) !== ROLES.ADMIN) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. Required role(s): admin.'
+        message: 'Access denied. Required role(s): ADMIN.'
       });
     }
 
@@ -371,6 +375,19 @@ const deleteUser = (req, res) => {
 
     const cleanId = idParam.trim();
     let targetUser = null;
+
+    // Security: Check if targeting primary system administrator account (ID 1, 'admin', or admin role)
+    const roleHint = (req.query.role || req.body?.role || '').toLowerCase();
+    const isAdminTarget = cleanId === '1' || cleanId.toLowerCase() === 'admin' || cleanId.toLowerCase() === 'admin@university.edu' || roleHint === 'admin';
+    if (isAdminTarget) {
+      const adminAcc = db.prepare(`SELECT admin_id as id, system_user_id, username as name, email, 'admin' as role FROM admins WHERE admin_id = ? OR username = ? OR email = ?`).get(cleanId, cleanId, cleanId);
+      if (adminAcc || cleanId === '1' || cleanId.toLowerCase() === 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Primary system administrator accounts cannot be deleted.'
+        });
+      }
+    }
 
     // 2. Resolve user by system_user_id (e.g. GIET-STU-XXXX, GIET-DRV-XXXX, GIET-MGR-XXXX, GIET-ADM-XXXX)
     targetUser = db.prepare(`SELECT student_id as id, system_user_id, name, email, 'student' as role FROM students WHERE system_user_id = ?`).get(cleanId);
@@ -435,12 +452,13 @@ const deleteUser = (req, res) => {
     }
 
     // 6. Security: Prevent deleting primary/system admin account
-    if (targetUser.role === 'admin' || targetUser.name === 'admin' || targetUser.username === 'admin') {
+    if (normalizeRole(targetUser.role) === ROLES.ADMIN || targetUser.name === 'admin' || targetUser.username === 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Primary system administrator accounts cannot be deleted.'
       });
     }
+
 
     // 7. Database Safety: Check active dependencies
     if (targetUser.role === 'driver') {
@@ -514,7 +532,7 @@ const deleteUser = (req, res) => {
         system_user_id: targetUser.system_user_id,
         name: targetUser.name,
         email: targetUser.email,
-        role: targetUser.role
+        role: normalizeRole(targetUser.role)
       }
     });
   } catch (err) {

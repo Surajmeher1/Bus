@@ -14,12 +14,14 @@
 
 const jwt = require('jsonwebtoken');
 const jwtConfig = require('../config/jwt');
+const { ROLES, normalizeRole } = require('../utils/roles');
 const BusModel   = require('../models/busModel');
 const RouteModel = require('../models/routeModel');
 const db         = require('../config/db');
 const geofenceService = require('../services/geofenceService');
 const gpsValidationService = require('../services/gpsValidationService');
 const etaService = require('../services/etaService');
+
 
 // Active driver sessions: driverId -> { busId, socketId, lastUpdate }
 const activeDriverSessions = new Map();
@@ -101,8 +103,15 @@ module.exports = function setupTrackingSocket(io) {
     // ── DRIVER: Start Trip ───────────────────────────────────────────────────
     socket.on('driver:start-trip', ({ token, busId }) => {
       const user = verifyToken(token);
-      if (!user || user.role !== 'driver') {
+      if (!user || normalizeRole(user.role) !== ROLES.DRIVER) {
         socket.emit('driver:error', { message: 'Unauthorized. Valid driver token required.' });
+        return;
+      }
+
+      // Verify driver exists & is active in database
+      const driver = db.prepare('SELECT driver_id, name, is_active FROM drivers WHERE driver_id = ?').get(user.id);
+      if (!driver || !driver.is_active) {
+        socket.emit('driver:error', { message: 'Driver account is inactive or not found.' });
         return;
       }
 
@@ -120,8 +129,8 @@ module.exports = function setupTrackingSocket(io) {
         return;
       }
 
-      // Check if active trip exists
-      const activeTrip = db.prepare("SELECT * FROM trips WHERE bus_id = ? AND status = 'running'").get(busId);
+      // Check if active trip exists and is owned by this driver
+      const activeTrip = db.prepare("SELECT * FROM trips WHERE bus_id = ? AND driver_id = ? AND status = 'running'").get(busId, user.id);
       if (!activeTrip) {
         socket.emit('driver:error', { message: 'No active trip initialized. Please start trip from the dashboard first.' });
         return;
@@ -164,24 +173,40 @@ module.exports = function setupTrackingSocket(io) {
     // ── DRIVER: Location Update ──────────────────────────────────────────────
     socket.on('driver:location-update', ({ token, busId, latitude, longitude, accuracy, timestamp }) => {
       const user = verifyToken(token);
-      if (!user || user.role !== 'driver') {
-        socket.emit('driver:error', { message: 'Unauthorized driver token.' });
+      if (!user || normalizeRole(user.role) !== ROLES.DRIVER) {
+        socket.emit('driver:error', { message: 'Unauthorized driver token. Only drivers can submit GPS.' });
+        return;
+      }
+
+      // Verify driver exists & is active in database
+      const driver = db.prepare('SELECT driver_id, name, is_active FROM drivers WHERE driver_id = ?').get(user.id);
+      if (!driver || !driver.is_active) {
+        socket.emit('driver:error', { message: 'Driver account is inactive or not found.' });
         return;
       }
 
       const parsedBusId = parseInt(busId);
+
+      // Verify bus exists and is assigned to this driver
+      const busAssigned = db.prepare('SELECT bus_id, driver_id FROM buses WHERE bus_id = ?').get(parsedBusId);
+      if (!busAssigned || busAssigned.driver_id !== user.id) {
+        socket.emit('driver:error', { message: 'You are not assigned to this bus.' });
+        return;
+      }
+
       const session = activeDriverSessions.get(user.id);
       if (!session || session.busId !== parsedBusId) {
         socket.emit('driver:error', { message: 'No active authorized trip session for this bus.' });
         return;
       }
 
-      // Verify active trip record in DB
-      const activeTrip = db.prepare("SELECT * FROM trips WHERE bus_id = ? AND status = 'running'").get(parsedBusId);
+      // Verify active trip record in DB is assigned to this driver
+      const activeTrip = db.prepare("SELECT * FROM trips WHERE bus_id = ? AND driver_id = ? AND status = 'running'").get(parsedBusId, user.id);
       if (!activeTrip) {
-        socket.emit('driver:error', { message: 'Trip has already ended or does not exist.' });
+        socket.emit('driver:error', { message: 'Trip has already ended or is not assigned to this driver.' });
         return;
       }
+
 
       // Server-side GPS Validation (Anti-Fake-Bus verification)
       const gpsCheck = gpsValidationService.validateGpsReading({
@@ -349,10 +374,11 @@ module.exports = function setupTrackingSocket(io) {
     // ── DRIVER: End Trip ────────────────────────────────────────────────────
     socket.on('driver:end-trip', ({ token, busId }) => {
       const user = verifyToken(token);
-      if (!user || user.role !== 'driver') {
+      if (!user || normalizeRole(user.role) !== ROLES.DRIVER) {
         socket.emit('driver:error', { message: 'Unauthorized driver token.' });
         return;
       }
+
 
       const session = activeDriverSessions.get(user.id);
       const effectiveBusId = session ? session.busId : parseInt(busId);

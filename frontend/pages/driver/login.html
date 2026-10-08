@@ -77,10 +77,7 @@
 <script src="../../assets/js/api.js"></script>
 <script>
   Theme.init();
-  // Redirect if already logged in as driver
-  if (Auth.isLoggedIn() && Auth.getRole() === 'driver') {
-    window.location.href = 'dashboard.html';
-  }
+  Auth.checkAlreadyLoggedInAndRedirect();
 
   function togglePw() {
     const inp = document.getElementById('password');
@@ -102,8 +99,9 @@
       });
       if (data.success) {
         Auth.setAuth(data.token, data.user);
-        window.location.href = 'dashboard.html';
+        Auth.redirectAfterLogin(data.user);
       }
+
     } catch (err) {
       errEl.textContent = err.message;
       errEl.style.display = 'block';

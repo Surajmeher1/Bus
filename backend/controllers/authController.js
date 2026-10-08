@@ -6,6 +6,7 @@ const StudentModel = require('../models/studentModel');
 const ManagerModel = require('../models/managerModel');
 const db = require('../config/db');
 const { isValidGietEmail, generateSystemUserId } = require('../utils/validation');
+const { ROLES } = require('../utils/roles');
 
 const generateToken = (payload) =>
   jwt.sign(payload, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
@@ -22,7 +23,7 @@ const adminLogin = async (req, res) => {
 
     const token = generateToken({
       id: admin.admin_id,
-      role: 'admin',
+      role: ROLES.ADMIN,
       username: admin.username,
       must_change_password: !!admin.must_change_password
     });
@@ -34,11 +35,12 @@ const adminLogin = async (req, res) => {
         id: admin.admin_id,
         username: admin.username,
         email: admin.email,
-        role: 'admin',
+        role: ROLES.ADMIN,
         system_user_id: admin.system_user_id || 'GIET-ADM-0001',
         must_change_password: !!admin.must_change_password
       }
     });
+
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error.', error: err.message });
   }
@@ -82,7 +84,7 @@ const driverLogin = async (req, res) => {
 
     const token = generateToken({
       id: driver.driver_id,
-      role: 'driver',
+      role: ROLES.DRIVER,
       email: driver.email,
       must_change_password: !!driver.must_change_password
     });
@@ -97,7 +99,7 @@ const driverLogin = async (req, res) => {
         email: driver.email,
         phone: driver.phone,
         license_number: driver.license_number,
-        role: 'driver',
+        role: ROLES.DRIVER,
         system_user_id: driver.system_user_id,
         must_change_password: !!driver.must_change_password,
         assigned_bus: assignedBus || null
@@ -125,7 +127,7 @@ const managerLogin = async (req, res) => {
 
     const token = generateToken({
       id: manager.manager_id,
-      role: 'manager',
+      role: ROLES.MANAGER,
       email: manager.email,
       must_change_password: !!manager.must_change_password
     });
@@ -137,7 +139,7 @@ const managerLogin = async (req, res) => {
         name: manager.name,
         email: manager.email,
         phone: manager.phone,
-        role: 'manager',
+        role: ROLES.MANAGER,
         system_user_id: manager.system_user_id,
         must_change_password: !!manager.must_change_password
       }
@@ -175,13 +177,13 @@ const studentRegister = async (req, res) => {
     `).run(systemUserId, roll_number, name, email.trim().toLowerCase(), phone, department, parseInt(semester) || 1, hashedPwd);
 
     const student = StudentModel.findById(result.lastInsertRowid);
-    const token = generateToken({ id: student.student_id, role: 'student', email: student.email, must_change_password: false });
+    const token = generateToken({ id: student.student_id, role: ROLES.STUDENT, email: student.email, must_change_password: false });
 
     res.status(201).json({
       success: true,
       message: 'Registration successful!',
       token,
-      user: { ...student, role: 'student', system_user_id: systemUserId, must_change_password: false }
+      user: { ...student, role: ROLES.STUDENT, system_user_id: systemUserId, must_change_password: false }
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error.', error: err.message });
@@ -207,7 +209,7 @@ const studentLogin = async (req, res) => {
 
     const token = generateToken({
       id: student.student_id,
-      role: 'student',
+      role: ROLES.STUDENT,
       email: student.email,
       must_change_password: !!student.must_change_password
     });
@@ -217,11 +219,12 @@ const studentLogin = async (req, res) => {
       token,
       user: {
         ...safeStudent,
-        role: 'student',
+        role: ROLES.STUDENT,
         system_user_id: student.system_user_id,
         must_change_password: !!student.must_change_password
       }
     });
+
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error.', error: err.message });
   }

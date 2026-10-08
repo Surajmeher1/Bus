@@ -5,27 +5,85 @@
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
+// ── RBAC Role Definitions & Portal Mappings ───────────────────────────────────
+const ROLES = Object.freeze({
+  ADMIN: 'ADMIN',
+  MANAGER: 'MANAGER',
+  DRIVER: 'DRIVER',
+  STUDENT: 'STUDENT'
+});
+
+const ROLE_DASHBOARDS = Object.freeze({
+  ADMIN: '/pages/admin/dashboard.html',
+  MANAGER: '/pages/manager/dashboard.html',
+  DRIVER: '/pages/driver/dashboard.html',
+  STUDENT: '/pages/student/dashboard.html'
+});
+
+function normalizeRole(role) {
+  if (!role || typeof role !== 'string') return '';
+  return role.trim().toUpperCase();
+}
+
 // ── Token Management ─────────────────────────────────────────────────────────
 const Auth = {
-  getToken:  ()      => localStorage.getItem('sbt_token'),
-  getUser:   ()      => JSON.parse(localStorage.getItem('sbt_user') || 'null'),
-  setAuth:   (token, user) => {
+  getToken: () => localStorage.getItem('sbt_token'),
+  getUser:  () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('sbt_user') || 'null');
+      if (u && u.role) {
+        u.role = normalizeRole(u.role);
+      }
+      return u;
+    } catch (_) {
+      return null;
+    }
+  },
+  setAuth: (token, user) => {
     localStorage.setItem('sbt_token', token);
-    localStorage.setItem('sbt_user', JSON.stringify(user));
+    const normalizedUser = user ? { ...user, role: normalizeRole(user.role) } : null;
+    localStorage.setItem('sbt_user', JSON.stringify(normalizedUser));
   },
   clearAuth: () => {
     localStorage.removeItem('sbt_token');
     localStorage.removeItem('sbt_user');
   },
   isLoggedIn: () => !!localStorage.getItem('sbt_token'),
-  getRole:    () => {
-    const user = JSON.parse(localStorage.getItem('sbt_user') || 'null');
-    return user?.role || null;
+  getRole: () => {
+    const user = Auth.getUser();
+    return user?.role ? normalizeRole(user.role) : null;
   },
-  redirectIfNotRole: (role) => {
-    const user = JSON.parse(localStorage.getItem('sbt_user') || 'null');
-    if (!user || user.role !== role) {
+  hasRole: (requiredRole) => {
+    const userRole = Auth.getRole();
+    return userRole === normalizeRole(requiredRole);
+  },
+  redirectAfterLogin: (user) => {
+    const role = normalizeRole(user?.role || Auth.getRole());
+    const target = ROLE_DASHBOARDS[role] || '/index.html';
+    window.location.href = target;
+  },
+  redirectIfNotRole: (requiredRole) => {
+    const user = Auth.getUser();
+    const token = Auth.getToken();
+    if (!token || !user) {
+      Auth.clearAuth();
       window.location.href = '/index.html';
+      return;
+    }
+    const currentRole = normalizeRole(user.role);
+    const targetRole = normalizeRole(requiredRole);
+    if (currentRole !== targetRole) {
+      console.warn(`[RBAC] Access denied for role '${currentRole}'. Required: '${targetRole}'. Redirecting...`);
+      const fallbackUrl = ROLE_DASHBOARDS[currentRole] || '/index.html';
+      window.location.href = fallbackUrl;
+    }
+  },
+  checkAlreadyLoggedInAndRedirect: () => {
+    if (Auth.isLoggedIn()) {
+      const role = Auth.getRole();
+      if (role && ROLE_DASHBOARDS[role]) {
+        window.location.href = ROLE_DASHBOARDS[role];
+      }
     }
   },
   logout: () => {
@@ -33,6 +91,7 @@ const Auth = {
     window.location.href = '/index.html';
   }
 };
+
 
 // ── HTTP Client ──────────────────────────────────────────────────────────────
 async function apiFetch(endpoint, options = {}) {

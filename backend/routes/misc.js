@@ -1,26 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, authorize, authorizeBusOwnership } = require('../middleware/auth');
+const { ROLES } = require('../utils/roles');
 const { getNotifications, getAllNotifications, createNotification, deleteNotification } = require('../controllers/notificationController');
 const { getAllFeedback, getFeedbackByBus, getMyFeedback, submitFeedback } = require('../controllers/feedbackController');
 const { getDashboardStats, getReports, changeAdminPassword, getActivityLogs } = require('../controllers/adminController');
 
 // Notification routes
-router.get('/notifications/all',       authenticate, requireRole('admin'), getAllNotifications);
+router.get('/notifications/all',       authenticate, authorize(ROLES.ADMIN), getAllNotifications);
 router.get('/notifications',           authenticate, getNotifications);
-router.post('/notifications',          authenticate, requireRole('admin', 'manager'), createNotification);
-router.delete('/notifications/:id',    authenticate, requireRole('admin'), deleteNotification);
+router.post('/notifications',          authenticate, authorize(ROLES.ADMIN, ROLES.MANAGER), createNotification);
+router.delete('/notifications/:id',    authenticate, authorize(ROLES.ADMIN), deleteNotification);
 
 // Feedback routes
-router.get('/feedback',                authenticate, requireRole('admin'), getAllFeedback);
-router.get('/feedback/my',             authenticate, requireRole('student'), getMyFeedback);
-router.get('/feedback/bus/:busId',     authenticate, requireRole('manager', 'admin'), getFeedbackByBus);
-router.post('/feedback',               authenticate, requireRole('student'), submitFeedback);
+router.get('/feedback',                authenticate, authorize(ROLES.ADMIN), getAllFeedback);
+router.get('/feedback/my',             authenticate, authorize(ROLES.STUDENT), getMyFeedback);
+router.get('/feedback/bus/:busId',     authenticate, authorize(ROLES.ADMIN, ROLES.MANAGER), authorizeBusOwnership, getFeedbackByBus);
+router.post('/feedback',               authenticate, authorize(ROLES.STUDENT), submitFeedback);
 
-// Admin stats & reports
-router.get('/stats',                   authenticate, requireRole('admin'), getDashboardStats);
-router.get('/reports',                 authenticate, requireRole('admin'), getReports);
-router.put('/admin/change-password',   authenticate, requireRole('admin'), changeAdminPassword);
-router.get('/activity-logs',           authenticate, requireRole('admin'), getActivityLogs);
+// Admin stats, reports & security audit logs (Admin strictly restricted)
+router.get('/stats',                   authenticate, authorize(ROLES.ADMIN), getDashboardStats);
+router.get('/reports',                 authenticate, authorize(ROLES.ADMIN), getReports);
+router.put('/admin/change-password',   authenticate, authorize(ROLES.ADMIN), changeAdminPassword);
+router.get('/activity-logs',           authenticate, authorize(ROLES.ADMIN), getActivityLogs);
 
 module.exports = router;
+

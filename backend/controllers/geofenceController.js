@@ -51,7 +51,7 @@ const createGeofence = (req, res) => {
       VALUES (?, ?, ?, 1, datetime('now'))
     `).run(name, description || '', coordsJson);
 
-    req.logActivity?.('create_geofence', `Created operating area '${name}'`);
+    req.logActivity?.('GEOFENCE_CHANGED', `Created operating area '${name}'`);
 
     res.status(201).json({
       success: true,
@@ -90,7 +90,7 @@ const updateGeofence = (req, res) => {
       req.params.id
     );
 
-    req.logActivity?.('update_geofence', `Updated operating area '${name || existing.name}'`);
+    req.logActivity?.('GEOFENCE_CHANGED', `Updated operating area '${name || existing.name}'`);
 
     res.json({ success: true, message: 'Operating area updated.' });
   } catch (err) {
@@ -107,7 +107,7 @@ const toggleGeofence = (req, res) => {
     db.prepare('UPDATE geofences SET is_active = ?, updated_at = datetime(\'now\') WHERE geofence_id = ?')
       .run(newStatus, req.params.id);
 
-    req.logActivity?.('toggle_geofence', `Toggled geofence ${existing.name} to ${newStatus ? 'active' : 'inactive'}`);
+    req.logActivity?.('GEOFENCE_CHANGED', `Toggled geofence ${existing.name} to ${newStatus ? 'active' : 'inactive'}`);
 
     res.json({
       success: true,
@@ -122,8 +122,9 @@ const toggleGeofence = (req, res) => {
 const deleteGeofence = (req, res) => {
   try {
     db.prepare('DELETE FROM geofences WHERE geofence_id = ?').run(req.params.id);
-    req.logActivity?.('delete_geofence', `Deleted geofence ID ${req.params.id}`);
+    req.logActivity?.('GEOFENCE_CHANGED', `Deleted geofence ID ${req.params.id}`);
     res.json({ success: true, message: 'Operating area deleted.' });
+
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

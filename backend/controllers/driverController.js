@@ -7,10 +7,25 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const DriverModel = require('../models/driverModel');
 const gpsValidationService = require('../services/gpsValidationService');
+const { ROLES, normalizeRole } = require('../utils/roles');
 
-// ── GET ALL DRIVERS (Admin only) ──────────────────────────────────────────────
+// ── GET ALL DRIVERS (Admin: all, Manager: assigned drivers only) ──────────────
 const getAllDrivers = (req, res) => {
   try {
+    const role = normalizeRole(req.user?.role);
+    if (role === ROLES.MANAGER) {
+      const drivers = db.prepare(`
+        SELECT d.driver_id, d.name, d.email, d.phone, d.license_number, d.address,
+               d.is_active, d.created_at,
+               b.bus_id, b.bus_number, b.status as bus_status
+        FROM drivers d
+        JOIN buses b ON b.driver_id = d.driver_id
+        WHERE b.manager_id = ?
+        ORDER BY d.name
+      `).all(req.user.id);
+      return res.json({ success: true, data: drivers });
+    }
+
     const drivers = db.prepare(`
       SELECT d.driver_id, d.name, d.email, d.phone, d.license_number, d.address,
              d.is_active, d.created_at,
@@ -28,6 +43,17 @@ const getAllDrivers = (req, res) => {
 // ── GET SINGLE DRIVER ─────────────────────────────────────────────────────────
 const getDriver = (req, res) => {
   try {
+    const role = normalizeRole(req.user?.role);
+    if (role === ROLES.MANAGER) {
+      const driverBus = db.prepare('SELECT bus_id FROM buses WHERE driver_id = ? AND manager_id = ?').get(req.params.id, req.user.id);
+      if (!driverBus) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to view this driver. You can only view drivers assigned to your buses.'
+        });
+      }
+    }
+
     const driver = db.prepare(`
       SELECT d.driver_id, d.name, d.email, d.phone, d.license_number, d.address, d.is_active, d.created_at
       FROM drivers d WHERE d.driver_id = ?
@@ -38,6 +64,7 @@ const getDriver = (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // ── CREATE DRIVER (Admin only, with login credentials) ────────────────────────
 const createDriver = async (req, res) => {
@@ -154,12 +181,21 @@ const startTrip = (req, res) => {
     const { route_id, bus_id } = req.body;
 
     const targetBusId = bus_id ? parseInt(bus_id) : null;
-    const driverBus = db.prepare('SELECT bus_id FROM buses WHERE driver_id = ?').get(req.user.id);
-    const effectiveBusId = targetBusId || driverBus?.bus_id;
+    const driverBus = db.prepare('SELECT bus_id, bus_number FROM buses WHERE driver_id = ?').get(req.user.id);
 
-    if (!effectiveBusId) {
-      return res.status(404).json({ success: false, message: 'No bus assigned to your driver account.' });
+    if (!driverBus) {
+      return res.status(403).json({ success: false, message: 'No bus assigned to your driver account.' });
     }
+
+    if (targetBusId && targetBusId !== driverBus.bus_id) {
+      return res.status(403).json({
+        success: false,
+        message: `You are not assigned to bus #${targetBusId}. You are only authorized to operate your assigned bus (${driverBus.bus_number}).`
+      });
+    }
+
+    const effectiveBusId = driverBus.bus_id;
+
 
     // Strict Anti-Fake Trip Validation:
     // Ensures authenticated driver, driver assignment, bus route assignment, no duplicate trips
@@ -208,8 +244,9 @@ const startTrip = (req, res) => {
       });
     }
 
-    req.logActivity?.('driver_start_trip', `Driver started trip #${tripId} for ${bus.bus_number}`);
+    req.logActivity?.('TRIP_STARTED', `Driver started trip #${tripId} for ${bus.bus_number}`);
     res.status(201).json({
+
       success: true,
       message: 'Trip initiated. Awaiting GPS location feed to verify LIVE status.',
       trip_id: tripId,
@@ -259,8 +296,9 @@ const endTrip = (req, res) => {
       });
     }
 
-    req.logActivity?.('driver_end_trip', `Driver ended trip for ${bus.bus_number}`);
+    req.logActivity?.('TRIP_COMPLETED', `Driver ended trip for ${bus.bus_number}`);
     res.json({ success: true, message: 'Trip ended successfully.' });
+
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -331,9 +369,10 @@ const deletePickupPoint = (req, res) => {
     if (!point) return res.status(404).json({ success: false, message: 'Pickup point not found.' });
 
     // Drivers can only delete their own pickup points
-    if (req.user.role === 'driver' && point.created_by_driver_id !== req.user.id) {
+    if (normalizeRole(req.user.role) === ROLES.DRIVER && point.created_by_driver_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Cannot delete another driver\'s pickup point.' });
     }
+
 
     db.prepare('DELETE FROM pickup_points WHERE pickup_id = ?').run(req.params.id);
 

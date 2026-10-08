@@ -39,6 +39,10 @@ const createBus = (req, res) => {
       manager_id: manager_id || null,
       route_id: route_id || null
     });
+    req.logActivity?.('BUS_CREATED', `Bus ${bus_number} created [ID: ${result.lastInsertRowid}]`);
+    if (driver_id) {
+      req.logActivity?.('DRIVER_ASSIGNED', `Driver #${driver_id} assigned to Bus ${bus_number}`);
+    }
     res.status(201).json({ success: true, message: 'Bus created.', id: result.lastInsertRowid });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -48,6 +52,10 @@ const createBus = (req, res) => {
 const updateBus = (req, res) => {
   try {
     BusModel.update(req.params.id, req.body);
+    req.logActivity?.('BUS_UPDATED', `Bus #${req.params.id} updated`);
+    if (req.body.driver_id) {
+      req.logActivity?.('DRIVER_ASSIGNED', `Driver #${req.body.driver_id} assigned to Bus #${req.params.id}`);
+    }
     res.json({ success: true, message: 'Bus updated.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -57,11 +65,13 @@ const updateBus = (req, res) => {
 const deleteBus = (req, res) => {
   try {
     BusModel.delete(req.params.id);
+    req.logActivity?.('BUS_DELETED', `Bus #${req.params.id} deleted`);
     res.json({ success: true, message: 'Bus deleted.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 const updateBusLocation = (req, res) => {
   try {

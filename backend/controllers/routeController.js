@@ -51,7 +51,7 @@ const createRoute = (req, res) => {
       });
     }
 
-    req.logActivity?.('create_route', `Created route '${route_name}'`);
+    req.logActivity?.('ROUTE_CREATED', `Created route '${route_name}' [ID: ${routeId}]`);
     res.status(201).json({ success: true, message: 'Route created.', id: routeId });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -69,7 +69,7 @@ const updateRoute = (req, res) => {
       direction,
       destination_type
     });
-    req.logActivity?.('update_route', `Updated route ID ${req.params.id}`);
+    req.logActivity?.('ROUTE_UPDATED', `Updated route ID ${req.params.id}`);
     res.json({ success: true, message: 'Route updated.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -79,12 +79,13 @@ const updateRoute = (req, res) => {
 const deleteRoute = (req, res) => {
   try {
     RouteModel.delete(req.params.id);
-    req.logActivity?.('delete_route', `Deleted route ID ${req.params.id}`);
+    req.logActivity?.('ROUTE_DELETED', `Deleted route ID ${req.params.id}`);
     res.json({ success: true, message: 'Route deleted.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 const addStop = (req, res) => {
   try {
@@ -181,9 +182,13 @@ const assignRoute = (req, res) => {
       UPDATE buses SET route_id = ?, driver_id = COALESCE(?, driver_id) WHERE bus_id = ?
     `).run(routeId, driverId, bus_id);
 
-    req.logActivity?.('assign_route', `Assigned route #${routeId} to bus #${bus.bus_number}`);
+    req.logActivity?.('ROUTE_ASSIGNED', `Assigned route #${routeId} to bus #${bus.bus_number}`);
+    if (driverId) {
+      req.logActivity?.('DRIVER_ASSIGNED', `Driver #${driverId} assigned to bus #${bus.bus_number}`);
+    }
 
     res.json({ success: true, message: `Route assigned to ${bus.bus_number} successfully.` });
+
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
