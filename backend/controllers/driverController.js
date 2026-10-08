@@ -6,6 +6,7 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const DriverModel = require('../models/driverModel');
+const gpsValidationService = require('../services/gpsValidationService');
 
 // ── GET ALL DRIVERS (Admin only) ──────────────────────────────────────────────
 const getAllDrivers = (req, res) => {
@@ -150,32 +151,48 @@ const getMyBus = (req, res) => {
 // ── START TRIP (Driver only) ──────────────────────────────────────────────────
 const startTrip = (req, res) => {
   try {
-    const { route_id } = req.body;
+    const { route_id, bus_id } = req.body;
 
-    const bus = db.prepare('SELECT * FROM buses WHERE driver_id = ?').get(req.user.id);
-    if (!bus) return res.status(404).json({ success: false, message: 'No bus assigned.' });
+    const targetBusId = bus_id ? parseInt(bus_id) : null;
+    const driverBus = db.prepare('SELECT bus_id FROM buses WHERE driver_id = ?').get(req.user.id);
+    const effectiveBusId = targetBusId || driverBus?.bus_id;
 
-    // Check for already running trip
-    if (bus.active_trip_id) {
-      const existingTrip = db.prepare('SELECT * FROM trips WHERE trip_id = ? AND status = ?').get(bus.active_trip_id, 'running');
-      if (existingTrip) {
-        return res.status(409).json({ success: false, message: 'A trip is already in progress.', trip_id: existingTrip.trip_id });
-      }
+    if (!effectiveBusId) {
+      return res.status(404).json({ success: false, message: 'No bus assigned to your driver account.' });
     }
 
-    const effectiveRouteId = route_id || bus.route_id;
+    // Strict Anti-Fake Trip Validation:
+    // Ensures authenticated driver, driver assignment, bus route assignment, no duplicate trips
+    const validation = gpsValidationService.validateTripStart({
+      driverId: req.user.id,
+      busId: effectiveBusId,
+      routeId: route_id ? parseInt(route_id) : null
+    });
 
-    // Create trip
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, message: validation.message });
+    }
+
+    const { bus, routeId: effectiveRouteId } = validation;
+
+    // Create trip with initial state 'STARTING' (becomes 'LIVE' only once authentic GPS arrives)
     const result = db.prepare(`
-      INSERT INTO trips (bus_id, driver_id, route_id, start_time, status, gps_mode)
-      VALUES (?, ?, ?, datetime('now'), 'running', 'LIVE')
-    `).run(bus.bus_id, req.user.id, effectiveRouteId || null);
+      INSERT INTO trips (bus_id, driver_id, route_id, start_time, status, gps_mode, trip_state)
+      VALUES (?, ?, ?, datetime('now'), 'running', 'LIVE', 'STARTING')
+    `).run(bus.bus_id, req.user.id, effectiveRouteId);
 
     const tripId = result.lastInsertRowid;
 
-    // Update bus
-    db.prepare("UPDATE buses SET status = 'running', active_trip_id = ? WHERE bus_id = ?")
-      .run(tripId, bus.bus_id);
+    // Update bus: state is STARTING until first valid GPS fix
+    db.prepare(`
+      UPDATE buses SET
+        status = 'running',
+        active_trip_id = ?,
+        route_id = ?,
+        tracking_status = 'STARTING',
+        trip_state = 'STARTING'
+      WHERE bus_id = ?
+    `).run(tripId, effectiveRouteId, bus.bus_id);
 
     // Broadcast via Socket.IO
     if (req.io) {
@@ -184,13 +201,21 @@ const startTrip = (req, res) => {
         bus_number: bus.bus_number,
         status: 'running',
         mode: 'LIVE',
+        trip_status: 'STARTING',
+        trip_state: 'STARTING',
         trip_id: tripId,
         timestamp: new Date().toISOString()
       });
     }
 
-    req.logActivity?.('driver_start_trip', `Driver started trip for ${bus.bus_number}`);
-    res.status(201).json({ success: true, message: 'Trip started.', trip_id: tripId, bus_id: bus.bus_id });
+    req.logActivity?.('driver_start_trip', `Driver started trip #${tripId} for ${bus.bus_number}`);
+    res.status(201).json({
+      success: true,
+      message: 'Trip initiated. Awaiting GPS location feed to verify LIVE status.',
+      trip_id: tripId,
+      bus_id: bus.bus_id,
+      route_id: effectiveRouteId
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -203,12 +228,23 @@ const endTrip = (req, res) => {
     if (!bus) return res.status(404).json({ success: false, message: 'No bus assigned.' });
 
     if (bus.active_trip_id) {
-      db.prepare("UPDATE trips SET status = 'completed', end_time = datetime('now') WHERE trip_id = ?")
-        .run(bus.active_trip_id);
+      db.prepare(`
+        UPDATE trips SET
+          status = 'completed',
+          trip_state = 'COMPLETED',
+          end_time = datetime('now')
+        WHERE trip_id = ?
+      `).run(bus.active_trip_id);
     }
 
-    db.prepare("UPDATE buses SET status = 'inactive', active_trip_id = NULL WHERE bus_id = ?")
-      .run(bus.bus_id);
+    db.prepare(`
+      UPDATE buses SET
+        status = 'inactive',
+        active_trip_id = NULL,
+        tracking_status = 'COMPLETED',
+        trip_state = 'COMPLETED'
+      WHERE bus_id = ?
+    `).run(bus.bus_id);
 
     // Broadcast trip completed
     if (req.io) {
@@ -217,13 +253,14 @@ const endTrip = (req, res) => {
         bus_number: bus.bus_number,
         status: 'inactive',
         trip_status: 'TRIP COMPLETED',
+        trip_state: 'COMPLETED',
         mode: 'OFFLINE',
         timestamp: new Date().toISOString()
       });
     }
 
     req.logActivity?.('driver_end_trip', `Driver ended trip for ${bus.bus_number}`);
-    res.json({ success: true, message: 'Trip ended.' });
+    res.json({ success: true, message: 'Trip ended successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -222,15 +222,24 @@
                 Select a bus on the map or filter above
               </div>
             </div>
+            <!-- Next Available Bus Prediction -->
+            <div class="card-header" style="border-top:1px solid var(--border-color);"><div class="card-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary-500);margin-right:6px;"></i>Next Available Bus Prediction</div></div>
+            <div id="next-bus-panel" style="padding:14px;">
+              <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;">Select an active bus to see next schedule predictions.</div>
+            </div>
+            <!-- Stop Timeline & ETA -->
+            <div class="card-header" style="border-top:1px solid var(--border-color);"><div class="card-title"><i class="fa-solid fa-route" style="color:var(--success);margin-right:6px;"></i>Route Stop Timeline & ETA</div></div>
+            <div id="stop-timeline" style="padding:14px;max-height:220px;overflow-y:auto;">
+              <div class="stop-list" id="stop-list">
+                <div style="font-size:0.8rem;color:var(--text-muted);padding:8px;">Select a bus to view stops</div>
+              </div>
+            </div>
+            <!-- Student Pickups -->
             <div class="card-header" style="border-top:1px solid var(--border-color);"><div class="card-title"><i class="fa-solid fa-map-pin" style="color:#f59e0b;margin-right:6px;"></i>Student Pickup Locations</div></div>
-            <div id="pickup-panel" style="padding:16px;max-height:220px;overflow-y:auto;">
+            <div id="pickup-panel" style="padding:14px;max-height:180px;overflow-y:auto;">
               <div id="student-pickup-list" style="font-size:.85rem;color:var(--text-muted);">
                 Loading pickup points...
               </div>
-            </div>
-            <div class="card-header" style="border-top:1px solid var(--border-color);"><div class="card-title"><i class="fa-solid fa-clock" style="color:var(--primary-500);margin-right:6px;"></i>Stop Timeline & ETA</div></div>
-            <div id="stop-timeline" style="padding:16px;max-height:220px;overflow-y:auto;">
-              <div class="stop-list" id="stop-list"></div>
             </div>
           </div>
         </div>
@@ -651,62 +660,192 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function formatBusStatusBadge(status, trackingStatus, tripState, mode) {
+  const ts = trackingStatus || mode;
+  if (ts === 'OUTSIDE_AREA') {
+    return '<span class="badge" style="background:#fee2e2;color:#991b1b;font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> OUTSIDE AREA</span>';
+  }
+  if (ts === 'GPS_LOST' || status === 'offline') {
+    return '<span class="badge badge-danger">🔴 GPS LOST / OFFLINE</span>';
+  }
+  if (ts === 'GPS_WEAK') {
+    return '<span class="badge badge-warning">🟡 GPS WEAK</span>';
+  }
+  if (tripState === 'STARTING') {
+    return '<span class="badge badge-warning">🟡 STARTING SOON</span>';
+  }
+  if (tripState === 'SCHEDULED' || status === 'scheduled') {
+    return '<span class="badge badge-secondary">⚪ NOT STARTED</span>';
+  }
+  if (tripState === 'ARRIVED') {
+    return '<span class="badge badge-primary">🔵 ARRIVED AT STOP</span>';
+  }
+  if (tripState === 'DELAYED') {
+    return '<span class="badge badge-warning">🟠 DELAYED</span>';
+  }
+  if (tripState === 'COMPLETED' || status === 'inactive') {
+    return '<span class="badge badge-secondary">⚫ TRIP COMPLETED</span>';
+  }
+  if (ts === 'LIVE' || mode === 'LIVE' || status === 'running') {
+    return '<span class="badge" style="background:#d1fae5;color:#065f46;font-weight:700;">🟢 LIVE GPS</span>';
+  }
+  return `<span class="badge badge-secondary">${status || 'OFFLINE'}</span>`;
+}
+
 function selectBusForDetail(bus) {
   currentSelectedBus = bus;
   const panel = document.getElementById('bus-detail-panel');
   if (!panel) return;
 
-  const modeBadge = bus.mode === 'LIVE'
-    ? '<span class="badge" style="background:#d1fae5;color:#065f46;font-weight:700;">🟢 LIVE DRIVER GPS</span>'
-    : bus.status === 'running'
-      ? '<span class="badge badge-warning">🟡 DEMO / SIMULATION</span>'
-      : bus.status === 'inactive'
-        ? '<span class="badge badge-secondary">⚫ TRIP COMPLETED</span>'
-        : '<span class="badge badge-danger">🔴 OFFLINE</span>';
+  const statusBadge = formatBusStatusBadge(bus.status, bus.tracking_status, bus.trip_state, bus.mode);
 
-  // Mode badge in page header
+  // Header badge in page header
   const headerBadge = document.getElementById('live-mode-badge');
   if (headerBadge) {
-    if (bus.mode === 'LIVE') {
-      headerBadge.style.display = 'inline-block';
-      headerBadge.className = 'badge';
-      headerBadge.style.background = '#d1fae5';
-      headerBadge.style.color = '#065f46';
-      headerBadge.textContent = '🟢 LIVE DRIVER GPS';
-    } else if (bus.status === 'inactive') {
-      headerBadge.style.display = 'inline-block';
-      headerBadge.style.background = '#f3f4f6';
-      headerBadge.style.color = '#374151';
-      headerBadge.textContent = '⚫ TRIP COMPLETED';
-    } else {
-      headerBadge.style.display = 'inline-block';
-      headerBadge.style.background = '#fef3c7';
-      headerBadge.style.color = '#92400e';
-      headerBadge.textContent = '🟡 DEMO / SIMULATION';
-    }
+    headerBadge.style.display = 'inline-block';
+    headerBadge.innerHTML = statusBadge;
   }
 
+  const nextStopName = bus.next_stop?.stop_name || 'Approaching Route Stop';
+  const nextEta = bus.next_stop_eta_minutes !== null && bus.next_stop_eta_minutes !== undefined
+    ? `${bus.next_stop_eta_minutes} min`
+    : (bus.status === 'running' || bus.mode === 'LIVE' ? 'En Route' : '—');
+
+  const collegeEta = bus.college_eta_minutes !== null && bus.college_eta_minutes !== undefined
+    ? `${bus.college_eta_minutes} min`
+    : (bus.status === 'running' || bus.mode === 'LIVE' ? 'Calculating...' : '—');
+
   panel.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <h3 style="font-size:1.25rem;font-weight:800;margin:0;">${bus.bus_number}</h3>
-      ${modeBadge}
+      ${statusBadge}
     </div>
-    <div style="font-size:.85rem;color:var(--text-secondary);margin-bottom:12px;">
+    <div style="font-size:.85rem;color:var(--text-secondary);margin-bottom:10px;">
       <i class="fa-solid fa-route" style="color:var(--primary-500);margin-right:4px;"></i>${bus.route_name || 'No route assigned'}
     </div>
-    <div style="display:flex;gap:12px;font-size:.8rem;color:var(--text-muted);margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:10px;">
       <div><i class="fa-solid fa-user" style="margin-right:4px;"></i>${bus.driver_name || 'Driver'}</div>
       <div><i class="fa-solid fa-chair" style="margin-right:4px;"></i>${bus.available_seats || 0}/${bus.capacity || 50} seats</div>
     </div>
-    <div class="progress-bar" style="margin-bottom:12px;">
+    <div class="progress-bar mb-16">
       <div class="progress-fill ${getOccClass(bus)}" style="width:${Math.round(((bus.capacity-(bus.available_seats||bus.capacity))/bus.capacity)*100)}%"></div>
     </div>
+
+    <!-- Live ETA Cards -->
+    <div class="grid grid-2 mb-12" style="gap:10px;">
+      <div style="background:var(--bg-base);padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-color);">
+        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">
+          <i class="fa-solid fa-location-dot" style="color:var(--primary-500);margin-right:4px;"></i>Next Stop
+        </div>
+        <div style="font-weight:700;font-size:0.85rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${nextStopName}">
+          ${nextStopName}
+        </div>
+        <div style="font-size:0.8rem;font-weight:700;color:var(--primary-600);margin-top:2px;">
+          ETA: ${nextEta}
+        </div>
+      </div>
+      <div style="background:var(--bg-base);padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-color);">
+        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">
+          <i class="fa-solid fa-graduation-cap" style="color:var(--success);margin-right:4px;"></i>Campus ETA
+        </div>
+        <div style="font-weight:700;font-size:0.85rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          GIET Campus
+        </div>
+        <div style="font-size:0.8rem;font-weight:700;color:var(--success);margin-top:2px;">
+          ETA: ${collegeEta}
+        </div>
+      </div>
+    </div>
   `;
+
+  // Render Next Available Bus card
+  renderNextBusCard(bus.next_bus);
+
+  // Render Stop Timeline if timeline data is available, else fetch from route
+  if (bus.timeline && bus.timeline.length) {
+    renderStopTimeline(bus.timeline);
+  } else if (bus.route_id) {
+    RouteAPI.getOne(bus.route_id).then(rRes => {
+      const stops = rRes.data?.stops || [];
+      const dummyTimeline = stops.map((s, idx) => ({
+        stop_id: s.stop_id,
+        stop_name: s.stop_name,
+        stop_order: s.stop_order,
+        is_college: s.is_college,
+        status: idx === 0 ? 'passed' : (idx === 1 ? 'next' : 'upcoming'),
+        eta_minutes: s.expected_offset_minutes || ((idx + 1) * 7)
+      }));
+      renderStopTimeline(dummyTimeline);
+    }).catch(() => {});
+  }
 
   // Fetch pickups for this bus
   PickupAPI.getAll({ bus_id: bus.bus_id }).then(res => {
     renderStudentPickups(res.data || [], { lat: bus.current_latitude, lng: bus.current_longitude });
   }).catch(() => {});
+}
+
+function renderNextBusCard(nextBus) {
+  const container = document.getElementById('next-bus-panel');
+  if (!container) return;
+  if (!nextBus) {
+    container.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px;">No subsequent bus scheduled on this route yet.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);border-radius:var(--radius-md);padding:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-weight:700;font-size:0.82rem;color:var(--primary-700);">
+          <i class="fa-solid fa-clock-rotate-left" style="margin-right:6px;"></i>Next Bus: <b>${nextBus.bus_number}</b>
+        </span>
+        <span class="badge badge-primary" style="font-size:0.68rem;">Scheduled</span>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">
+        Departure from Campus: <b>${nextBus.departure_from_college || '8:30 AM'}</b>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);">
+        Expected Arrival: <b>${nextBus.expected_arrival_at_stop || '8:50 AM'}</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderStopTimeline(timeline) {
+  const container = document.getElementById('stop-list');
+  if (!container) return;
+  if (!timeline || !timeline.length) {
+    container.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);padding:8px;">No stop data available.</div>';
+    return;
+  }
+  container.innerHTML = timeline.map((s, idx) => {
+    const isPassed = s.status === 'passed';
+    const isNext = s.status === 'next';
+    const dotClass = isPassed ? 'success' : (isNext ? 'active' : '');
+    const dotIcon = isPassed
+      ? '<i class="fa-solid fa-check" style="font-size:0.65rem;"></i>'
+      : (s.is_college ? '<i class="fa-solid fa-graduation-cap" style="font-size:0.65rem;"></i>' : idx + 1);
+
+    const etaLabel = isPassed
+      ? '<span style="font-size:0.72rem;color:var(--success);font-weight:600;">Passed</span>'
+      : isNext
+        ? `<span class="badge badge-primary" style="font-size:0.68rem;animation:pulse 2s infinite;">Next Stop (~${s.eta_minutes ?? 5}m)</span>`
+        : `<span style="font-size:0.72rem;color:var(--text-muted);">+${s.eta_minutes ?? (idx * 5)}m</span>`;
+
+    return `
+      <div class="stop-item" style="padding:6px 0;">
+        <div class="stop-dot ${dotClass}">${dotIcon}</div>
+        <div class="stop-info" style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+          <div>
+            <div class="stop-name" style="${isNext ? 'font-weight:800;color:var(--primary-600);' : ''}">
+              ${s.stop_name}
+              ${s.is_college ? '<span class="badge badge-success" style="font-size:0.62rem;margin-left:4px;">Campus Destination</span>' : ''}
+            </div>
+          </div>
+          <div>${etaLabel}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function centerOnSelectedBus() {
@@ -941,13 +1080,24 @@ function triggerSOS() {
 // ── Socket Real-time Updates ───────────────────────────────────────────────────
 document.addEventListener('bus:location', (e) => {
   const data = e.detail;
-  // Update bus card info if visible
+  if (!data) return;
+
+  // If this is the currently selected bus, refresh detail panel with live calculations
+  if (currentSelectedBus && (currentSelectedBus.bus_id === data.bus_id || currentSelectedBus.bus_number === data.bus_number)) {
+    selectBusForDetail({ ...currentSelectedBus, ...data });
+  }
+
+  // Update bus card info if visible on dashboard
   const busCards = document.querySelectorAll('.bus-card');
   busCards.forEach(card => {
     const numEl = card.querySelector('.bus-number');
     if (numEl?.textContent === data.bus_number) {
       const seatsEl = card.querySelectorAll('.bus-seats-val');
-      if (seatsEl.length) seatsEl[0].textContent = `${data.available_seats}/${data.capacity}`;
+      if (seatsEl.length) seatsEl[0].textContent = `${data.available_seats ?? 50}/${data.capacity ?? 50}`;
+      const badgeEl = card.querySelector('.badge');
+      if (badgeEl) {
+        badgeEl.outerHTML = formatBusStatusBadge(data.status, data.tracking_status, data.trip_state, data.mode);
+      }
     }
   });
 });

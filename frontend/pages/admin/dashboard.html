@@ -38,12 +38,14 @@
       <div class="nav-item"><a class="nav-link active" href="#" data-section="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="live-tracking"><i class="fa-solid fa-location-crosshairs"></i><span>Live Tracking</span></a></div>
       <div class="nav-section-title">Management</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="user-management"><i class="fa-solid fa-users-gear"></i><span>User Management</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="buses"><i class="fa-solid fa-bus"></i><span>Buses</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="drivers"><i class="fa-solid fa-id-card"></i><span>Drivers</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="managers"><i class="fa-solid fa-user-tie"></i><span>Bus Managers</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="routes"><i class="fa-solid fa-route"></i><span>Routes</span></a></div>
       <div class="nav-section-title">Operations</div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="geofence"><i class="fa-solid fa-draw-polygon"></i><span>Bus Operating Area</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="schedule"><i class="fa-solid fa-calendar-days"></i><span>Schedule</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="reports"><i class="fa-solid fa-chart-line"></i><span>Reports</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span></a></div>
@@ -167,11 +169,69 @@
         </div>
       </section>
 
+      <!-- ═══ USER MANAGEMENT (GIET Controls) ═══ -->
+      <section id="section-user-management" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">User Management</h1>
+            <div class="page-subtitle">Admin-controlled account creation for Students, Drivers, and Managers with @giet.edu verification</div>
+          </div>
+          <button class="btn btn-primary" onclick="openCreateUserModal()"><i class="fa-solid fa-user-plus"></i> Create New User</button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="card mb-24">
+          <div class="card-body" style="padding:16px;">
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <div class="search-bar" style="flex:1;max-width:320px;">
+                <i class="fa-solid fa-search"></i>
+                <input id="user-mgmt-search" placeholder="Search by name, email, User ID..." oninput="filterUserTable()"/>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <label style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);">Filter Role:</label>
+                <select id="user-mgmt-role-filter" class="form-control" style="width:160px;" onchange="loadUserManagement()">
+                  <option value="all">All Roles</option>
+                  <option value="student">Students</option>
+                  <option value="driver">Drivers</option>
+                  <option value="manager">Bus Managers</option>
+                </select>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="loadUserManagement()" title="Refresh users"><i class="fa-solid fa-arrows-rotate"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users Table Card -->
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>System User ID</th>
+                    <th>Role</th>
+                    <th>Full Name</th>
+                    <th>Email (@giet.edu)</th>
+                    <th>Identifier / Phone</th>
+                    <th>Temp Password Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="user-mgmt-tbody">
+                  <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px;">Loading users...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ═══ STUDENTS ═══ -->
       <section id="section-students" class="section fade-in" style="display:none;">
         <div class="page-header">
           <h1 class="page-title">Student Management</h1>
-          <button class="btn btn-primary" onclick="openModal('add-student-modal')"><i class="fa-solid fa-plus"></i> Add Student</button>
+          <button class="btn btn-primary" onclick="openCreateUserModal('student')"><i class="fa-solid fa-plus"></i> Add Student</button>
         </div>
         <div class="card">
           <div class="card-header">
@@ -219,7 +279,7 @@
             <h1 class="page-title">Driver Management</h1>
             <div class="page-subtitle">Manage bus drivers and their login credentials</div>
           </div>
-          <button class="btn btn-primary" onclick="openModal('add-driver-modal')"><i class="fa-solid fa-plus"></i> Add Driver</button>
+          <button class="btn btn-primary" onclick="openCreateUserModal('driver')"><i class="fa-solid fa-plus"></i> Add Driver</button>
         </div>
         <div class="card">
           <div class="card-body" style="padding:0;">
@@ -237,7 +297,7 @@
       <section id="section-managers" class="section fade-in" style="display:none;">
         <div class="page-header">
           <h1 class="page-title">Bus Manager Management</h1>
-          <button class="btn btn-primary" onclick="openModal('add-manager-modal')"><i class="fa-solid fa-plus"></i> Add Manager</button>
+          <button class="btn btn-primary" onclick="openCreateUserModal('manager')"><i class="fa-solid fa-plus"></i> Add Manager</button>
         </div>
         <div class="card">
           <div class="card-body" style="padding:0;">
@@ -258,6 +318,47 @@
           <button class="btn btn-primary" onclick="openModal('add-route-modal')"><i class="fa-solid fa-plus"></i> Add Route</button>
         </div>
         <div id="routes-grid" class="grid grid-2"></div>
+      </section>
+
+      <!-- ═══ BUS OPERATING AREA (GEOFENCE) ═══ -->
+      <section id="section-geofence" class="section fade-in" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Bus Operating Area</h1>
+            <div class="page-subtitle">Configure approved polygon boundaries. Trips straying outside trigger automatic admin alerts.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openAddGeofenceModal()"><i class="fa-solid fa-draw-polygon"></i> Define Operating Area</button>
+        </div>
+
+        <div class="grid mb-24" style="grid-template-columns:2fr 1fr;gap:20px;">
+          <div>
+            <div class="card" style="overflow:hidden;">
+              <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-map-location-dot" style="color:var(--primary-500);margin-right:8px;"></i>Allowed Operating Zone (Polygon Geofence)</div>
+                <button class="btn btn-outline btn-sm" onclick="initGeofenceMap()"><i class="fa-solid fa-arrows-rotate"></i> Center Map</button>
+              </div>
+              <div class="map-container" style="height:440px;">
+                <div id="geofence-map" style="height:100%;width:100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="card">
+              <div class="card-header"><div class="card-title"><i class="fa-solid fa-shield-halved" style="color:var(--success);margin-right:8px;"></i>Configured Operating Areas</div></div>
+              <div id="geofence-areas-list" style="padding:16px;max-height:200px;overflow-y:auto;">
+                <div style="color:var(--text-muted);text-align:center;">Loading areas...</div>
+              </div>
+            </div>
+
+            <div class="card flex-1">
+              <div class="card-header"><div class="card-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);margin-right:8px;"></i>Recent Fleet Violations</div></div>
+              <div id="geofence-violations-list" style="padding:12px;max-height:220px;overflow-y:auto;">
+                <div style="color:var(--text-muted);text-align:center;">Loading violations...</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ═══ SCHEDULE ═══ -->
@@ -480,9 +581,374 @@
         <div class="form-group"><label class="form-label">Source</label><input id="new-rt-src" class="form-control"/></div>
         <div class="form-group"><label class="form-label">Destination</label><input id="new-rt-dest" class="form-control"/></div>
       </div>
-      <div class="form-group"><label class="form-label">Distance (km)</label><input id="new-rt-dist" class="form-control" type="number"/></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group"><label class="form-label">Distance (km)</label><input id="new-rt-dist" class="form-control" type="number"/></div>
+        <div class="form-group">
+          <label class="form-label">Route Direction</label>
+          <select id="new-rt-dir" class="form-control">
+            <option value="towards_campus">Towards Campus</option>
+            <option value="from_campus">From Campus</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-route-modal')">Cancel</button><button class="btn btn-primary" onclick="addRoute()">Add Route</button></div>
+  </div>
+</div>
+
+<!-- ═══ Create User Modal (GIET Institutional Controls) ═══ -->
+<div class="modal-overlay" id="create-user-modal">
+  <div class="modal" style="max-width:540px;display:flex;flex-direction:column;max-height:90vh;overflow:hidden;">
+    <div class="modal-header" style="flex-shrink:0;">
+      <div>
+        <div class="modal-title">Create University Account</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);">Admin-controlled provisioning with @giet.edu domain enforcement</div>
+      </div>
+      <span class="modal-close" onclick="closeModal('create-user-modal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+
+    <form id="create-user-form" style="display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;margin:0;">
+      <div class="modal-body" style="overflow-y:auto;flex:1 1 auto;padding:24px;">
+        <div class="form-group">
+          <label class="form-label">Role *</label>
+          <select id="new-user-role" class="form-control" onchange="onUserRoleChange()">
+            <option value="student">Student</option>
+            <option value="driver">Driver</option>
+            <option value="manager">Bus Manager</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input id="new-user-name" class="form-control" placeholder="e.g. Rahul Sharma" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Institutional Email (@giet.edu only) *</label>
+          <input id="new-user-email" class="form-control" type="email" placeholder="e.g. 23cse001@giet.edu" oninput="validateUserEmailLive()" required />
+          <div id="new-user-email-feedback" style="font-size:0.78rem;margin-top:5px;display:none;"></div>
+        </div>
+
+        <!-- Student Fields -->
+        <div id="role-fields-student">
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="form-group">
+              <label class="form-label">Roll Number <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(Optional - auto-assigned if blank)</span></label>
+              <input id="new-user-roll" class="form-control" placeholder="e.g. 23CSE001"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Semester</label>
+              <select id="new-user-sem" class="form-control">
+                <option>1</option><option>2</option><option>3</option><option>4</option>
+                <option>5</option><option>6</option><option>7</option><option>8</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="form-group">
+              <label class="form-label">Department</label>
+              <select id="new-user-dept" class="form-control">
+                <option>Computer Science</option><option>Electronics</option>
+                <option>Mechanical</option><option>Civil</option><option>Electrical</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(Optional)</span></label>
+              <input id="new-user-stu-phone" class="form-control" placeholder="9876543210"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Driver Fields -->
+        <div id="role-fields-driver" style="display:none;">
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="form-group">
+              <label class="form-label">Phone <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(Optional)</span></label>
+              <input id="new-user-drv-phone" class="form-control" placeholder="9876543210"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">License Number <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(Optional)</span></label>
+              <input id="new-user-drv-lic" class="form-control" placeholder="OD-02-2023-XXXX"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(Optional)</span></label>
+            <input id="new-user-drv-addr" class="form-control" placeholder="Gunupur, Rayagada"/>
+          </div>
+        </div>
+
+        <!-- Manager Fields -->
+        <div id="role-fields-manager" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Phone <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(Optional)</span></label>
+            <input id="new-user-mgr-phone" class="form-control" placeholder="9876543210"/>
+          </div>
+        </div>
+
+        <!-- Security / Auto-generation notice -->
+        <div style="background:var(--bg-base);border-left:4px solid var(--primary-500);padding:12px;border-radius:4px;margin-top:12px;">
+          <div style="font-weight:600;font-size:0.8rem;color:var(--text-primary);margin-bottom:4px;">
+            <i class="fa-solid fa-key" style="color:var(--primary-500);margin-right:6px;"></i>Auto-Credential Generation & Security
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);line-height:1.4;">
+            Unique System User ID (e.g. <code>GIET-STU-XXXX</code>) and a temporary password will be generated automatically.
+            User must change password on first login. Credentials will be emailed to the @giet.edu address.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="flex-shrink:0;position:sticky;bottom:0;background:var(--bg-surface);border-top:1px solid var(--border-color);padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;z-index:10;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('create-user-modal')">Cancel</button>
+        <button type="submit" id="btn-submit-create-user" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ User Credentials Modal ═══ -->
+<div class="modal-overlay" id="user-credentials-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-circle-check" style="color:var(--success);margin-right:8px;"></i>Account created successfully.</div>
+      <span class="modal-close" onclick="closeModal('user-credentials-modal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+    <div class="modal-body">
+      <div id="cred-email-alert" style="padding:12px 14px;border-radius:var(--radius-md);margin-bottom:16px;font-size:0.875rem;font-weight:500;line-height:1.4;"></div>
+
+      <div style="background:var(--bg-base);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">User Role:</span>
+          <span id="cred-role-badge" class="badge badge-primary">Student</span>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">Full Name:</span>
+          <b id="cred-name" style="font-size:0.9rem;"></b>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">Institutional Email:</span>
+          <span id="cred-email" style="font-family:monospace;font-size:0.85rem;"></span>
+        </div>
+        <hr style="border:none;border-top:1px dashed var(--border-color);margin:4px 0;"/>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">Generated User ID:</span>
+          <code id="cred-user-id" style="font-size:1.05rem;font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);"></code>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">Email Delivery Status:</span>
+          <span id="cred-delivery-status" style="font-size:0.85rem;font-weight:600;"></span>
+        </div>
+      </div>
+
+      <!-- Development-only safe temporary credential-preview mechanism -->
+      <div id="dev-credential-preview" style="display:none;margin-top:14px;padding:12px;background:rgba(245,158,11,0.08);border:1px dashed var(--warning);border-radius:var(--radius-md);">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--warning);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <i class="fa-solid fa-code"></i> DEVELOPMENT CREDENTIAL PREVIEW (SAFE DEV MODE)
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:4px;">
+          Temporary Password: <code id="cred-temp-pw" style="font-weight:700;color:var(--danger);background:var(--bg-surface);padding:3px 8px;border-radius:4px;"></code>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">
+          Note: In production environments, credentials are only emailed to the user and never exposed in the UI.
+        </div>
+      </div>
+
+      <div style="margin-top:14px;font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-shield-halved"></i> Only a bcrypt hash is stored in the database. Plaintext passwords are never stored. The user must change password on first login.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" id="btn-toggle-dev-preview" onclick="toggleDevPreview()"><i class="fa-solid fa-eye"></i> Dev Preview</button>
+      <button class="btn btn-primary" onclick="closeModal('user-credentials-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete User Confirmation Modal ═══ -->
+<div class="modal-overlay" id="delete-user-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--danger);display:flex;align-items:center;gap:8px;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Confirm User Deletion
+      </div>
+      <span class="modal-close" onclick="closeModal('delete-user-modal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <p style="margin-bottom:18px;color:var(--text-primary);font-size:0.95rem;font-weight:500;line-height:1.5;">
+        Are you sure you want to delete this user? This action cannot be undone.
+      </p>
+
+      <div style="background:var(--bg-base);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">User Name:</span>
+          <b id="del-user-name" style="font-size:0.9rem;color:var(--text-primary);"></b>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">User ID:</span>
+          <code id="del-user-id" style="font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:3px 8px;border-radius:4px;border:1px solid var(--border-color);"></code>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">Email:</span>
+          <span id="del-user-email" style="font-family:monospace;font-size:0.85rem;color:var(--text-primary);"></span>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:0.85rem;color:var(--text-secondary);">Role:</span>
+          <span id="del-user-role" class="badge"></span>
+        </div>
+      </div>
+
+      <div id="del-user-error" style="display:none;margin-top:14px;padding:12px;border-radius:var(--radius-md);background:rgba(239,68,68,0.1);border:1px solid var(--danger);color:var(--danger);font-size:0.85rem;line-height:1.4;"></div>
+    </div>
+    <div class="modal-footer" style="padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" class="btn btn-outline" onclick="closeModal('delete-user-modal')">Cancel</button>
+      <button type="button" id="btn-confirm-delete-user" class="btn btn-danger" onclick="confirmDeleteUser()"><i class="fa-solid fa-trash"></i> Delete User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Define Geofence Modal ═══ -->
+<div class="modal-overlay" id="add-geofence-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-draw-polygon" style="color:var(--primary-500);margin-right:8px;"></i>Define Bus Operating Area</div>
+      <span class="modal-close" onclick="closeModal('add-geofence-modal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Operating Area Name *</label>
+        <input id="new-geo-name" class="form-control" placeholder="e.g. GIET Gunupur Campus Transit Zone"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input id="new-geo-desc" class="form-control" placeholder="Approved boundary for university buses"/>
+      </div>
+      <div class="form-group">
+        <div class="flex-between" style="margin-bottom:6px;">
+          <label class="form-label" style="margin:0;">Polygon Coordinates (JSON / Array of [lat, lng]) *</label>
+          <button type="button" class="btn btn-xs btn-outline" onclick="fillDefaultGeofencePreset()">Load Campus Preset</button>
+        </div>
+        <textarea id="new-geo-coords" class="form-control" rows="5" style="font-family:monospace;font-size:0.75rem;" placeholder="[[19.0650, 83.8050], [19.0650, 83.8400], [19.0300, 83.8400], [19.0300, 83.8050]]"></textarea>
+      </div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Boundary Color</label>
+          <input id="new-geo-color" class="form-control" type="color" value="#3b82f6" style="height:38px;padding:2px;"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Initial Status</label>
+          <select id="new-geo-active" class="form-control">
+            <option value="1">Active (Enforced)</option>
+            <option value="0">Disabled</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('add-geofence-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCreateGeofence()"><i class="fa-solid fa-check"></i> Save Operating Area</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Manage Route Stops Modal ═══ -->
+<div class="modal-overlay" id="manage-route-stops-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="m-stops-route-title">Manage Stops & Destination</div>
+        <div id="m-stops-route-subtitle" style="font-size:0.75rem;color:var(--text-muted);"></div>
+      </div>
+      <span class="modal-close" onclick="closeModal('manage-route-stops-modal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+    <div class="modal-body">
+      <!-- Stops list -->
+      <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;color:var(--text-secondary);">Ordered Stops:</div>
+      <div class="table-wrapper mb-20" style="max-height:220px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-md);">
+        <table style="font-size:0.8rem;">
+          <thead>
+            <tr>
+              <th style="width:40px;">#</th>
+              <th>Stop Name</th>
+              <th>Coordinates</th>
+              <th>Offset (mins)</th>
+              <th>Type</th>
+              <th style="width:120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="m-stops-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:16px;">Loading stops...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add New Stop -->
+      <div style="background:var(--bg-base);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-color);">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:10px;"><i class="fa-solid fa-location-dot" style="color:var(--primary-500);margin-right:6px;"></i>Add New Stop to Route</div>
+        <div class="grid grid-2" style="gap:12px;">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Stop Name *</label>
+            <input id="add-stop-name" class="form-control" placeholder="e.g. GIET Main Gate"/>
+          </div>
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Offset from Start (mins)</label>
+            <input id="add-stop-offset" class="form-control" type="number" placeholder="e.g. 15" value="0"/>
+          </div>
+        </div>
+        <div class="grid grid-2" style="gap:12px;">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Latitude *</label>
+            <input id="add-stop-lat" class="form-control" type="number" step="0.000001" placeholder="19.0494"/>
+          </div>
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Longitude *</label>
+            <input id="add-stop-lng" class="form-control" type="number" step="0.000001" placeholder="83.8242"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
+            <input id="add-stop-is-college" type="checkbox"/>
+            <span>Mark as <b>GIET Campus / College Destination</b> (Used for College ETA calculations)</span>
+          </label>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="submitAddStop()"><i class="fa-solid fa-plus"></i> Add Stop</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('manage-route-stops-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Assign Route Modal ═══ -->
+<div class="modal-overlay" id="assign-route-modal" style="opacity:0;pointer-events:none;">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-link" style="color:var(--primary-500);margin-right:8px;"></i>Assign Route to Bus & Driver</div>
+      <span class="modal-close" onclick="closeModal('assign-route-modal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="assign-rt-id"/>
+      <div style="background:var(--bg-base);padding:12px;border-radius:var(--radius-md);margin-bottom:16px;">
+        <div style="font-size:0.75rem;color:var(--text-secondary);">Target Route:</div>
+        <div id="assign-rt-name" style="font-weight:700;font-size:1rem;color:var(--primary-600);"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Select Bus *</label>
+        <select id="assign-rt-bus" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Select Driver (Optional)</label>
+        <select id="assign-rt-driver" class="form-control">
+          <option value="">Keep current driver assignment</option>
+        </select>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;line-height:1.4;">
+        <i class="fa-solid fa-shield-halved"></i> <b>Enforcement rule:</b> A bus cannot start a trip for an unassigned route, and a driver cannot start a trip for an unassigned bus.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('assign-route-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAssignRoute()"><i class="fa-solid fa-check"></i> Save Assignment</button>
+    </div>
   </div>
 </div>
 
@@ -500,24 +966,73 @@ let allDriversCached = [], allManagersCached = [], allRoutesCached = [];
 // ── Navigation ─────────────────────────────────────────────────────────────────
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-  document.getElementById(`section-${name}`).style.display = 'block';
+  const targetSection = document.getElementById(`section-${name}`);
+  if (targetSection) targetSection.style.display = 'block';
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
   document.getElementById('page-title').textContent = {
-    dashboard:'Admin Dashboard', students:'Students', buses:'Buses', drivers:'Drivers',
+    dashboard:'Admin Dashboard', 'user-management':'User Management', geofence:'Bus Operating Area',
+    students:'Students', buses:'Buses', drivers:'Drivers',
     managers:'Managers', routes:'Routes', schedule:'Schedule', reports:'Reports',
     notifications:'Notifications', logs:'Activity Logs', settings:'Settings'
   }[name] || name;
-  const actions = { dashboard: loadDashboard, 'live-tracking': initAdminLiveMap, students: loadStudents, buses: loadBuses, drivers: loadDrivers, managers: loadManagers, routes: loadRoutes, schedule: loadSchedule, reports: loadReports, notifications: loadAllNotifs, logs: loadLogs };
+  const actions = {
+    dashboard: loadDashboard, 'user-management': loadUserManagement, geofence: loadGeofences,
+    'live-tracking': initAdminLiveMap, students: loadStudents, buses: loadBuses,
+    drivers: loadDrivers, managers: loadManagers, routes: loadRoutes,
+    schedule: loadSchedule, reports: loadReports, notifications: loadAllNotifs, logs: loadLogs
+  };
   if (actions[name]) actions[name]();
   document.getElementById('user-menu')?.classList.remove('open');
 }
 document.querySelectorAll('.nav-link[data-section], .user-menu-item[data-section]').forEach(l => l.addEventListener('click', e => { e.preventDefault(); showSection(l.dataset.section); }));
 
 // ── Modals ─────────────────────────────────────────────────────────────────────
-function openModal(id) { const m = document.getElementById(id); m.style.opacity='1'; m.style.pointerEvents='all'; m.classList.add('open'); }
-function closeModal(id){ const m = document.getElementById(id); m.style.opacity='0'; m.style.pointerEvents='none'; m.classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.opacity='0'; m.style.pointerEvents='none'; }));
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.classList.add('open');
+  m.style.opacity = '1';
+  m.style.pointerEvents = 'auto';
+  m.style.visibility = 'visible';
+  document.body.classList.add('modal-open');
+}
+
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.classList.remove('open');
+  m.style.opacity = '0';
+  m.style.pointerEvents = 'none';
+  m.style.visibility = 'hidden';
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.classList.remove('modal-open');
+  }
+}
+
+// Backdrop click closes modal only when clicking the backdrop itself
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => {
+    if (e.target === m) {
+      closeModal(m.id);
+    }
+  });
+});
+
+// Prevent click events inside modal content from bubbling to backdrop
+document.querySelectorAll('.modal').forEach(content => {
+  content.addEventListener('click', e => {
+    e.stopPropagation();
+  });
+});
+
+// ESC key listener to close active modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    const openModals = document.querySelectorAll('.modal-overlay.open');
+    openModals.forEach(m => closeModal(m.id));
+  }
+});
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 async function loadDashboard() {
@@ -590,17 +1105,7 @@ async function searchStudents() {
   try { const res = await StudentAPI.search(q); renderStudentTable(res.data || []); } catch(e) {}
 }
 async function addStudent() {
-  const data = {
-    name: document.getElementById('new-stu-name').value,
-    roll_number: document.getElementById('new-stu-roll').value,
-    email: document.getElementById('new-stu-email').value,
-    phone: document.getElementById('new-stu-phone').value,
-    semester: document.getElementById('new-stu-sem').value,
-    department: document.getElementById('new-stu-dept').value,
-    password: document.getElementById('new-stu-pw').value || 'Student@123',
-  };
-  if (!data.name || !data.roll_number || !data.email) { Toast.warning('Fill required fields.'); return; }
-  try { await StudentAPI.create(data); Toast.success('Student added!'); closeModal('add-student-modal'); loadStudents(); } catch(e) { Toast.error(e.message); }
+  openCreateUserModal('student');
 }
 async function deleteStudent(id) {
   if (!confirm('Delete this student?')) return;
@@ -664,16 +1169,7 @@ async function loadDrivers() {
   } catch(e) {}
 }
 async function addDriver() {
-  const data = {
-    name: document.getElementById('new-drv-name').value,
-    email: document.getElementById('new-drv-email').value,
-    password: document.getElementById('new-drv-pw').value,
-    phone: document.getElementById('new-drv-phone').value,
-    license_number: document.getElementById('new-drv-lic').value,
-    address: document.getElementById('new-drv-addr').value
-  };
-  if (!data.name || !data.email || !data.password) { Toast.warning('Name, email, and password are required.'); return; }
-  try { await DriverAPI.create(data); Toast.success('Driver added!'); closeModal('add-driver-modal'); loadDrivers(); } catch(e) { Toast.error(e.message); }
+  openCreateUserModal('driver');
 }
 async function toggleDriver(id) {
   try { const res = await DriverAPI.toggle(id); Toast.success(res.message); loadDrivers(); } catch(e) { Toast.error(e.message); }
@@ -696,39 +1192,850 @@ async function loadManagers() {
   } catch(e) {}
 }
 async function addManager() {
-  const data = { name: document.getElementById('new-mgr-name').value, email: document.getElementById('new-mgr-email').value, phone: document.getElementById('new-mgr-phone').value, password: document.getElementById('new-mgr-pw').value||'Manager@123' };
-  if (!data.name || !data.email) { Toast.warning('Name and email required.'); return; }
-  try { await ManagerAPI.create(data); Toast.success('Manager added!'); closeModal('add-manager-modal'); loadManagers(); } catch(e) { Toast.error(e.message); }
+  openCreateUserModal('manager');
 }
 async function deleteManager(id) { if (!confirm('Delete manager?')) return; try { await ManagerAPI.delete(id); Toast.success('Manager deleted.'); loadManagers(); } catch(e) { Toast.error(e.message); } }
 
-// ── Routes ─────────────────────────────────────────────────────────────────────
+// ── Routes & Stops Management (GIET Controls) ─────────────────────────────────
+let currentRouteForStops = null;
+
 async function loadRoutes() {
   try {
     const res = await RouteAPI.getAll();
     const container = document.getElementById('routes-grid');
-    container.innerHTML = (res.data||[]).map(r => `
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">${r.route_name}</div>
-          <button class="btn btn-danger btn-sm" onclick="deleteRoute(${r.route_id})"><i class="fa-solid fa-trash-can"></i></button>
-        </div>
-        <div class="card-body">
-          <div style="font-size:.875rem;color:var(--text-secondary);margin-bottom:12px;">${r.source} → ${r.destination} (${r.distance||'?'} km)</div>
-          <div class="stop-list">
-            ${(r.stops||[]).map((s,i)=>`<div class="stop-item"><div class="stop-dot ${i===0?'active':''}">${i+1}</div><div class="stop-info"><div class="stop-name">${s.stop_name}</div></div></div>`).join('')}
+    const routes = res.data || [];
+    if (!routes.length) {
+      container.innerHTML = '<div style="color:var(--text-muted);padding:20px;">No routes configured yet. Click "Add Route" above.</div>';
+      return;
+    }
+    container.innerHTML = routes.map(r => {
+      const dirBadge = r.direction === 'towards_campus'
+        ? '<span class="badge badge-success" style="font-size:0.7rem;"><i class="fa-solid fa-graduation-cap"></i> Towards Campus</span>'
+        : '<span class="badge badge-info" style="font-size:0.7rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i> From Campus</span>';
+
+      return `
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+            <div>
+              <div class="card-title">${r.route_name}</div>
+              <div style="margin-top:4px;">${dirBadge}</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="btn btn-outline btn-xs" onclick="openManageStopsModal(${r.route_id})" title="Manage Stops & Destination">
+                <i class="fa-solid fa-list-ol"></i> Stops (${(r.stops||[]).length})
+              </button>
+              <button class="btn btn-primary btn-xs" onclick="openAssignRouteModal(${r.route_id})" title="Assign Bus & Driver">
+                <i class="fa-solid fa-link"></i> Assign
+              </button>
+              <button class="btn btn-danger btn-xs" onclick="deleteRoute(${r.route_id})" title="Delete Route">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="font-size:.875rem;color:var(--text-secondary);margin-bottom:12px;">
+              <i class="fa-solid fa-route" style="color:var(--primary-500);margin-right:6px;"></i>${r.source} → ${r.destination} (${r.distance||'?'} km)
+            </div>
+            <div class="stop-list" style="max-height:160px;overflow-y:auto;">
+              ${(r.stops||[]).map((s,i)=>`
+                <div class="stop-item">
+                  <div class="stop-dot ${s.is_college ? 'success' : (i===0?'active':'')}">${i+1}</div>
+                  <div class="stop-info" style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                    <div class="stop-name">
+                      ${s.stop_name}
+                      ${s.is_college ? '<span class="badge badge-success" style="font-size:0.65rem;margin-left:6px;"><i class="fa-solid fa-building-columns"></i> Campus Destination</span>' : ''}
+                    </div>
+                    ${s.expected_offset_minutes ? `<span style="font-size:0.75rem;color:var(--text-muted);"><i class="fa-regular fa-clock"></i> +${s.expected_offset_minutes}m</span>` : ''}
+                  </div>
+                </div>
+              `).join('') || '<div style="font-size:0.8rem;color:var(--text-muted);padding:8px;">No stops added yet.</div>'}
+            </div>
           </div>
         </div>
-      </div>
-    `).join('') || '<div style="color:var(--text-muted);">No routes found.</div>';
-  } catch(e) {}
+      `;
+    }).join('');
+  } catch(e) {
+    Toast.error('Failed to load routes: ' + e.message);
+  }
 }
+
 async function addRoute() {
-  const data = { route_name: document.getElementById('new-rt-name').value, source: document.getElementById('new-rt-src').value, destination: document.getElementById('new-rt-dest').value, distance: document.getElementById('new-rt-dist').value };
+  const data = {
+    route_name: document.getElementById('new-rt-name').value.trim(),
+    source: document.getElementById('new-rt-src').value.trim(),
+    destination: document.getElementById('new-rt-dest').value.trim(),
+    distance: document.getElementById('new-rt-dist').value,
+    direction: document.getElementById('new-rt-dir')?.value || 'towards_campus',
+    destination_type: document.getElementById('new-rt-dir')?.value === 'towards_campus' ? 'campus' : 'city'
+  };
   if (!data.route_name) { Toast.warning('Route name required.'); return; }
-  try { await RouteAPI.create(data); Toast.success('Route added!'); closeModal('add-route-modal'); loadRoutes(); } catch(e) { Toast.error(e.message); }
+  try {
+    await RouteAPI.create(data);
+    Toast.success('Route added!');
+    closeModal('add-route-modal');
+    loadRoutes();
+  } catch(e) { Toast.error(e.message); }
 }
-async function deleteRoute(id) { if (!confirm('Delete route?')) return; try { await RouteAPI.delete(id); Toast.success('Route deleted.'); loadRoutes(); } catch(e) { Toast.error(e.message); } }
+
+async function deleteRoute(id) {
+  if (!confirm('Delete route?')) return;
+  try {
+    await RouteAPI.delete(id);
+    Toast.success('Route deleted.');
+    loadRoutes();
+  } catch(e) { Toast.error(e.message); }
+}
+
+async function openManageStopsModal(routeId) {
+  try {
+    const res = await RouteAPI.getOne(routeId);
+    currentRouteForStops = res.data;
+    if (!currentRouteForStops) { Toast.error('Route not found'); return; }
+
+    document.getElementById('m-stops-route-title').textContent = `Manage Stops: ${currentRouteForStops.route_name}`;
+    document.getElementById('m-stops-route-subtitle').textContent = `${currentRouteForStops.source} → ${currentRouteForStops.destination} (${currentRouteForStops.direction === 'towards_campus' ? 'Towards Campus' : 'From Campus'})`;
+
+    renderRouteStopsTable();
+    openModal('manage-route-stops-modal');
+  } catch(e) {
+    Toast.error('Failed to load route stops: ' + e.message);
+  }
+}
+
+function renderRouteStopsTable() {
+  const tbody = document.getElementById('m-stops-tbody');
+  const stops = currentRouteForStops?.stops || [];
+  if (!stops.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px;">No stops added yet. Use the form below to add the first stop.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = stops.map((s, idx) => `
+    <tr>
+      <td><b>${idx + 1}</b></td>
+      <td><b>${s.stop_name}</b></td>
+      <td style="font-size:0.75rem;font-family:monospace;">${s.latitude ? s.latitude.toFixed(4) : '—'}, ${s.longitude ? s.longitude.toFixed(4) : '—'}</td>
+      <td>+${s.expected_offset_minutes || 0} min</td>
+      <td>${s.is_college ? '<span class="badge badge-success"><i class="fa-solid fa-building-columns"></i> Campus</span>' : '<span style="color:var(--text-muted);">Transit</span>'}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-outline btn-xs" ${idx === 0 ? 'disabled' : ''} onclick="moveStop(${s.stop_id}, -1)" title="Move Up"><i class="fa-solid fa-arrow-up"></i></button>
+          <button class="btn btn-outline btn-xs" ${idx === stops.length - 1 ? 'disabled' : ''} onclick="moveStop(${s.stop_id}, 1)" title="Move Down"><i class="fa-solid fa-arrow-down"></i></button>
+          <button class="btn btn-danger btn-xs" onclick="deleteRouteStop(${s.stop_id})" title="Delete Stop"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function submitAddStop() {
+  if (!currentRouteForStops) return;
+  const name = document.getElementById('add-stop-name').value.trim();
+  const lat = parseFloat(document.getElementById('add-stop-lat').value);
+  const lng = parseFloat(document.getElementById('add-stop-lng').value);
+  const offset = parseInt(document.getElementById('add-stop-offset').value) || 0;
+  const is_college = document.getElementById('add-stop-is-college').checked ? 1 : 0;
+
+  if (!name || isNaN(lat) || isNaN(lng)) {
+    Toast.warning('Stop name, latitude, and longitude are required.');
+    return;
+  }
+
+  try {
+    const stops = currentRouteForStops.stops || [];
+    const stop_order = stops.length + 1;
+    await RouteAPI.addStop(currentRouteForStops.route_id, {
+      stop_name: name,
+      latitude: lat,
+      longitude: lng,
+      stop_order,
+      expected_offset_minutes: offset,
+      is_college
+    });
+    Toast.success('Stop added to route!');
+    document.getElementById('add-stop-name').value = '';
+    document.getElementById('add-stop-lat').value = '';
+    document.getElementById('add-stop-lng').value = '';
+    document.getElementById('add-stop-offset').value = '0';
+    document.getElementById('add-stop-is-college').checked = false;
+
+    // Refresh route
+    const res = await RouteAPI.getOne(currentRouteForStops.route_id);
+    currentRouteForStops = res.data;
+    renderRouteStopsTable();
+    loadRoutes();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
+
+async function moveStop(stopId, direction) {
+  if (!currentRouteForStops) return;
+  const stops = [...(currentRouteForStops.stops || [])];
+  const idx = stops.findIndex(s => s.stop_id === stopId);
+  if (idx < 0) return;
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= stops.length) return;
+
+  const temp = stops[idx];
+  stops[idx] = stops[targetIdx];
+  stops[targetIdx] = temp;
+
+  const newOrderStopIds = stops.map(s => s.stop_id);
+  try {
+    await RouteAPI.reorderStops(currentRouteForStops.route_id, newOrderStopIds);
+    Toast.success('Stop order updated.');
+    const res = await RouteAPI.getOne(currentRouteForStops.route_id);
+    currentRouteForStops = res.data;
+    renderRouteStopsTable();
+    loadRoutes();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
+
+async function deleteRouteStop(stopId) {
+  if (!confirm('Remove this stop from route?')) return;
+  try {
+    await RouteAPI.deleteStop(currentRouteForStops.route_id, stopId);
+    Toast.success('Stop removed.');
+    const res = await RouteAPI.getOne(currentRouteForStops.route_id);
+    currentRouteForStops = res.data;
+    renderRouteStopsTable();
+    loadRoutes();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
+
+async function openAssignRouteModal(routeId) {
+  try {
+    const [rtRes, busRes, drvRes] = await Promise.all([
+      RouteAPI.getOne(routeId),
+      BusAPI.getAll(),
+      DriverAPI.getAll()
+    ]);
+    const route = rtRes.data;
+    const buses = busRes.data || [];
+    const drivers = drvRes.data || [];
+
+    document.getElementById('assign-rt-id').value = routeId;
+    document.getElementById('assign-rt-name').textContent = `${route.route_name} (${route.source} → ${route.destination})`;
+
+    const busSelect = document.getElementById('assign-rt-bus');
+    busSelect.innerHTML = buses.map(b => `
+      <option value="${b.bus_id}" ${b.route_id === routeId ? 'selected' : ''}>
+        ${b.bus_number} (${b.registration_number || 'No Reg'}) — Current Route: ${b.route_name || 'None'} | Driver: ${b.driver_name || 'None'}
+      </option>
+    `).join('') || '<option value="">No buses registered</option>';
+
+    const drvSelect = document.getElementById('assign-rt-driver');
+    drvSelect.innerHTML = '<option value="">Keep current driver assignment</option>' +
+      drivers.map(d => `<option value="${d.driver_id}">${d.name} (${d.phone || 'No phone'}) — Assigned Bus: ${d.bus_number || 'None'}</option>`).join('');
+
+    openModal('assign-route-modal');
+  } catch(e) {
+    Toast.error('Failed to open route assignment: ' + e.message);
+  }
+}
+
+async function submitAssignRoute() {
+  const routeId = document.getElementById('assign-rt-id').value;
+  const busId = document.getElementById('assign-rt-bus').value;
+  const driverId = document.getElementById('assign-rt-driver').value || null;
+
+  if (!routeId || !busId) {
+    Toast.warning('Please select a bus to assign.');
+    return;
+  }
+
+  try {
+    const res = await RouteAPI.assign(routeId, { bus_id: busId, driver_id: driverId });
+    Toast.success(res.message || 'Route successfully assigned to bus!');
+    closeModal('assign-route-modal');
+    loadRoutes();
+    loadBuses();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
+
+// ── User Management (GIET Institutional Controls) ─────────────────────────────
+let allUsersCached = [];
+
+async function loadUserManagement() {
+  const role = document.getElementById('user-mgmt-role-filter')?.value || 'all';
+  const search = document.getElementById('user-mgmt-search')?.value || '';
+  const tbody = document.getElementById('user-mgmt-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</td></tr>';
+  try {
+    const res = await AdminAPI.getUsers({ role, search });
+    allUsersCached = res.data || [];
+    renderUsersTable(allUsersCached);
+  } catch(e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:24px;">Failed to load users: ${e.message}</td></tr>`;
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('user-mgmt-tbody');
+  if (!tbody) return;
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px;">No users found matching query</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => {
+    const roleBadge = u.role === 'student'
+      ? '<span class="badge badge-primary">Student</span>'
+      : u.role === 'driver'
+        ? '<span class="badge badge-warning">Driver</span>'
+        : '<span class="badge badge-info">Bus Manager</span>';
+
+    const pwBadge = u.must_change_password
+      ? '<span class="badge badge-warning" title="User must update credentials on first sign in"><i class="fa-solid fa-clock-rotate-left"></i> Must Change</span>'
+      : '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Active</span>';
+
+    const identifier = u.roll_number
+      ? `Roll: ${u.roll_number}`
+      : u.license_number
+        ? `Lic: ${u.license_number}`
+        : (u.phone || '—');
+
+    const rawId = u.system_user_id || u.id;
+    const safeName = encodeURIComponent(u.name || '');
+    const safeEmail = encodeURIComponent(u.email || '');
+    const safeRole = encodeURIComponent(u.role || '');
+    const safeId = encodeURIComponent(rawId || '');
+
+    return `
+      <tr>
+        <td><code style="font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:3px 7px;border-radius:4px;">${u.system_user_id || '—'}</code></td>
+        <td>${roleBadge}</td>
+        <td><b>${escapeHtml(u.name || '')}</b></td>
+        <td><code style="font-size:0.82rem;">${escapeHtml(u.email || '')}</code></td>
+        <td style="font-size:0.82rem;">${identifier}</td>
+        <td>${pwBadge}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+        <td>
+          <button class="btn btn-outline btn-sm btn-danger" style="color:var(--danger);border-color:var(--danger);padding:4px 10px;font-size:0.8rem;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" onclick="openDeleteUserModal('${safeId}', '${safeName}', '${safeEmail}', '${safeRole}', ${u.id || null})" title="Delete User">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+let userToDelete = null;
+
+function openDeleteUserModal(userId, encName, encEmail, encRole, recordId) {
+  const name = decodeURIComponent(encName || '');
+  const email = decodeURIComponent(encEmail || '');
+  const role = decodeURIComponent(encRole || '');
+  const targetId = decodeURIComponent(userId || '') || recordId;
+
+  userToDelete = {
+    id: recordId,
+    system_user_id: targetId,
+    name,
+    email,
+    role
+  };
+
+  const nameEl = document.getElementById('del-user-name');
+  if (nameEl) nameEl.textContent = name || '—';
+
+  const idEl = document.getElementById('del-user-id');
+  if (idEl) idEl.textContent = targetId || '—';
+
+  const emailEl = document.getElementById('del-user-email');
+  if (emailEl) emailEl.textContent = email || '—';
+
+  const roleEl = document.getElementById('del-user-role');
+  if (roleEl) {
+    roleEl.className = 'badge ' + (role === 'student' ? 'badge-primary' : role === 'driver' ? 'badge-warning' : 'badge-info');
+    roleEl.textContent = role ? role.toUpperCase() : 'USER';
+  }
+
+  const errEl = document.getElementById('del-user-error');
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+
+  const btn = document.getElementById('btn-confirm-delete-user');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete User';
+  }
+
+  openModal('delete-user-modal');
+}
+
+async function confirmDeleteUser() {
+  if (!userToDelete) return;
+
+  const btn = document.getElementById('btn-confirm-delete-user');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting User...';
+  }
+
+  const errEl = document.getElementById('del-user-error');
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+
+  try {
+    const deleteTargetId = userToDelete.system_user_id || userToDelete.id;
+    const res = await AdminAPI.deleteUser(deleteTargetId);
+
+    closeModal('delete-user-modal');
+    Toast.success(res.message || 'User deleted successfully');
+
+    // Optimistically remove user from table without requiring a full page reload
+    allUsersCached = allUsersCached.filter(u =>
+      (u.system_user_id !== deleteTargetId) &&
+      (String(u.id) !== String(deleteTargetId)) &&
+      (u.email !== userToDelete.email)
+    );
+    renderUsersTable(allUsersCached);
+
+    // Refresh user list in background to sync with server
+    loadUserManagement();
+    loadDashboard();
+    if (userToDelete.role === 'student') loadStudents();
+    if (userToDelete.role === 'driver') loadDrivers();
+    if (userToDelete.role === 'manager') loadManagers();
+
+    userToDelete = null;
+  } catch (err) {
+    console.error('Delete user error:', err);
+    // On failure: keep the user in the list and display the backend error message clearly
+    const errorMsg = err.message || 'Failed to delete user.';
+    Toast.error(errorMsg);
+    if (errEl) {
+      errEl.textContent = errorMsg;
+      errEl.style.display = 'block';
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete User';
+    }
+  }
+}
+
+function filterUserTable() {
+  const q = (document.getElementById('user-mgmt-search')?.value || '').toLowerCase().trim();
+  if (!q) { renderUsersTable(allUsersCached); return; }
+  const filtered = allUsersCached.filter(u =>
+    (u.name && u.name.toLowerCase().includes(q)) ||
+    (u.email && u.email.toLowerCase().includes(q)) ||
+    (u.system_user_id && u.system_user_id.toLowerCase().includes(q)) ||
+    (u.roll_number && u.roll_number.toLowerCase().includes(q))
+  );
+  renderUsersTable(filtered);
+}
+
+function openCreateUserModal(defaultRole = 'student') {
+  const roleSelect = document.getElementById('new-user-role');
+  if (roleSelect && defaultRole) roleSelect.value = defaultRole;
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-email').value = '';
+  document.getElementById('new-user-roll').value = '';
+  document.getElementById('new-user-stu-phone').value = '';
+  document.getElementById('new-user-drv-phone').value = '';
+  document.getElementById('new-user-drv-lic').value = '';
+  document.getElementById('new-user-drv-addr').value = '';
+  document.getElementById('new-user-mgr-phone').value = '';
+  document.getElementById('new-user-email-feedback').style.display = 'none';
+  onUserRoleChange();
+  openModal('create-user-modal');
+
+  setTimeout(() => {
+    const firstInput = document.getElementById('new-user-name');
+    if (firstInput) firstInput.focus();
+  }, 100);
+}
+
+function onUserRoleChange() {
+  const role = document.getElementById('new-user-role').value;
+  document.getElementById('role-fields-student').style.display = role === 'student' ? 'block' : 'none';
+  document.getElementById('role-fields-driver').style.display = role === 'driver' ? 'block' : 'none';
+  document.getElementById('role-fields-manager').style.display = role === 'manager' ? 'block' : 'none';
+}
+
+function validateUserEmailLive() {
+  const email = (document.getElementById('new-user-email').value || '').trim();
+  const feedback = document.getElementById('new-user-email-feedback');
+  if (!feedback) return;
+  if (!email) {
+    feedback.style.display = 'none';
+    return;
+  }
+  feedback.style.display = 'block';
+  if (isValidGietEmail(email)) {
+    feedback.style.color = 'var(--success)';
+    feedback.innerHTML = '<i class="fa-solid fa-circle-check"></i> Valid GIET institutional domain (@giet.edu)';
+  } else {
+    feedback.style.color = 'var(--danger)';
+    feedback.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Only emails ending strictly with <b>@giet.edu</b> are accepted (e.g. 23cse001@giet.edu)';
+  }
+}
+
+let lastCreatedCredentials = null;
+
+async function handleCreateUserSubmit(event) {
+  if (event) event.preventDefault();
+  console.log('[USER CREATE] submit triggered');
+
+  const role = document.getElementById('new-user-role').value;
+  const name = document.getElementById('new-user-name').value.trim();
+  const email = document.getElementById('new-user-email').value.trim();
+
+  if (!name || !email) {
+    Toast.warning('Name and institutional email are required.');
+    return;
+  }
+  if (!isValidGietEmail(email)) {
+    Toast.error('Invalid email! Only institutional emails ending strictly with @giet.edu are allowed.');
+    return;
+  }
+
+  const payload = {
+    role,
+    name,
+    fullName: name,
+    email,
+    phone: ''
+  };
+
+  if (role === 'student') {
+    const roll = (document.getElementById('new-user-roll').value || '').trim();
+    if (roll) {
+      payload.roll_number = roll;
+      payload.rollNumber = roll;
+    }
+    payload.semester = document.getElementById('new-user-sem').value;
+    payload.department = document.getElementById('new-user-dept').value;
+    const phone = (document.getElementById('new-user-stu-phone').value || '').trim();
+    if (phone) payload.phone = phone;
+  } else if (role === 'driver') {
+    const phone = (document.getElementById('new-user-drv-phone').value || '').trim();
+    const lic = (document.getElementById('new-user-drv-lic').value || '').trim();
+    const addr = (document.getElementById('new-user-drv-addr').value || '').trim();
+    if (phone) payload.phone = phone;
+    if (lic) {
+      payload.license_number = lic;
+      payload.licenseNumber = lic;
+    }
+    if (addr) payload.address = addr;
+  } else if (role === 'manager') {
+    const phone = (document.getElementById('new-user-mgr-phone').value || '').trim();
+    if (phone) payload.phone = phone;
+  }
+
+  console.log('[USER CREATE] form data:', payload);
+
+  const btn = document.getElementById('btn-submit-create-user');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Provisioning Account...';
+  }
+
+  try {
+    const res = await AdminAPI.createUser(payload);
+    console.log('[USER CREATE] response:', res);
+    Toast.success('Account created successfully.');
+    closeModal('create-user-modal');
+
+    // Retrieve credentials object robustly from API payload
+    const creds = res.dev_preview || res.dev_credentials || res.devCredentials || (res.data && res.data.devCredentials) || res.data || {};
+    lastCreatedCredentials = {
+      system_user_id: res.user_id || creds.system_user_id || creds.userId || 'GIET-USR-0000',
+      temporary_password: creds.temporary_password || creds.tempPassword || '******',
+      role: (res.data?.role || res.role || role),
+      email: (res.data?.email || res.email || email),
+      name: (res.data?.name || res.name || name)
+    };
+
+    setTimeout(() => {
+      document.getElementById('cred-name').textContent = lastCreatedCredentials.name;
+      document.getElementById('cred-email').textContent = lastCreatedCredentials.email;
+      document.getElementById('cred-role-badge').textContent = lastCreatedCredentials.role.toUpperCase();
+      document.getElementById('cred-user-id').textContent = lastCreatedCredentials.system_user_id;
+
+      // Ensure dev preview starts hidden
+      const devPreviewBox = document.getElementById('dev-credential-preview');
+      if (devPreviewBox) {
+        devPreviewBox.style.display = 'none';
+        document.getElementById('cred-temp-pw').textContent = lastCreatedCredentials.temporary_password;
+      }
+
+      const alertBox = document.getElementById('cred-email-alert');
+      const deliveryStatusEl = document.getElementById('cred-delivery-status');
+      const emailSent = res.emailSent || (res.data && res.data.emailSent) || res.email_status === 'sent';
+
+      if (emailSent) {
+        alertBox.style.background = 'rgba(34,197,94,0.12)';
+        alertBox.style.color = 'var(--success)';
+        alertBox.style.border = '1px solid rgba(34,197,94,0.3)';
+        alertBox.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Login credentials have been sent to the user\'s GIET email.';
+        if (deliveryStatusEl) {
+          deliveryStatusEl.style.color = 'var(--success)';
+          deliveryStatusEl.innerHTML = '<i class="fa-solid fa-check"></i> Sent via SMTP';
+        }
+      } else {
+        alertBox.style.background = 'rgba(239,68,68,0.1)';
+        alertBox.style.color = 'var(--danger)';
+        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
+        alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Account created, but email could not be sent. Check SMTP configuration.';
+        if (deliveryStatusEl) {
+          deliveryStatusEl.style.color = 'var(--warning)';
+          deliveryStatusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Email Failed / Unconfigured';
+        }
+      }
+      openModal('user-credentials-modal');
+    }, 150);
+
+    loadUserManagement();
+    loadDashboard();
+    if (role === 'student') loadStudents();
+    if (role === 'driver') loadDrivers();
+    if (role === 'manager') loadManagers();
+  } catch(e) {
+    console.error('[USER CREATE] error:', e);
+    if (e.status === 401 || e.message?.includes('Session expired') || e.message?.includes('No token')) {
+      Toast.error('Session expired. Please log in again.');
+    } else if (e.status === 403 || e.message?.includes('Admin permission') || e.message?.includes('Access denied')) {
+      Toast.error('Admin permission required.');
+    } else if (e.status === 409 || e.message?.includes('already registered') || e.message?.includes('already exists')) {
+      Toast.error(e.message || 'An account with this email already exists.');
+    } else {
+      Toast.error(e.message || 'Failed to create account.');
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+    }
+  }
+}
+
+// Attach submit event listener to form
+const createUserForm = document.getElementById('create-user-form');
+if (createUserForm) {
+  createUserForm.addEventListener('submit', handleCreateUserSubmit);
+}
+const submitCreateUser = handleCreateUserSubmit;
+
+function toggleDevPreview() {
+  const box = document.getElementById('dev-credential-preview');
+  const btn = document.getElementById('btn-toggle-dev-preview');
+  if (!box) return;
+  if (box.style.display === 'none' || !box.style.display) {
+    box.style.display = 'block';
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Hide Dev Preview';
+  } else {
+    box.style.display = 'none';
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-eye"></i> Dev Preview';
+  }
+}
+
+function copyCredentials() {
+  if (!lastCreatedCredentials) return;
+  const text = `GIET Smart Bus Credentials:\nUser ID: ${lastCreatedCredentials.system_user_id}\nTemporary Password: ${lastCreatedCredentials.temporary_password}\nRole: ${lastCreatedCredentials.role}\nEmail: ${lastCreatedCredentials.email}\nNote: Password must be changed on first login.`;
+  navigator.clipboard.writeText(text).then(() => {
+    Toast.success('Credentials copied to clipboard!');
+  }).catch(() => {
+    Toast.info(`User ID: ${lastCreatedCredentials.system_user_id} | Password: ${lastCreatedCredentials.temporary_password}`);
+  });
+}
+
+// ── Geofence & Operating Area Management ──────────────────────────────────────
+let geofenceMap = null;
+let geofencePolygonLayers = [];
+
+async function loadGeofences() {
+  try {
+    const [geoRes, violRes] = await Promise.all([
+      GeofenceAPI.getAll(),
+      GeofenceAPI.getViolations()
+    ]);
+    const geofences = geoRes.data || [];
+    const violations = violRes.data || [];
+
+    const container = document.getElementById('geofence-areas-list');
+    if (container) {
+      if (!geofences.length) {
+        container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:12px;">No operating areas configured. Click "Define Operating Area" above.</div>';
+      } else {
+        container.innerHTML = geofences.map(g => `
+          <div style="padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:8px;background:var(--bg-surface);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color || '#3b82f6'};"></span>
+                <b>${g.name}</b>
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">${g.description || 'Approved transit area'}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button class="btn btn-xs ${g.is_active ? 'btn-success' : 'btn-outline'}" onclick="toggleGeofence(${g.geofence_id})" title="${g.is_active ? 'Deactivate' : 'Activate'}">
+                ${g.is_active ? 'Active' : 'Disabled'}
+              </button>
+              <button class="btn btn-danger btn-xs" onclick="deleteGeofence(${g.geofence_id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    const vContainer = document.getElementById('geofence-violations-list');
+    if (vContainer) {
+      if (!violations.length) {
+        vContainer.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:12px;">No area violations recorded. Fleet is operating within designated zones.</div>';
+      } else {
+        vContainer.innerHTML = violations.slice(0, 10).map(v => `
+          <div style="padding:8px 10px;border-left:3px solid var(--danger);background:var(--bg-surface);margin-bottom:6px;border-radius:0 4px 4px 0;font-size:0.8rem;">
+            <div class="flex-between">
+              <b>⚠️ ${v.bus_number} (${v.driver_name || 'Driver'})</b>
+              <span style="font-size:0.72rem;color:var(--text-muted);">${new Date(v.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">
+              Exited: ${v.geofence_name || 'Operating Area'} at [${v.latitude ? v.latitude.toFixed(4) : '—'}, ${v.longitude ? v.longitude.toFixed(4) : '—'}]
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    initGeofenceMap(geofences);
+  } catch(e) {
+    Toast.error('Failed to load operating areas: ' + e.message);
+  }
+}
+
+function initGeofenceMap(geofences = []) {
+  const mapEl = document.getElementById('geofence-map');
+  if (!mapEl) return;
+  if (!geofenceMap) {
+    geofenceMap = L.map('geofence-map').setView([19.0494, 83.8242], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(geofenceMap);
+  } else {
+    geofenceMap.invalidateSize();
+  }
+
+  geofencePolygonLayers.forEach(l => geofenceMap.removeLayer(l));
+  geofencePolygonLayers = [];
+
+  const bounds = [];
+  geofences.forEach(g => {
+    let coords = g.coordinates;
+    if (typeof coords === 'string') {
+      try { coords = JSON.parse(coords); } catch(err) { coords = []; }
+    }
+    if (Array.isArray(coords) && coords.length >= 3) {
+      const polygon = L.polygon(coords, {
+        color: g.color || '#3b82f6',
+        fillColor: g.color || '#3b82f6',
+        fillOpacity: g.is_active ? 0.25 : 0.05,
+        weight: g.is_active ? 3 : 1.5,
+        dashArray: g.is_active ? null : '6, 6'
+      }).addTo(geofenceMap);
+
+      polygon.bindPopup(`<b>${g.name}</b><br>${g.description || ''}<br>Status: <b>${g.is_active ? 'Active' : 'Disabled'}</b>`);
+      geofencePolygonLayers.push(polygon);
+      coords.forEach(pt => bounds.push(pt));
+    }
+  });
+
+  if (bounds.length > 0) {
+    geofenceMap.fitBounds(bounds, { padding: [20, 20] });
+  }
+}
+
+function openAddGeofenceModal() {
+  document.getElementById('new-geo-name').value = '';
+  document.getElementById('new-geo-desc').value = '';
+  document.getElementById('new-geo-coords').value = '';
+  document.getElementById('new-geo-color').value = '#3b82f6';
+  document.getElementById('new-geo-active').value = '1';
+  openModal('add-geofence-modal');
+}
+
+function fillDefaultGeofencePreset() {
+  document.getElementById('new-geo-name').value = 'GIET University & Gunupur Perimeter';
+  document.getElementById('new-geo-desc').value = 'Official authorized transit operating area covering GIET campus and Gunupur city limits.';
+  document.getElementById('new-geo-coords').value = JSON.stringify([
+    [19.0650, 83.8050],
+    [19.0650, 83.8400],
+    [19.0300, 83.8400],
+    [19.0300, 83.8050]
+  ], null, 2);
+}
+
+async function submitCreateGeofence() {
+  const name = document.getElementById('new-geo-name').value.trim();
+  const desc = document.getElementById('new-geo-desc').value.trim();
+  const rawCoords = document.getElementById('new-geo-coords').value.trim();
+  const color = document.getElementById('new-geo-color').value;
+  const is_active = parseInt(document.getElementById('new-geo-active').value) || 1;
+
+  if (!name || !rawCoords) {
+    Toast.warning('Operating area name and polygon coordinates are required.');
+    return;
+  }
+
+  let coordinates;
+  try {
+    coordinates = JSON.parse(rawCoords);
+    if (!Array.isArray(coordinates) || coordinates.length < 3) {
+      throw new Error('Polygon must contain at least 3 [lat, lng] vertices.');
+    }
+  } catch(err) {
+    Toast.error('Invalid coordinates format! Expected JSON array of points: ' + err.message);
+    return;
+  }
+
+  try {
+    await GeofenceAPI.create({ name, description: desc, coordinates, color, is_active });
+    Toast.success('Operating area created successfully!');
+    closeModal('add-geofence-modal');
+    loadGeofences();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
+
+async function toggleGeofence(id) {
+  try {
+    const res = await GeofenceAPI.toggle(id);
+    Toast.success(res.message);
+    loadGeofences();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
+
+async function deleteGeofence(id) {
+  if (!confirm('Are you sure you want to delete this operating area?')) return;
+  try {
+    await GeofenceAPI.delete(id);
+    Toast.success('Operating area deleted.');
+    loadGeofences();
+  } catch(e) {
+    Toast.error(e.message);
+  }
+}
 
 // ── Schedule ───────────────────────────────────────────────────────────────────
 async function loadSchedule() {
@@ -878,6 +2185,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadDashboard();
   SocketClient.connect();
+
+  document.addEventListener('admin:geofence-violation', (e) => {
+    const v = e.detail;
+    const vContainer = document.getElementById('geofence-violations-list');
+    if (vContainer) {
+      const item = document.createElement('div');
+      item.style = 'padding:8px 10px;border-left:3px solid var(--danger);background:var(--bg-surface);margin-bottom:6px;border-radius:0 4px 4px 0;font-size:0.8rem;';
+      item.innerHTML = `
+        <div class="flex-between">
+          <b>⚠️ ${v.bus_number || v.bus_id} (${v.driver_name || 'Driver'})</b>
+          <span style="font-size:0.72rem;color:var(--text-muted);">${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">
+          Exited: ${v.geofence_name || 'Operating Area'} at [${v.latitude ? v.latitude.toFixed(4) : '—'}, ${v.longitude ? v.longitude.toFixed(4) : '—'}]
+        </div>
+      `;
+      vContainer.prepend(item);
+    }
+  });
 });
 // ── Admin Live Tracking Map ───────────────────────────────────────────────────
 let adminLiveMap = null;

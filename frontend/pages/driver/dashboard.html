@@ -454,18 +454,24 @@ async function loadRoutes() {
   try {
     const res = await RouteAPI.getAll();
     const select = document.getElementById('route-select');
+    select.innerHTML = '<option value="">— Use assigned route —</option>';
     (res.data || []).forEach(r => {
       const opt = document.createElement('option');
       opt.value = r.route_id;
-      opt.textContent = r.route_name;
+      opt.textContent = `${r.route_name} (${r.source} → ${r.destination})`;
+      if (busData && busData.route_id === r.route_id) opt.selected = true;
       select.appendChild(opt);
     });
+    document.getElementById('route-selector').style.display = 'block';
   } catch (_) {}
 }
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
 function connectSocket() {
-  socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
+  const socketUrl = (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.port !== '5500')
+    ? `${window.location.protocol}//${window.location.hostname}:5000`
+    : 'http://localhost:5000';
+  socket = io(socketUrl, { transports: ['websocket', 'polling'] });
   socket.on('connect', () => console.log('🔌 Socket connected'));
   socket.on('driver:trip-started', (data) => {
     Toast.success(`Trip started — ${data.bus_number} is now LIVE`);

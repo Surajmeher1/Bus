@@ -2,7 +2,9 @@
  * Socket.IO Client Wrapper — Real-time Bus Tracking
  */
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.port !== '5500')
+  ? `${window.location.protocol}//${window.location.hostname}:5000`
+  : 'http://localhost:5000';
 
 let socket = null;
 const busMarkers    = {}; // { busId: L.Marker }
@@ -36,6 +38,13 @@ const SocketClient = {
 
     socket.on('seat-update', (data) => {
       document.dispatchEvent(new CustomEvent('bus:seats', { detail: data }));
+    });
+
+    socket.on('admin:geofence-violation', (data) => {
+      document.dispatchEvent(new CustomEvent('admin:geofence-violation', { detail: data }));
+      if (typeof Toast !== 'undefined') {
+        Toast.show(`⚠️ BUS AREA VIOLATION: Bus ${data.bus_number || data.bus_id} (${data.driver_name || 'Driver'}) is outside allowed operating area!`, 'error', 10000);
+      }
     });
 
     socket.on('notification', (data) => {

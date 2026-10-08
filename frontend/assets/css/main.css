@@ -477,7 +477,7 @@ tbody tr:last-child td { border-bottom: none; }
   transform: translateY(-8px);
   transition: all var(--transition);
 }
-.user-menu.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+.user-menu.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
 .user-menu-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 12px; border-radius: var(--radius-md);
@@ -593,36 +593,86 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* ── Modal ───────────────────────────────────────────────────────────────────── */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
-  opacity: 0; pointer-events: none; transition: opacity var(--transition);
+  opacity: 0; pointer-events: none; visibility: hidden;
+  transition: opacity var(--transition), visibility var(--transition);
 }
-.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-overlay.open {
+  opacity: 1; pointer-events: auto !important; visibility: visible;
+}
 .modal {
+  position: relative;
+  z-index: 10001;
+  pointer-events: auto !important;
   background: var(--bg-surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
-  width: 100%; max-width: 520px;
-  max-height: 90vh; overflow-y: auto;
+  width: 100%; max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   transform: translateY(-20px) scale(0.97);
   transition: transform var(--transition-bounce);
 }
-.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+.modal-overlay.open .modal {
+  transform: translateY(0) scale(1);
+  pointer-events: auto !important;
+}
 .modal-header {
   padding: 24px 24px 16px;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  pointer-events: auto !important;
 }
 .modal-title { font-size: 1.125rem; font-weight: 700; }
-.modal-close { color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: var(--radius-sm); }
+.modal-close {
+  color: var(--text-muted); cursor: pointer; padding: 4px;
+  border-radius: var(--radius-sm); pointer-events: auto !important;
+}
 .modal-close:hover { background: var(--bg-base); color: var(--text-primary); }
-.modal-body   { padding: 24px; }
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  pointer-events: auto !important;
+}
+.modal-body * {
+  pointer-events: auto;
+}
 .modal-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
   display: flex; gap: 10px; justify-content: flex-end;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  position: sticky;
+  bottom: 0;
+  z-index: 10002;
+  pointer-events: auto !important;
+}
+.modal-footer * {
+  pointer-events: auto;
+}
+
+/* ── Modal Open Background Locking ────────────────────────────────────────────── */
+body.modal-open {
+  overflow: hidden !important;
+}
+body.modal-open .app-layout {
+  pointer-events: none !important;
+  user-select: none;
+}
+body.modal-open .modal-overlay {
+  pointer-events: auto !important;
+}
+body.modal-open .modal-overlay .modal,
+body.modal-open .modal-overlay .modal * {
+  pointer-events: auto !important;
 }
 
 /* ── Search Bar ──────────────────────────────────────────────────────────────── */

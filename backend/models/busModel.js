@@ -60,9 +60,13 @@ const BusModel = {
 
   getLocations: () =>
     db.prepare(`
-      SELECT bus_id, bus_number, current_latitude, current_longitude, current_speed,
-             status, available_seats, capacity, route_id
-      FROM buses WHERE status != 'inactive'
+      SELECT b.bus_id, b.bus_number, b.registration_number, b.current_latitude, b.current_longitude,
+             b.current_speed, b.status, b.tracking_status, b.trip_state, b.available_seats,
+             b.capacity, b.route_id, r.route_name, d.name as driver_name, d.phone as driver_phone
+      FROM buses b
+      LEFT JOIN routes r ON b.route_id = r.route_id
+      LEFT JOIN drivers d ON b.driver_id = d.driver_id
+      WHERE b.status != 'inactive'
     `).all(),
 };
 

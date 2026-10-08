@@ -49,17 +49,22 @@ async function apiFetch(endpoint, options = {}) {
       headers
     });
 
-    // Token expired → logout
-    if (response.status === 401) {
-      Auth.clearAuth();
-      window.location.href = '/index.html';
-      return;
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (_) {
+      data = {};
     }
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.message || `Request failed (${response.status})`);
+      const err = new Error(data.message || `Request failed (${response.status})`);
+      err.status = response.status;
+      err.data = data;
+      if (response.status === 401) {
+        Auth.clearAuth();
+        setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+      }
+      throw err;
     }
 
     return data;
@@ -82,12 +87,20 @@ const API = {
 
 // ── Auth Endpoints ────────────────────────────────────────────────────────────
 const AuthAPI = {
-  studentLogin:   (data) => API.post('/auth/student/login', data),
-  studentRegister:(data) => API.post('/auth/student/register', data),
-  driverLogin:    (data) => API.post('/auth/driver/login', data),   // Review 1
-  managerLogin:   (data) => API.post('/auth/manager/login', data),
-  adminLogin:     (data) => API.post('/auth/admin/login', data),
+  studentLogin:      (data) => API.post('/auth/student/login', data),
+  studentRegister:   (data) => API.post('/auth/student/register', data),
+  driverLogin:       (data) => API.post('/auth/driver/login', data),
+  managerLogin:      (data) => API.post('/auth/manager/login', data),
+  adminLogin:        (data) => API.post('/auth/admin/login', data),
+  changeTempPassword:(data) => API.post('/auth/change-temp-password', data),
 };
+
+// ── Strict GIET Email Validation (Frontend) ──────────────────────────────────
+function isValidGietEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@giet\.edu$/i;
+  return emailRegex.test(email.trim());
+}
 
 // ── Bus Endpoints ─────────────────────────────────────────────────────────────
 const BusAPI = {
@@ -109,11 +122,16 @@ const BusAPI = {
 
 // ── Route Endpoints ───────────────────────────────────────────────────────────
 const RouteAPI = {
-  getAll:    ()         => API.get('/routes'),
-  getOne:    (id)       => API.get(`/routes/${id}`),
-  create:    (data)     => API.post('/routes', data),
-  update:    (id, data) => API.put(`/routes/${id}`, data),
-  delete:    (id)       => API.delete(`/routes/${id}`),
+  getAll:      ()                     => API.get('/routes'),
+  getOne:      (id)                   => API.get(`/routes/${id}`),
+  create:      (data)                 => API.post('/routes', data),
+  update:      (id, data)             => API.put(`/routes/${id}`, data),
+  delete:      (id)                   => API.delete(`/routes/${id}`),
+  addStop:     (id, data)             => API.post(`/routes/${id}/stops`, data),
+  updateStop:  (id, stopId, data)     => API.put(`/routes/${id}/stops/${stopId}`, data),
+  deleteStop:  (id, stopId)           => API.delete(`/routes/${id}/stops/${stopId}`),
+  reorderStops:(id, stops)            => API.put(`/routes/${id}/stops/reorder`, { stops }),
+  assign:      (id, data)             => API.post(`/routes/${id}/assign`, data),
 };
 
 // ── Trip Endpoints ────────────────────────────────────────────────────────────
@@ -140,20 +158,18 @@ const StudentAPI = {
 
 // ── Driver Endpoints ───────────────────────────────────────────────────────────
 const DriverAPI = {
-  // Admin management
   getAll:        ()         => API.get('/drivers'),
   getOne:        (id)       => API.get(`/drivers/${id}`),
   create:        (data)     => API.post('/drivers', data),
   update:        (id, data) => API.put(`/drivers/${id}`, data),
   toggle:        (id)       => API.patch(`/drivers/${id}/toggle`, {}),
   delete:        (id)       => API.delete(`/drivers/${id}`),
-  // Driver self-service (Review 1)
   getMyBus:      ()         => API.get('/driver/my-bus'),
   startTrip:     (data)     => API.post('/driver/start-trip', data),
   endTrip:       ()         => API.post('/driver/end-trip', {}),
 };
 
-// ── Pickup Point Endpoints (Review 1) ─────────────────────────────────────────
+// ── Pickup Point Endpoints ────────────────────────────────────────────────────
 const PickupAPI = {
   getAll:   (params = {}) => {
     const q = Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
@@ -161,6 +177,17 @@ const PickupAPI = {
   },
   create:   (data)     => API.post('/driver/pickup-points', data),
   delete:   (id)       => API.delete(`/driver/pickup-points/${id}`),
+};
+
+// ── Geofence & Operating Area Endpoints ───────────────────────────────────────
+const GeofenceAPI = {
+  getAll:        ()         => API.get('/geofences'),
+  getOne:        (id)       => API.get(`/geofences/${id}`),
+  create:        (data)     => API.post('/geofences', data),
+  update:        (id, data) => API.put(`/geofences/${id}`, data),
+  toggle:        (id)       => API.patch(`/geofences/${id}/toggle`, {}),
+  delete:        (id)       => API.delete(`/geofences/${id}`),
+  getViolations: ()         => API.get('/geofences/violations'),
 };
 
 // ── Manager Endpoints ──────────────────────────────────────────────────────────
@@ -188,9 +215,15 @@ const FeedbackAPI = {
 
 // ── Admin Endpoints ────────────────────────────────────────────────────────────
 const AdminAPI = {
-  getStats:   ()     => API.get('/stats'),
-  getReports: ()     => API.get('/reports'),
-  getLogs:    ()     => API.get('/activity-logs'),
+  getStats:   ()           => API.get('/stats'),
+  getReports: ()           => API.get('/reports'),
+  getLogs:    ()           => API.get('/activity-logs'),
+  getUsers:   (params = {})=> {
+    const q = Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
+    return API.get(`/admin/users${q ? '?' + q : ''}`);
+  },
+  createUser: (data)       => API.post('/admin/users', data),
+  deleteUser: (id)         => API.delete(`/admin/users/${encodeURIComponent(id)}`),
 };
 
 // ── Toast Notifications ────────────────────────────────────────────────────────
@@ -307,4 +340,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Logout
   document.getElementById('logout-btn')?.addEventListener('click', Auth.logout);
+
+  // Check if first-login temporary password change is required
+  promptPasswordChangeOnFirstLogin();
 });
+
+// ── First-Login Password Change Modal ──────────────────────────────────────────
+function promptPasswordChangeOnFirstLogin() {
+  const user = Auth.getUser();
+  if (!user || !user.must_change_password) return;
+
+  // Don't show on login pages
+  if (window.location.pathname.includes('login.html') || window.location.pathname.endsWith('index.html')) return;
+
+  if (document.getElementById('temp-pwd-modal')) return;
+
+  const modalHtml = `
+    <div id="temp-pwd-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+      <div style="background:var(--bg-card, #ffffff);border:1px solid var(--border-color, #e2e8f0);border-radius:16px;padding:28px;max-width:440px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,0.3);color:var(--text-primary, #1e293b);">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="width:52px;height:52px;border-radius:50%;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 12px;">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <h3 style="margin:0 0 6px;font-size:1.25rem;font-weight:800;">Password Change Required</h3>
+          <p style="margin:0;font-size:0.85rem;color:var(--text-secondary, #64748b);">
+            You have logged in with a temporary password. For your security, please set a permanent password before continuing.
+          </p>
+        </div>
+        <form id="temp-pwd-form" onsubmit="handleTempPwdSubmit(event)">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;">Current Temporary Password</label>
+            <input type="password" id="temp-pwd-current" class="form-control" required style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color, #cbd5e1);background:var(--bg-input, #fff);color:inherit;" placeholder="Enter temporary password" />
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;">New Password (min 6 characters)</label>
+            <input type="password" id="temp-pwd-new" class="form-control" minlength="6" required style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color, #cbd5e1);background:var(--bg-input, #fff);color:inherit;" placeholder="Enter new password" />
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;">Confirm New Password</label>
+            <input type="password" id="temp-pwd-confirm" class="form-control" minlength="6" required style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color, #cbd5e1);background:var(--bg-input, #fff);color:inherit;" placeholder="Confirm new password" />
+          </div>
+          <div id="temp-pwd-err" style="color:#ef4444;font-size:0.8rem;margin-bottom:12px;display:none;"></div>
+          <button type="submit" id="temp-pwd-btn" class="btn btn-primary" style="width:100%;padding:12px;border-radius:8px;font-weight:700;">
+            Update Password & Continue
+          </button>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function handleTempPwdSubmit(e) {
+  e.preventDefault();
+  const current = document.getElementById('temp-pwd-current').value;
+  const newPwd  = document.getElementById('temp-pwd-new').value;
+  const confirm = document.getElementById('temp-pwd-confirm').value;
+  const errEl   = document.getElementById('temp-pwd-err');
+  const btn     = document.getElementById('temp-pwd-btn');
+
+  if (newPwd !== confirm) {
+    errEl.textContent = 'New passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await AuthAPI.changeTempPassword({ current_password: current, new_password: newPwd });
+    Toast.success(res.message || 'Password updated successfully!');
+    const user = Auth.getUser();
+    if (user) {
+      user.must_change_password = false;
+      localStorage.setItem('sbt_user', JSON.stringify(user));
+    }
+    const modal = document.getElementById('temp-pwd-modal');
+    if (modal) modal.remove();
+  } catch (err) {
+    errEl.textContent = err.message || 'Failed to update password.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Update Password & Continue';
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    promptPasswordChangeOnFirstLogin();
+  });
+}
