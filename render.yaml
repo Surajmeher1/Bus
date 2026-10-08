@@ -24,6 +24,8 @@ services:
         value: 2h
       - key: DB_PATH
         value: /var/data/bustrack.db
+      - key: DATABASE_URL
+        sync: false
       - key: CLIENT_URL
         sync: false
       - key: APP_URL
@@ -44,3 +46,11 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         value: Admin@123
+      - key: GPS_SIMULATION_INTERVAL
+        value: 3000
+      - key: ENABLE_GPS_SIMULATION
+        value: false
+      - key: GPS_TIMEOUT_SECONDS
+        value: 45
+      - key: ANDROID_APP_URL
+        sync: false
