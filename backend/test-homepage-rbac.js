@@ -62,6 +62,32 @@ function httpGet(path) {
   });
 }
 
+function httpPost(path, body) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify(body);
+    const req = http.request(`http://localhost:${PORT}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode, body: JSON.parse(data) });
+        } catch (_) {
+          resolve({ status: res.statusCode, body: data });
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+}
+
 // ── CDP Client Helper ───────────────────────────────────────────────────────────
 class CdpClient {
   constructor(wsUrl) {
@@ -132,16 +158,47 @@ async function runTests() {
     assert(false, `Config API request failed: ${err.message}`);
   }
 
+  // ── 1.1 Unified RBAC Login API Tests ─────────────────────────────────────────
+  console.log('\n📌 [1.1] Unified RBAC Login API (/api/v1/auth/login)');
+  try {
+    const adminRes = await httpPost('/api/v1/auth/login', { identifier: 'admin', password: 'Admin@123' });
+    assert(adminRes.status === 200, 'Admin login returns 200');
+    assert(adminRes.body.success === true, 'Admin login success is true');
+    assert(adminRes.body.user.role === 'ADMIN', 'Admin role is correctly detected as ADMIN');
+
+    const mgrRes = await httpPost('/api/v1/auth/login', { identifier: 'rajesh@university.edu', password: 'Manager@123' });
+    assert(mgrRes.status === 200, 'Manager login returns 200');
+    assert(mgrRes.body.user.role === 'MANAGER', 'Manager role is correctly detected as MANAGER');
+
+    const drvRes = await httpPost('/api/v1/auth/login', { identifier: 'rahul@driver.edu', password: 'Driver@123' });
+    assert(drvRes.status === 200, 'Driver login returns 200');
+    assert(drvRes.body.user.role === 'DRIVER', 'Driver role is correctly detected as DRIVER');
+
+    const stuRes = await httpPost('/api/v1/auth/login', { identifier: 'sneha@student.edu', password: 'Student@123' });
+    assert(stuRes.status === 200, 'Student login returns 200');
+    assert(stuRes.body.user.role === 'STUDENT', 'Student role is correctly detected as STUDENT');
+
+    const badRes = await httpPost('/api/v1/auth/login', { identifier: 'admin', password: 'WrongPassword' });
+    assert(badRes.status === 401, 'Invalid password returns 401 Unauthorized');
+
+    const missingRes = await httpPost('/api/v1/auth/login', { identifier: '' });
+    assert(missingRes.status === 400, 'Missing fields returns 400 Bad Request');
+  } catch (err) {
+    assert(false, `Unified login test failed: ${err.message}`);
+  }
+
   // ── 2. Static HTML & JS Structure Verification ───────────────────────────────
-  console.log('\n📌 [2] Static Frontend File Verification (index.html & api.js)');
+  console.log('\n📌 [2] Static Frontend File Verification (index.html, api.js, pages/auth/login.html)');
   const indexHtml = fs.readFileSync(path.join(__dirname, '../frontend/index.html'), 'utf8');
   const apiJs = fs.readFileSync(path.join(__dirname, '../frontend/assets/js/api.js'), 'utf8');
+  const unifiedLoginHtml = fs.readFileSync(path.join(__dirname, '../frontend/pages/auth/login.html'), 'utf8');
 
   assert(indexHtml.includes('id="nav-guest-actions"'), 'index.html contains #nav-guest-actions');
   assert(indexHtml.includes('id="nav-user-actions"'), 'index.html contains #nav-user-actions');
   assert(indexHtml.includes('id="nav-android-btn"'), 'index.html contains #nav-android-btn');
   assert(indexHtml.includes('id="hero-android-btn"'), 'index.html contains #hero-android-btn');
   assert(indexHtml.includes('id="login-dropdown"'), 'index.html contains #login-dropdown');
+  assert(indexHtml.includes('pages/auth/login.html'), 'index.html links to unified login page');
   assert(indexHtml.includes('Student Login') && indexHtml.includes('Driver Login') && 
          indexHtml.includes('Manager Login') && indexHtml.includes('Admin Login'), 
          'index.html contains all 4 login options');
@@ -160,6 +217,12 @@ async function runTests() {
   assert(apiJs.includes('getDashboardUrl'), 'api.js Auth defines getDashboardUrl');
   assert(apiJs.includes('getDashboardLabel'), 'api.js Auth defines getDashboardLabel');
   assert(apiJs.includes('validateSession'), 'api.js Auth defines validateSession');
+  assert(apiJs.includes('login:'), 'api.js AuthAPI exports login');
+
+  assert(unifiedLoginHtml.includes('id="identifier"'), 'pages/auth/login.html contains #identifier input');
+  assert(unifiedLoginHtml.includes('id="password"'), 'pages/auth/login.html contains #password input');
+  assert(unifiedLoginHtml.includes('AuthAPI.login'), 'pages/auth/login.html uses AuthAPI.login');
+  assert(unifiedLoginHtml.includes('Auth.redirectAfterLogin'), 'pages/auth/login.html uses Auth.redirectAfterLogin');
 
   // ── 3. Headless Chrome End-to-End Simulation ──────────────────────────────────
   console.log('\n📌 [3] Headless Chrome E2E Simulation (CDP)');
@@ -394,19 +457,43 @@ async function runTests() {
     const playStoreNavBtnText = await pageCdp.eval(`document.getElementById('nav-android-btn-text').textContent.trim()`);
     assert(playStoreNavBtnText === 'Install Android App', 'Play Store state: Nav button displays "Install Android App"');
 
-    // Fallback back to Coming Soon
-    await pageCdp.eval(`
-      appConfig = { success: true, is_available: false, android_app_url: null };
-      updateAndroidButtons();
-    `);
-    const comingSoonNavBtnText = await pageCdp.eval(`document.getElementById('nav-android-btn-text').textContent.trim()`);
-    assert(comingSoonNavBtnText === 'Android App Coming Soon', 'Fallback state: Button reverts to "Android App Coming Soon"');
+    // ── E2E Step H: Unified Login Page E2E & Auto-Redirect ──────────────────────
+    console.log('\n  👉 Testing State H: Unified Login Page (/pages/auth/login.html)');
+    await pageCdp.send('Page.navigate', { url: `http://localhost:${PORT}/pages/auth/login.html` });
+    await new Promise(r => setTimeout(r, 1500));
 
-    // Take screenshot of final verified state
-    const screenshot = await pageCdp.send('Page.captureScreenshot', { format: 'png' });
-    const screenshotPath = path.join(__dirname, 'homepage-rbac-verified.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'));
-    console.log(`  📸 Verification screenshot saved: ${screenshotPath}`);
+    const loginInpExists = await pageCdp.eval(`!!document.getElementById('identifier')`);
+    const pwdInpExists = await pageCdp.eval(`!!document.getElementById('password')`);
+    const submitBtnExists = await pageCdp.eval(`!!document.getElementById('login-btn')`);
+    assert(loginInpExists, 'Unified login page has identifier input');
+    assert(pwdInpExists, 'Unified login page has password input');
+    assert(submitBtnExists, 'Unified login page has submit button');
+    await takeScreenshot('unified-rbac-login.png');
+
+    // Test form submit with Student credentials and verify auto-redirect to student dashboard
+    await pageCdp.eval(`
+      document.getElementById('identifier').value = 'sneha@student.edu';
+      document.getElementById('password').value = 'Student@123';
+      document.getElementById('login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    `);
+    await new Promise(r => setTimeout(r, 1200));
+
+    const studentRedirectUrl = await pageCdp.eval(`window.location.href`);
+    assert(studentRedirectUrl.includes('/pages/student/dashboard.html'), 'Unified login with student credentials redirects to /pages/student/dashboard.html');
+
+    // Clear and test Admin credentials redirect to admin dashboard
+    await pageCdp.eval(`Auth.clearAuth();`);
+    await pageCdp.send('Page.navigate', { url: `http://localhost:${PORT}/pages/auth/login.html` });
+    await new Promise(r => setTimeout(r, 1500));
+    await pageCdp.eval(`
+      document.getElementById('identifier').value = 'admin';
+      document.getElementById('password').value = 'Admin@123';
+      document.getElementById('login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    `);
+    await new Promise(r => setTimeout(r, 1200));
+
+    const adminRedirectUrl = await pageCdp.eval(`window.location.href`);
+    assert(adminRedirectUrl.includes('/pages/admin/dashboard.html'), 'Unified login with admin credentials redirects to /pages/admin/dashboard.html');
 
     pageCdp.close();
     cdp.close();

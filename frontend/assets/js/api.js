@@ -189,6 +189,8 @@ const API = {
 
 // ── Auth Endpoints ────────────────────────────────────────────────────────────
 const AuthAPI = {
+  login:             (data) => API.post('/auth/login', data),
+  unifiedLogin:      (data) => API.post('/auth/login', data),
   studentLogin:      (data) => API.post('/auth/student/login', data),
   studentRegister:   (data) => API.post('/auth/student/register', data),
   driverLogin:       (data) => API.post('/auth/driver/login', data),
@@ -566,6 +568,7 @@ const NativeApp = {
 if (typeof window !== 'undefined') {
   window.NativeApp = NativeApp;
   window.Auth = Auth;
+  window.AuthAPI = AuthAPI;
   window.ROLES = ROLES;
   window.ROLE_DASHBOARDS = ROLE_DASHBOARDS;
   window.ROLE_LABELS = ROLE_LABELS;
