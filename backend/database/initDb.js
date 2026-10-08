@@ -9,18 +9,25 @@ const bcrypt = require('bcryptjs');
 const path   = require('path');
 const fs     = require('fs');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bustrack.db');
-const DB_DIR  = path.dirname(DB_PATH);
+function initDb(targetDb = null) {
+  const shouldClose = !targetDb;
+  let db = targetDb;
 
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-}
+  if (!db) {
+    const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bustrack.db');
+    const DB_DIR  = path.dirname(DB_PATH);
 
-const db = new DatabaseSync(DB_PATH);
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA foreign_keys = ON');
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
 
-console.log('🗄️  Initializing database...');
+    db = new DatabaseSync(DB_PATH);
+  }
+
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA foreign_keys = ON');
+
+  console.log('🗄️  Ensuring database tables and seeds...');
 
 // ─── SCHEMA ─────────────────────────────────────────────────────────────────
 
@@ -300,8 +307,27 @@ if (adminCount === 0) {
   console.log('   Student 1 → email: arjun@student.edu     | password: Student@123');
   console.log('   Student 2 → email: sneha@student.edu     | password: Student@123\n');
 } else {
-  console.log('ℹ️  Database already seeded, skipping...');
+    console.log('ℹ️  Database already seeded, verifying admin account...');
+    const defaultAdminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const hasAdmin = db.prepare('SELECT * FROM admins WHERE username = ?').get(defaultAdminUsername);
+    if (!hasAdmin) {
+      const hashPwd = (pwd) => bcrypt.hashSync(pwd, 10);
+      const defaultAdminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+      db.prepare(`INSERT INTO admins (username, password, email) VALUES (?, ?, ?)`)
+        .run(defaultAdminUsername, hashPwd(defaultAdminPassword), 'admin@university.edu');
+      console.log('👑 Default admin account restored successfully.');
+    }
+  }
+
+  if (shouldClose) {
+    db.close();
+  }
+  console.log('✅ Database initialization complete!');
+  return db;
 }
 
-db.close();
-console.log('✅ Database initialization complete!');
+if (require.main === module) {
+  initDb();
+}
+
+module.exports = { initDb };

@@ -213,7 +213,21 @@
         throw new Error(data.message || 'Authentication failed. Please verify credentials.');
       }
     } catch (err) {
-      errEl.textContent = err.message || 'Invalid credentials. Please try again.';
+      let msg = 'Invalid username or password.';
+      if (err.status === 401) {
+        msg = 'Invalid username or password.';
+      } else if (err.status === 403) {
+        msg = 'You do not have permission to access this portal.';
+      } else if (err.status === 404) {
+        msg = 'Login service not found.';
+      } else if (err.status >= 500) {
+        msg = 'Server error. Please try again later.';
+      } else if (err.status === 0 || (err.message && err.message.toLowerCase().includes('connect'))) {
+        msg = 'Unable to connect to the server.';
+      } else if (err.message) {
+        msg = err.message;
+      }
+      errEl.textContent = msg;
       errEl.style.display = 'block';
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In to Portal';

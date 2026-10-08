@@ -20,8 +20,12 @@ try {
   db.exec('PRAGMA foreign_keys = ON');
   db.exec('PRAGMA synchronous = NORMAL');
   console.log('✅ SQLite database connected:', DB_PATH);
+
+  // Auto-initialize schema & seed demo users on startup if tables/data are missing
+  const { initDb } = require('../database/initDb');
+  initDb(db);
 } catch (err) {
-  console.error('❌ Database connection failed:', err.message);
+  console.error('❌ Database connection/initialization failed:', err.message);
   process.exit(1);
 }
 

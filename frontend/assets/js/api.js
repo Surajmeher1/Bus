@@ -184,10 +184,30 @@ async function apiFetch(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      const err = new Error(data.message || `Request failed (${response.status})`);
+      let defaultMessage = `Request failed (${response.status})`;
+      if (response.status === 401) {
+        defaultMessage = 'Invalid username or password.';
+      } else if (response.status === 403) {
+        defaultMessage = 'You do not have permission to access this portal.';
+      } else if (response.status === 404) {
+        defaultMessage = 'Login service not found.';
+      } else if (response.status >= 500) {
+        defaultMessage = 'Server error. Please try again later.';
+      }
+
+      // Use backend message if clean, otherwise fallback to status-mapped message
+      const message = (data && data.message && response.status < 500) ? data.message : defaultMessage;
+      const err = new Error(message);
       err.status = response.status;
       err.data = data;
-      if (response.status === 401) {
+
+      const isAuthEndpoint = endpoint.startsWith('/auth/login') ||
+        endpoint.startsWith('/auth/student/login') ||
+        endpoint.startsWith('/auth/driver/login') ||
+        endpoint.startsWith('/auth/manager/login') ||
+        endpoint.startsWith('/auth/admin/login');
+
+      if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined' && !window.location.pathname.includes('login')) {
         Auth.clearAuth();
         setTimeout(() => { window.location.href = '/index.html'; }, 2000);
       }
@@ -197,7 +217,9 @@ async function apiFetch(endpoint, options = {}) {
     return data;
   } catch (err) {
     if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Please ensure the backend is running.');
+      const netErr = new Error('Unable to connect to the server.');
+      netErr.status = 0;
+      throw netErr;
     }
     throw err;
   }
