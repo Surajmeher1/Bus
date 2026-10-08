@@ -491,3 +491,31 @@ if (typeof document !== 'undefined') {
     promptPasswordChangeOnFirstLogin();
   });
 }
+
+// ── PWA Service Worker Registration ──────────────────────────────────────────
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        // Registered successfully
+      })
+      .catch(err => {
+        // Handled silently
+      });
+  });
+}
+
+// ── Native Mobile / Capacitor Environment Detection ──────────────────────────
+const NativeApp = {
+  isNative: () => typeof window !== 'undefined' && (!!window.Capacitor || !!window.AndroidBridge || navigator.userAgent.includes('SmartBusAndroid')),
+  getPlatform: () => {
+    if (typeof window !== 'undefined' && window.Capacitor?.getPlatform) {
+      return window.Capacitor.getPlatform();
+    }
+    return /android/i.test(navigator.userAgent) ? 'android' : 'web';
+  }
+};
+if (typeof window !== 'undefined') {
+  window.NativeApp = NativeApp;
+}
+

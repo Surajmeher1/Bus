@@ -112,7 +112,7 @@ async function runTests() {
     const manager1 = db.prepare('SELECT manager_id as id, name, email FROM managers WHERE manager_id = 1').get();
     const manager2 = db.prepare('SELECT manager_id as id, name, email FROM managers WHERE manager_id = 2').get();
     const driver1 = db.prepare('SELECT driver_id as id, name, email FROM drivers WHERE driver_id = 1').get();
-    const student1 = db.prepare('SELECT student_id as id, name, email FROM students WHERE student_id = 1').get();
+    const student1 = db.prepare('SELECT student_id as id, name, email FROM students ORDER BY student_id ASC LIMIT 1').get();
 
     const adminToken = createToken({ id: adminUser.id, role: ROLES.ADMIN, username: adminUser.username });
     const manager1Token = createToken({ id: manager1.id, role: ROLES.MANAGER, email: manager1.email });

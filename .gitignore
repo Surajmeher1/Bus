@@ -92,3 +92,15 @@ temp/
 *.tmp
 *.bak
 *.orig
+
+# ─── Android & Mobile Build Artifacts ────────────────────────
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+local.properties
+captures/
+*.apk
+*.aab
+.cxx/
+

@@ -1,0 +1,32 @@
+{
+  "name": "smart-university-bus-tracking-system",
+  "version": "2.0.0",
+  "description": "Smart University Bus Tracking System - Web and Android Hybrid Application",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
+    "test:rbac": "cd backend && node --experimental-sqlite test-rbac.js",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "cap:copy": "npx cap copy android"
+  },
+  "keywords": [
+    "bus-tracking",
+    "real-time",
+    "gps",
+    "pwa",
+    "android",
+    "capacitor",
+    "rbac"
+  ],
+  "author": "GIET University",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/geolocation": "^6.1.0",
+    "@capacitor/local-notifications": "^6.1.0"
+  }
+}

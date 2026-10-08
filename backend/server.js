@@ -6,6 +6,8 @@ const cors = require('cors');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const compression = require('compression');
+const helmet = require('helmet');
 const { activityLogger } = require('./middleware/auth');
 
 // ── Initialize DB ─────────────────────────────────────────────────────────────
@@ -14,6 +16,25 @@ const db = require('./config/db');
 // ── Express App ───────────────────────────────────────────────────────────────
 const app = express();
 const server = http.createServer(app);
+
+// ── Compression & Production Security Headers ──────────────────────────────────
+app.use(compression());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://unpkg.com", "https://images.unsplash.com"],
+        connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+        workerSrc: ["'self'", "blob:"]
+      }
+    },
+    crossOriginEmbedderPolicy: false
+  })
+);
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
 const io = new Server(server, {
