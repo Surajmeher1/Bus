@@ -3,36 +3,163 @@
  * Centralized fetch wrapper with JWT injection, error handling & auth redirect
  */
 
-const API_BASE = 'http://localhost:5000/api/v1';
+/**
+ * Resolves the API base URL dynamically:
+ * 1. window.__APP_CONFIG__.API_BASE (if defined)
+ * 2. If running via local file:// protocol -> http://localhost:5000/api/v1
+ * 3. If running on dev live-server (e.g. port 5500, 3000) -> http://localhost:5000/api/v1
+ * 4. Production or same-origin backend -> `${window.location.origin}/api/v1`
+ */
+function resolveApiBase() {
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE) {
+    return window.__APP_CONFIG__.API_BASE.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.protocol === 'file:') {
+      return 'http://localhost:5000/api/v1';
+    }
+    const isDevPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      window.location.port && window.location.port !== '5000';
+    if (isDevPort) {
+      return 'http://localhost:5000/api/v1';
+    }
+    return `${window.location.origin}/api/v1`;
+  }
+  return 'http://localhost:5000/api/v1';
+}
+
+const API_BASE = resolveApiBase();
+
+// ── RBAC Role Definitions & Portal Mappings ───────────────────────────────────
+const ROLES = Object.freeze({
+  ADMIN: 'ADMIN',
+  MANAGER: 'MANAGER',
+  DRIVER: 'DRIVER',
+  STUDENT: 'STUDENT'
+});
+
+const ROLE_DASHBOARDS = Object.freeze({
+  ADMIN: '/pages/admin/dashboard.html',
+  MANAGER: '/pages/manager/dashboard.html',
+  DRIVER: '/pages/driver/dashboard.html',
+  STUDENT: '/pages/student/dashboard.html'
+});
+
+const ROLE_LABELS = Object.freeze({
+  ADMIN: 'Admin',
+  MANAGER: 'Manager',
+  DRIVER: 'Driver',
+  STUDENT: 'Student'
+});
+
+const ROLE_DASHBOARD_LABELS = Object.freeze({
+  ADMIN: 'Admin Dashboard',
+  MANAGER: 'Manager Dashboard',
+  DRIVER: 'Driver Dashboard',
+  STUDENT: 'Student Dashboard'
+});
+
+function normalizeRole(role) {
+  if (!role || typeof role !== 'string') return '';
+  return role.trim().toUpperCase();
+}
 
 // ── Token Management ─────────────────────────────────────────────────────────
 const Auth = {
-  getToken:  ()      => localStorage.getItem('sbt_token'),
-  getUser:   ()      => JSON.parse(localStorage.getItem('sbt_user') || 'null'),
-  setAuth:   (token, user) => {
+  getToken: () => localStorage.getItem('sbt_token'),
+  getUser:  () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('sbt_user') || 'null');
+      if (u && u.role) {
+        u.role = normalizeRole(u.role);
+      }
+      return u;
+    } catch (_) {
+      return null;
+    }
+  },
+  setAuth: (token, user) => {
     localStorage.setItem('sbt_token', token);
-    localStorage.setItem('sbt_user', JSON.stringify(user));
+    const normalizedUser = user ? { ...user, role: normalizeRole(user.role) } : null;
+    localStorage.setItem('sbt_user', JSON.stringify(normalizedUser));
   },
   clearAuth: () => {
     localStorage.removeItem('sbt_token');
     localStorage.removeItem('sbt_user');
   },
   isLoggedIn: () => !!localStorage.getItem('sbt_token'),
-  getRole:    () => {
-    const user = JSON.parse(localStorage.getItem('sbt_user') || 'null');
-    return user?.role || null;
+  getRole: () => {
+    const user = Auth.getUser();
+    return user?.role ? normalizeRole(user.role) : null;
   },
-  redirectIfNotRole: (role) => {
-    const user = JSON.parse(localStorage.getItem('sbt_user') || 'null');
-    if (!user || user.role !== role) {
+  hasRole: (requiredRole) => {
+    const userRole = Auth.getRole();
+    return userRole === normalizeRole(requiredRole);
+  },
+  redirectAfterLogin: (user) => {
+    const role = normalizeRole(user?.role || Auth.getRole());
+    const target = ROLE_DASHBOARDS[role] || '/index.html';
+    window.location.href = target;
+  },
+  redirectIfNotRole: (requiredRole) => {
+    const user = Auth.getUser();
+    const token = Auth.getToken();
+    if (!token || !user) {
+      Auth.clearAuth();
       window.location.href = '/index.html';
+      return;
     }
+    const currentRole = normalizeRole(user.role);
+    const targetRole = normalizeRole(requiredRole);
+    if (currentRole !== targetRole) {
+      console.warn(`[RBAC] Access denied for role '${currentRole}'. Required: '${targetRole}'. Redirecting...`);
+      const fallbackUrl = ROLE_DASHBOARDS[currentRole] || '/index.html';
+      window.location.href = fallbackUrl;
+    }
+  },
+  checkAlreadyLoggedInAndRedirect: () => {
+    if (Auth.isLoggedIn()) {
+      const role = Auth.getRole();
+      if (role && ROLE_DASHBOARDS[role]) {
+        window.location.href = ROLE_DASHBOARDS[role];
+      }
+    }
+  },
+  getDashboardUrl: (role) => {
+    const r = normalizeRole(role || Auth.getRole());
+    return ROLE_DASHBOARDS[r] || '/index.html';
+  },
+  getDashboardLabel: (role) => {
+    const r = normalizeRole(role || Auth.getRole());
+    return ROLE_DASHBOARD_LABELS[r] || 'Dashboard';
+  },
+  getRoleLabel: (role) => {
+    const r = normalizeRole(role || Auth.getRole());
+    return ROLE_LABELS[r] || r || 'User';
+  },
+  validateSession: async () => {
+    const token = Auth.getToken();
+    if (!token) return null;
+    try {
+      const res = await API.get('/auth/me');
+      if (res && res.success && res.user) {
+        Auth.setAuth(token, res.user);
+        return res.user;
+      }
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        Auth.clearAuth();
+        return null;
+      }
+    }
+    return Auth.getUser();
   },
   logout: () => {
     Auth.clearAuth();
     window.location.href = '/index.html';
   }
 };
+
 
 // ── HTTP Client ──────────────────────────────────────────────────────────────
 async function apiFetch(endpoint, options = {}) {
@@ -87,6 +214,8 @@ const API = {
 
 // ── Auth Endpoints ────────────────────────────────────────────────────────────
 const AuthAPI = {
+  login:             (data) => API.post('/auth/login', data),
+  unifiedLogin:      (data) => API.post('/auth/login', data),
   studentLogin:      (data) => API.post('/auth/student/login', data),
   studentRegister:   (data) => API.post('/auth/student/register', data),
   driverLogin:       (data) => API.post('/auth/driver/login', data),
@@ -211,6 +340,11 @@ const FeedbackAPI = {
   getMy:     ()       => API.get('/feedback/my'),
   getByBus:  (busId)  => API.get(`/feedback/bus/${busId}`),
   getAll:    ()       => API.get('/feedback'),
+};
+
+// ── App & Platform Configuration Endpoints ─────────────────────────────────────
+const ConfigAPI = {
+  getAppConfig: () => API.get('/config/app')
 };
 
 // ── Admin Endpoints ────────────────────────────────────────────────────────────
@@ -432,3 +566,38 @@ if (typeof document !== 'undefined') {
     promptPasswordChangeOnFirstLogin();
   });
 }
+
+// ── PWA Service Worker Registration ──────────────────────────────────────────
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        // Registered successfully
+      })
+      .catch(err => {
+        // Handled silently
+      });
+  });
+}
+
+// ── Native Mobile / Capacitor Environment Detection ──────────────────────────
+const NativeApp = {
+  isNative: () => typeof window !== 'undefined' && (!!window.Capacitor || !!window.AndroidBridge || navigator.userAgent.includes('SmartBusAndroid')),
+  getPlatform: () => {
+    if (typeof window !== 'undefined' && window.Capacitor?.getPlatform) {
+      return window.Capacitor.getPlatform();
+    }
+    return /android/i.test(navigator.userAgent) ? 'android' : 'web';
+  }
+};
+if (typeof window !== 'undefined') {
+  window.NativeApp = NativeApp;
+  window.Auth = Auth;
+  window.AuthAPI = AuthAPI;
+  window.ROLES = ROLES;
+  window.ROLE_DASHBOARDS = ROLE_DASHBOARDS;
+  window.ROLE_LABELS = ROLE_LABELS;
+  window.ROLE_DASHBOARD_LABELS = ROLE_DASHBOARD_LABELS;
+  window.ConfigAPI = ConfigAPI;
+}
+

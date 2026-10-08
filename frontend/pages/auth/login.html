@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In — Smart University Bus Tracking System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../assets/css/main.css"/>
+  <style>
+    .role-pills-row {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .role-indicator-pill {
+      font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em;
+      padding: 4px 10px; border-radius: 99px; display: inline-flex;
+      align-items: center; gap: 5px;
+    }
+    .role-indicator-pill.student { background: rgba(34,197,94,0.12); color: #16a34a; }
+    .role-indicator-pill.driver  { background: rgba(16,185,129,0.12); color: #059669; }
+    .role-indicator-pill.manager { background: rgba(245,158,11,0.12); color: #d97706; }
+    .role-indicator-pill.admin   { background: rgba(239,68,68,0.12); color: #dc2626; }
+    .unified-brand-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.35rem; color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+    }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <!-- Left Brand Column -->
+  <div class="auth-left">
+    <div class="auth-illustration">
+      <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.15); padding:6px 14px; border-radius:99px; margin-bottom:16px; font-size:0.8rem; font-weight:700;">
+        <i class="fa-solid fa-shield-halved" style="color:#22c55e;"></i> Role-Based Access Control (RBAC)
+      </div>
+      <h1 class="auth-hero-title">Unified Campus Mobility &amp; Transit System</h1>
+      <p class="auth-hero-sub">One secure entrance for all university transit members — students, drivers, fleet managers, and administrators.</p>
+
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(34,197,94,0.2);">
+          <i class="fa-solid fa-graduation-cap" style="color:#22c55e;"></i>
+        </div>
+        <div>
+          <strong style="color:white; display:block; font-size:0.9rem;">Students</strong>
+          <span>Live GPS bus tracking, estimated arrival times, and seat vacancy alerts.</span>
+        </div>
+      </div>
+
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(16,185,129,0.2);">
+          <i class="fa-solid fa-bus" style="color:#10b981;"></i>
+        </div>
+        <div>
+          <strong style="color:white; display:block; font-size:0.9rem;">Bus Drivers</strong>
+          <span>Mobile GPS coordinate broadcasting, active trip management, and pickup stops.</span>
+        </div>
+      </div>
+
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(245,158,11,0.2);">
+          <i class="fa-solid fa-clipboard-check" style="color:#f59e0b;"></i>
+        </div>
+        <div>
+          <strong style="color:white; display:block; font-size:0.9rem;">Fleet Managers</strong>
+          <span>Assigned vehicle supervision, delay updates, and route coordination.</span>
+        </div>
+      </div>
+
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(239,68,68,0.2);">
+          <i class="fa-solid fa-user-shield" style="color:#ef4444;"></i>
+        </div>
+        <div>
+          <strong style="color:white; display:block; font-size:0.9rem;">Administrators</strong>
+          <span>Central user provisioning, campus alerts, analytics, and security audit logs.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Form Column -->
+  <div class="auth-right">
+    <div class="auth-brand">
+      <div class="unified-brand-icon">🚌</div>
+      <div>
+        <div class="auth-brand-name">Smart Bus Tracker</div>
+        <div class="auth-brand-sub">Universal RBAC Sign In</div>
+      </div>
+    </div>
+
+    <h2 class="auth-title">Sign In to Your Account</h2>
+    <p class="auth-subtitle">Enter your university credentials. Your authorized dashboard will open automatically.</p>
+
+    <!-- Role Detection Badges -->
+    <div class="role-pills-row">
+      <span class="role-indicator-pill student"><i class="fa-solid fa-check"></i> Student</span>
+      <span class="role-indicator-pill driver"><i class="fa-solid fa-check"></i> Driver</span>
+      <span class="role-indicator-pill manager"><i class="fa-solid fa-check"></i> Manager</span>
+      <span class="role-indicator-pill admin"><i class="fa-solid fa-check"></i> Admin</span>
+    </div>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="identifier">University ID, Email, or Username</label>
+        <div class="input-group">
+          <i class="fa-solid fa-id-card input-icon"></i>
+          <input
+            id="identifier"
+            type="text"
+            class="form-control"
+            placeholder="e.g. GIET-STU-0001, name@giet.edu, or admin"
+            required
+            autocomplete="username"
+            autofocus
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input
+            id="password"
+            type="password"
+            class="form-control"
+            placeholder="Enter your account password"
+            required
+            autocomplete="current-password"
+          />
+          <i class="fa-solid fa-eye input-toggle" id="pw-toggle" onclick="togglePw()" title="Toggle password visibility"></i>
+        </div>
+      </div>
+
+      <div id="error-msg" class="form-error" style="display:none; margin-bottom:16px;"></div>
+
+      <button type="submit" class="btn btn-primary btn-lg w-full" id="login-btn">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In to Portal
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <div style="margin-bottom:12px;">
+        <a href="../../index.html" style="color:var(--text-muted); font-size:0.8125rem;">
+          <i class="fa-solid fa-arrow-left"></i> Back to Homepage
+        </a>
+      </div>
+
+      <div style="margin-bottom:12px; font-size:0.85rem; color:var(--text-secondary);">
+        New student at GIET? <a href="../student/register.html" style="color:var(--primary); font-weight:600;">Create Student Account</a>
+      </div>
+
+      <!-- Demo Accounts Quick Reference -->
+      <div style="margin-top:14px; padding:12px; background:var(--bg-base); border-radius:var(--radius-md); font-size:0.775rem; color:var(--text-muted); border:1px solid var(--border-color); text-align:left;">
+        <strong style="color:var(--text-primary); display:block; margin-bottom:4px;">Demo Credentials:</strong>
+        <div>• <b>Admin:</b> <code>admin</code> / <code>Admin@123</code></div>
+        <div>• <b>Manager:</b> <code>rajesh@university.edu</code> / <code>Manager@123</code></div>
+        <div>• <b>Driver:</b> <code>rahul@driver.edu</code> / <code>Driver@123</code></div>
+        <div>• <b>Student:</b> <code>sneha@student.edu</code> / <code>Student@123</code></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="../../assets/js/api.js"></script>
+<script>
+  Theme.init();
+  Auth.checkAlreadyLoggedInAndRedirect();
+
+  function togglePw() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    document.getElementById('pw-toggle').className = `fa-solid fa-eye${inp.type === 'text' ? '-slash' : ''} input-toggle`;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('error-msg');
+    const identifier = document.getElementById('identifier').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!identifier || !password) {
+      errEl.textContent = 'Please enter your username/email and password.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Authenticating...';
+
+    try {
+      const data = await AuthAPI.login({
+        identifier: identifier,
+        password: password
+      });
+
+      if (data && data.success && data.token) {
+        Auth.setAuth(data.token, data.user);
+        const roleLabel = Auth.getRoleLabel(data.user.role);
+        const name = data.user.name || data.user.username || 'User';
+        Toast.success(`Welcome back, ${name}! Redirecting to ${roleLabel} Dashboard...`);
+
+        setTimeout(() => {
+          Auth.redirectAfterLogin(data.user);
+        }, 600);
+      } else {
+        throw new Error(data.message || 'Authentication failed. Please verify credentials.');
+      }
+    } catch (err) {
+      errEl.textContent = err.message || 'Invalid credentials. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In to Portal';
+    }
+  });
+</script>
+</body>
+</html>

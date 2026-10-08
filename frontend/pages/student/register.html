@@ -153,8 +153,9 @@
       if (data.success) {
         Auth.setAuth(data.token, data.user);
         Toast.success('Account created successfully! Redirecting...');
-        setTimeout(() => window.location.href = 'dashboard.html', 800);
+        setTimeout(() => Auth.redirectAfterLogin(data.user), 800);
       }
+
     } catch (err) {
       errEl.textContent = err.message || 'Registration failed. Please try again.';
       errEl.style.display = 'block';

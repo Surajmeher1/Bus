@@ -25,6 +25,7 @@ const startTrip = (req, res) => {
     if (req.io) {
       req.io.emit('bus-status-change', { bus_id: parseInt(bus_id), status: 'running' });
     }
+    req.logActivity?.('TRIP_STARTED', `Trip #${result.lastInsertRowid} started for bus #${bus_id}`);
     res.status(201).json({ success: true, message: 'Trip started.', trip_id: result.lastInsertRowid });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -40,11 +41,13 @@ const endTrip = (req, res) => {
     if (req.io) {
       req.io.emit('bus-status-change', { bus_id: trip.bus_id, status: 'inactive' });
     }
+    req.logActivity?.('TRIP_COMPLETED', `Trip #${req.params.id} ended on bus #${trip.bus_id}`);
     res.json({ success: true, message: 'Trip ended.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 const getTripHistory = (req, res) => {
   try {

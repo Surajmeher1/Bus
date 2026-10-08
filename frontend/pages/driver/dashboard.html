@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="description" content="Bus Driver Dashboard — Smart Bus Tracking System"/>
   <title>Driver Dashboard — Smart Bus Tracker</title>
+  <meta name="theme-color" content="#047857" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/bus-icon.svg" />
+  <link rel="apple-touch-icon" href="/assets/icons/bus-icon.svg" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -468,9 +474,12 @@ async function loadRoutes() {
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
 function connectSocket() {
-  const socketUrl = (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.port !== '5500')
-    ? `${window.location.protocol}//${window.location.hostname}:5000`
-    : 'http://localhost:5000';
+  const socketUrl = (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.SOCKET_URL)
+    ? window.__APP_CONFIG__.SOCKET_URL.replace(/\/+$/, '')
+    : (typeof window !== 'undefined' && window.location && window.location.protocol !== 'file:' &&
+       !((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '5000'))
+      ? window.location.origin
+      : 'http://localhost:5000';
   socket = io(socketUrl, { transports: ['websocket', 'polling'] });
   socket.on('connect', () => console.log('🔌 Socket connected'));
   socket.on('driver:trip-started', (data) => {
@@ -512,6 +521,9 @@ async function startTrip() {
   // Notify socket that driver started
   socket.emit('driver:start-trip', { token, busId: busData.bus_id });
 
+  // Keep driver phone screen awake during active GPS tracking
+  requestWakeLock();
+
   // Request GPS — this shows the browser permission prompt
   watchId = navigator.geolocation.watchPosition(
     onGpsSuccess,
@@ -520,6 +532,23 @@ async function startTrip() {
   );
 
   setTripActiveUI(true, false);
+}
+
+let wakeLockSentinel = null;
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+    } catch (_) {}
+  }
+}
+function releaseWakeLock() {
+  if (wakeLockSentinel) {
+    try {
+      wakeLockSentinel.release();
+    } catch (_) {}
+    wakeLockSentinel = null;
+  }
 }
 
 function onGpsSuccess(position) {
@@ -590,6 +619,9 @@ function showGpsError(message) {
 
 // ── END TRIP ──────────────────────────────────────────────────────────────────
 async function endTrip(skipApi = false) {
+  // Release screen wakelock
+  releaseWakeLock();
+
   // Stop GPS
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);

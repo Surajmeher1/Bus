@@ -1,10 +1,32 @@
 /**
  * Socket.IO Client Wrapper — Real-time Bus Tracking
  */
+/**
+ * Resolves the Socket.IO server URL dynamically:
+ * 1. window.__APP_CONFIG__.SOCKET_URL (if defined)
+ * 2. If running via local file:// protocol -> http://localhost:5000
+ * 3. If running on dev live-server (e.g. port 5500, 3000) -> http://localhost:5000
+ * 4. Production or same-origin backend -> window.location.origin (e.g. https://your-domain.onrender.com)
+ */
+function resolveSocketUrl() {
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.SOCKET_URL) {
+    return window.__APP_CONFIG__.SOCKET_URL.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.protocol === 'file:') {
+      return 'http://localhost:5000';
+    }
+    const isDevPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      window.location.port && window.location.port !== '5000';
+    if (isDevPort) {
+      return 'http://localhost:5000';
+    }
+    return window.location.origin;
+  }
+  return 'http://localhost:5000';
+}
 
-const SOCKET_URL = (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.port !== '5500')
-  ? `${window.location.protocol}//${window.location.hostname}:5000`
-  : 'http://localhost:5000';
+const SOCKET_URL = resolveSocketUrl();
 
 let socket = null;
 const busMarkers    = {}; // { busId: L.Marker }
