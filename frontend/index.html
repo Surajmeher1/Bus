@@ -246,6 +246,139 @@
       .steps-grid::before { display: none; }
       .footer-grid { grid-template-columns: 1fr; }
     }
+
+    /* ── Android Button & RBAC Nav Styles ── */
+    .btn-android {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: white !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .btn-android:hover {
+      background: linear-gradient(135deg, #059669, #047857) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+    .btn-android:active { transform: translateY(0); }
+
+    /* Login Dropdown */
+    .login-dropdown { position: relative; display: inline-block; }
+    .login-dropdown-menu {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      min-width: 210px; background: #ffffff; border-radius: 14px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.2); border: 1px solid rgba(0,0,0,0.08);
+      overflow: hidden; z-index: 1000; padding: 6px;
+    }
+    [data-theme="dark"] .login-dropdown-menu {
+      background: #0f172a; border-color: rgba(255,255,255,0.12); box-shadow: 0 14px 40px rgba(0,0,0,0.6);
+    }
+    .login-dropdown-menu.show { display: block; animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes dropdownFade {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      font-size: 0.875rem; font-weight: 600; color: var(--text-primary);
+      border-radius: 8px; text-decoration: none; transition: background 0.15s;
+    }
+    .dropdown-item:hover { background: var(--primary-50); color: var(--primary-700); }
+    [data-theme="dark"] .dropdown-item:hover { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .role-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .role-dot.student { background: #22c55e; }
+    .role-dot.driver  { background: #10b981; }
+    .role-dot.manager { background: #f59e0b; }
+    .role-dot.admin   { background: #ef4444; }
+
+    /* User Greeting Pill in Navbar */
+    .user-greeting-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+      padding: 5px 12px; border-radius: 99px; backdrop-filter: blur(8px);
+    }
+    .nav.scrolled .user-greeting-pill {
+      background: var(--bg-surface); border-color: var(--border-color);
+    }
+    .role-tag {
+      font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.05em;
+      padding: 2px 8px; border-radius: 99px; background: #3b82f6; color: white;
+    }
+    .role-tag.ADMIN   { background: #ef4444; }
+    .role-tag.MANAGER { background: #f59e0b; }
+    .role-tag.DRIVER  { background: #10b981; }
+    .role-tag.STUDENT { background: #22c55e; }
+    .user-name-text { font-size: 0.85rem; font-weight: 600; color: white; }
+    .nav.scrolled .user-name-text { color: var(--text-primary); }
+
+    /* Hero User Panel */
+    .hero-user-panel {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 20px; padding: 24px; backdrop-filter: blur(12px);
+      max-width: 560px;
+    }
+    .hero-user-banner { display: flex; align-items: center; gap: 14px; }
+    .hero-user-heading { font-size: 1.25rem; font-weight: 800; color: white; }
+    .hero-user-sub { font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 2px; }
+    .hero-other-portals { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 10px; }
+    .hero-sub-btn { font-size: 0.875rem !important; padding: 10px 16px !important; }
+
+    /* Android App Modal */
+    .custom-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px); z-index: 10000; display: flex;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .custom-modal-card {
+      background: var(--bg-surface); border-radius: 24px; padding: 32px;
+      max-width: 480px; width: 100%; box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      border: 1px solid var(--border-color); position: relative; text-align: center;
+    }
+    .modal-close-btn {
+      position: absolute; top: 16px; right: 16px; background: none; border: none;
+      font-size: 1.25rem; color: var(--text-secondary); cursor: pointer; padding: 4px;
+    }
+    .modal-close-btn:hover { color: var(--text-primary); }
+    .android-modal-icon {
+      width: 64px; height: 64px; border-radius: 20px;
+      background: linear-gradient(135deg, #10b981, #059669); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin: 0 auto 16px; box-shadow: 0 8px 24px rgba(16,185,129,0.35);
+    }
+    .android-modal-title { font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+    .android-modal-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+      border-radius: 99px; background: #fef3c7; color: #b45309;
+      font-size: 0.75rem; font-weight: 700; margin-bottom: 14px;
+    }
+    .android-modal-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px; }
+    .android-modal-box {
+      background: var(--gray-50); border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 16px; text-align: left; margin-bottom: 16px;
+    }
+    .android-box-item { display: flex; gap: 12px; margin-bottom: 12px; font-size: 0.8125rem; }
+    .android-box-item:last-child { margin-bottom: 0; }
+    .android-box-item i { color: #10b981; font-size: 1.1rem; margin-top: 2px; }
+    .android-box-item strong { display: block; color: var(--text-primary); margin-bottom: 2px; }
+    .android-box-item span { color: var(--text-secondary); }
+    .android-pwa-tip {
+      font-size: 0.8125rem; color: var(--text-secondary); background: rgba(59,130,246,0.08);
+      border-radius: 12px; padding: 10px 14px; display: flex; align-items: center;
+      gap: 10px; text-align: left; margin-bottom: 20px;
+    }
+
+    @media (max-width: 640px) {
+      .nav { padding: 12px 16px; }
+      .user-greeting-pill { display: none; }
+      .hide-mobile { display: none !important; }
+      #nav-android-btn span { display: none; }
+      .hero-sub-btn { flex: 1; text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -260,14 +393,56 @@
   </div>
   <div class="nav-links">
     <a href="#features" class="nav-link-item">Features</a>
-    <a href="#portals" class="nav-link-item">Portals</a>
+    <a href="#portals" class="nav-link-item" id="nav-portals-link">Portals</a>
     <a href="#how" class="nav-link-item">How It Works</a>
   </div>
-  <div class="nav-actions">
+  <div class="nav-actions" id="nav-actions">
     <button id="theme-toggle" class="theme-toggle" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;" title="Toggle Theme">
       <i class="fa-solid fa-moon"></i>
     </button>
-    <a href="pages/student/login.html" class="btn btn-white btn-sm">Student Login</a>
+
+    <!-- Public / Logged-Out Actions -->
+    <div id="nav-guest-actions" style="display:flex; align-items:center; gap:8px;">
+      <!-- Android App Install Button (Visible ONLY when logged out) -->
+      <button id="nav-android-btn" class="btn btn-android btn-sm" onclick="handleAndroidAppClick()" title="Install Android App">
+        <i class="fa-brands fa-android"></i> <span id="nav-android-btn-text">Install Android App</span>
+      </button>
+
+      <!-- Login Portals Dropdown Menu -->
+      <div class="login-dropdown" id="login-dropdown">
+        <button class="btn btn-white btn-sm" id="login-dropdown-btn" onclick="toggleLoginDropdown(event)">
+          <i class="fa-solid fa-right-to-bracket"></i> <span>Login</span> <i class="fa-solid fa-chevron-down" style="font-size:0.65rem;margin-left:4px;"></i>
+        </button>
+        <div class="login-dropdown-menu" id="login-dropdown-menu">
+          <a href="pages/student/login.html" class="dropdown-item">
+            <span class="role-dot student"></span> Student Login
+          </a>
+          <a href="pages/driver/login.html" class="dropdown-item">
+            <span class="role-dot driver"></span> Driver Login
+          </a>
+          <a href="pages/manager/login.html" class="dropdown-item">
+            <span class="role-dot manager"></span> Manager Login
+          </a>
+          <a href="pages/admin/login.html" class="dropdown-item">
+            <span class="role-dot admin"></span> Admin Login
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Authenticated / Logged-In Actions (Visible ONLY when logged in) -->
+    <div id="nav-user-actions" style="display:none; align-items:center; gap:8px;">
+      <div class="user-greeting-pill">
+        <span class="role-tag" id="nav-user-role-badge">STUDENT</span>
+        <span class="user-name-text" id="nav-user-name">User</span>
+      </div>
+      <a id="nav-dashboard-btn" href="#" class="btn btn-white btn-sm">
+        <i class="fa-solid fa-gauge-high"></i> <span id="nav-dashboard-btn-text">Dashboard</span>
+      </a>
+      <button class="btn btn-outline btn-sm" id="nav-logout-btn" onclick="handleLogout()" style="border-color:rgba(255,255,255,0.4);color:white;" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span class="hide-mobile">Logout</span>
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -287,18 +462,50 @@
       </h1>
       <p class="hero-subtitle">
         Real-time GPS tracking, live ETAs, seat availability, and instant notifications — 
-        all in one platform for students, managers, and administrators.
+        all in one platform for students, drivers, managers, and administrators.
       </p>
-      <div class="hero-actions">
-        <a href="pages/student/login.html" class="btn btn-white btn-lg">
-          <i class="fa-solid fa-graduation-cap"></i> Student Portal
-        </a>
-        <a href="pages/driver/login.html" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,0.4);color:white;">
-          <i class="fa-solid fa-bus"></i> Driver Portal
-        </a>
-        <a href="pages/admin/login.html" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,0.4);color:white;">
-          <i class="fa-solid fa-user-shield"></i> Admin
-        </a>
+
+      <!-- Hero Actions Container -->
+      <div class="hero-actions-container" style="margin-bottom: 24px;">
+        <!-- Public / Logged-Out Actions -->
+        <div id="hero-guest-actions" class="hero-actions">
+          <a href="pages/student/login.html" class="btn btn-white btn-lg">
+            <i class="fa-solid fa-graduation-cap"></i> Student Login
+          </a>
+          <button id="hero-android-btn" class="btn btn-android btn-lg" onclick="handleAndroidAppClick()">
+            <i class="fa-brands fa-android"></i> <span id="hero-android-btn-text">Install Android App</span>
+          </button>
+          <div class="hero-other-portals">
+            <a href="pages/driver/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
+              <i class="fa-solid fa-bus"></i> Driver Login
+            </a>
+            <a href="pages/manager/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
+              <i class="fa-solid fa-clipboard-check"></i> Manager Login
+            </a>
+            <a href="pages/admin/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
+              <i class="fa-solid fa-user-shield"></i> Admin Login
+            </a>
+          </div>
+        </div>
+
+        <!-- Authenticated / Logged-In User Panel -->
+        <div id="hero-user-actions" style="display:none;" class="hero-user-panel">
+          <div class="hero-user-banner">
+            <i class="fa-solid fa-circle-check" style="color:#22c55e;font-size:1.5rem;"></i>
+            <div>
+              <div class="hero-user-heading">Welcome back, <span id="hero-user-name">User</span>!</div>
+              <div class="hero-user-sub">Active session authenticated as <strong id="hero-user-role-label">Student</strong>.</div>
+            </div>
+          </div>
+          <div class="hero-actions" style="margin-top:20px;">
+            <a id="hero-dashboard-btn" href="#" class="btn btn-white btn-lg">
+              <i class="fa-solid fa-gauge-high"></i> <span id="hero-dashboard-btn-text">Open Dashboard</span>
+            </a>
+            <button class="btn btn-outline btn-lg" onclick="handleLogout()" style="border-color:rgba(255,255,255,0.4);color:white;">
+              <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+          </div>
+        </div>
       </div>
       <div class="hero-stats">
         <div>
@@ -401,15 +608,15 @@
 <!-- ── Portals ─────────────────────────────────────────────────────── -->
 <section class="portals-section" id="portals">
   <div style="max-width:1280px; margin:0 auto; position:relative; z-index:1;">
-    <div class="section-label" style="color:rgba(255,255,255,0.6);">Three Dedicated Portals</div>
+    <div class="section-label" style="color:rgba(255,255,255,0.6);">Four Dedicated Portals</div>
     <h2 class="section-title" style="color:white;">Built for Every Role</h2>
-    <p class="section-subtitle" style="color:rgba(255,255,255,0.7);">Each portal is tailored to the specific needs of students, bus managers, and system administrators.</p>
-    <div class="portals-grid">
+    <p class="section-subtitle" style="color:rgba(255,255,255,0.7);">Each portal is tailored to the specific needs of students, drivers, bus managers, and administrators.</p>
+    <div class="portals-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));">
       <!-- Student Portal -->
-      <div class="portal-card" onclick="window.location.href='pages/student/login.html'">
+      <div class="portal-card" onclick="navigatePortal('STUDENT', 'pages/student/login.html')">
         <div class="portal-icon student"><i class="fa-solid fa-graduation-cap"></i></div>
         <div class="portal-title">Student Portal</div>
-        <div class="portal-desc">Track buses, view routes, check ETAs, and manage your profile.</div>
+        <div class="portal-desc">Track buses, view routes, check ETAs, and submit feedback.</div>
         <div class="portal-features">
           <div class="portal-feature"><i class="fa-solid fa-check"></i> Live bus tracking on map</div>
           <div class="portal-feature"><i class="fa-solid fa-check"></i> Real-time ETA per stop</div>
@@ -423,15 +630,15 @@
       </div>
 
       <!-- Driver Portal -->
-      <div class="portal-card" onclick="window.location.href='pages/driver/login.html'">
+      <div class="portal-card" onclick="navigatePortal('DRIVER', 'pages/driver/login.html')">
         <div class="portal-icon" style="background:linear-gradient(135deg,#10b981,#047857);"><i class="fa-solid fa-bus-simple"></i></div>
         <div class="portal-title">Bus Driver Portal</div>
-        <div class="portal-desc">Use your phone as a GPS device — share live location with students in real time.</div>
+        <div class="portal-desc">Broadcast live mobile GPS coordinates directly to campus maps.</div>
         <div class="portal-features">
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Real mobile GPS tracking</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Start &amp; end trips</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> High-accuracy GPS streaming</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Start &amp; end assigned trips</div>
           <div class="portal-feature"><i class="fa-solid fa-check"></i> Add pickup points on map</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Live broadcast to students</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Persistent screen wake-lock</div>
           <div class="portal-feature"><i class="fa-solid fa-check"></i> View assigned bus &amp; route</div>
         </div>
         <button class="btn btn-white w-full" style="color:#047857;">
@@ -439,17 +646,34 @@
         </button>
       </div>
 
+      <!-- Manager Portal -->
+      <div class="portal-card" onclick="navigatePortal('MANAGER', 'pages/manager/login.html')">
+        <div class="portal-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><i class="fa-solid fa-clipboard-check"></i></div>
+        <div class="portal-title">Manager Portal</div>
+        <div class="portal-desc">Operational fleet dispatch, bus readiness, delay updates, and trip monitoring.</div>
+        <div class="portal-features">
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Manage assigned buses</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Live fleet tracking & delays</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Fuel & maintenance records</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Seat capacity adjustments</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Operational announcements</div>
+        </div>
+        <button class="btn btn-white w-full" style="color:#d97706;">
+          <i class="fa-solid fa-arrow-right"></i> Enter Manager Portal
+        </button>
+      </div>
+
       <!-- Admin Portal -->
-      <div class="portal-card" onclick="window.location.href='pages/admin/login.html'">
+      <div class="portal-card" onclick="navigatePortal('ADMIN', 'pages/admin/login.html')">
         <div class="portal-icon admin"><i class="fa-solid fa-user-shield"></i></div>
         <div class="portal-title">Admin Portal</div>
-        <div class="portal-desc">Full system control — users, buses, routes, reports, and settings.</div>
+        <div class="portal-desc">Full governance — users, buses, routes, audit logs, and settings.</div>
         <div class="portal-features">
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> User & bus management</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Route & schedule creation</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Analytics & reports</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Emergency alerts</div>
-          <div class="portal-feature"><i class="fa-solid fa-check"></i> Activity logs & settings</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> User creation & deletion</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Route & geofence setup</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> System analytics & reports</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Campus emergency alerts</div>
+          <div class="portal-feature"><i class="fa-solid fa-check"></i> Full security audit trail</div>
         </div>
         <button class="btn btn-white w-full" style="color:#dc2626;">
           <i class="fa-solid fa-arrow-right"></i> Enter Admin Portal
@@ -463,23 +687,28 @@
 <section class="how-section" id="how">
   <div style="max-width:1280px; margin:0 auto; text-align:center;">
     <div class="section-label">How It Works</div>
-    <h2 class="section-title">One System, Three Roles</h2>
-    <p class="section-subtitle" style="margin:0 auto 0;">Real-time coordination between university administration, bus drivers, and students.</p>
-    <div class="steps-grid" style="grid-template-columns:repeat(3,1fr);">
+    <h2 class="section-title">One System, Four Unified Roles</h2>
+    <p class="section-subtitle" style="margin:0 auto 0;">Real-time coordination between university administration, fleet managers, bus drivers, and students.</p>
+    <div class="steps-grid" style="grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));">
       <div class="step-card">
         <div class="step-num" style="background:linear-gradient(135deg,#ef4444,#dc2626);">01</div>
         <div class="step-title">ADMIN</div>
-        <div class="step-desc">Manage buses, drivers, routes, and student pickup stops from a central control panel.</div>
+        <div class="step-desc">Manages user accounts, route networks, geofences, and monitors audit logs.</div>
       </div>
       <div class="step-card">
-        <div class="step-num" style="background:linear-gradient(135deg,#10b981,#047857);">02</div>
+        <div class="step-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">02</div>
+        <div class="step-title">MANAGER</div>
+        <div class="step-desc">Oversees assigned fleet units, controls trip status, and tracks bus health.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background:linear-gradient(135deg,#10b981,#047857);">03</div>
         <div class="step-title">DRIVER</div>
-        <div class="step-desc">Log in on a smartphone, start the trip, and stream real mobile GPS directly to the bus map.</div>
+        <div class="step-desc">Logs in on mobile, starts assigned trip, and streams continuous real GPS.</div>
       </div>
       <div class="step-card">
-        <div class="step-num" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">03</div>
+        <div class="step-num" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">04</div>
         <div class="step-title">STUDENT</div>
-        <div class="step-desc">Watch the bus move live on an interactive map, view pickup points with ETAs, and catch the bus.</div>
+        <div class="step-desc">Watches live bus motion, views real-time stop ETAs, and catches their ride on time.</div>
       </div>
     </div>
   </div>
@@ -494,12 +723,13 @@
           <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🚌</div>
           <div class="footer-brand-name">Smart Bus Tracker</div>
         </div>
-        <div class="footer-brand-desc">A modern, real-time university bus tracking system built for students, managers, and administrators.</div>
+        <div class="footer-brand-desc">A modern, real-time university bus tracking system built for students, drivers, managers, and administrators.</div>
       </div>
       <div>
         <div class="footer-title">Portals</div>
         <a href="pages/student/login.html"  class="footer-link">Student Portal</a>
         <a href="pages/driver/login.html"   class="footer-link">Driver Portal</a>
+        <a href="pages/manager/login.html"  class="footer-link">Manager Portal</a>
         <a href="pages/admin/login.html"    class="footer-link">Admin Portal</a>
       </div>
       <div>
@@ -526,27 +756,259 @@
   </div>
 </footer>
 
+<!-- ── Android App Info / Download Modal ──────────────────────────── -->
+<div id="android-modal" class="custom-modal-backdrop" style="display:none;" onclick="closeAndroidModal(event)">
+  <div class="custom-modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close-btn" onclick="closeAndroidModal()" title="Close">&times;</button>
+    <div class="android-modal-icon">
+      <i class="fa-brands fa-android"></i>
+    </div>
+    <h3 class="android-modal-title">GIET Smart Bus Android App</h3>
+    <div class="android-modal-badge" id="android-modal-badge">
+      <span class="live-dot" style="background:#f59e0b;"></span> Google Play Release in Progress
+    </div>
+    <p class="android-modal-desc" id="android-modal-desc">
+      The native Capacitor Android application featuring background driver GPS transmission and instant student arrival notifications will soon be available on the Google Play Store!
+    </p>
+    <div class="android-modal-box">
+      <div class="android-box-item">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <div>
+          <strong>Driver Real GPS Transmission</strong>
+          <span>High-precision live mobile GPS streaming with continuous screen wake-lock.</span>
+        </div>
+      </div>
+      <div class="android-box-item">
+        <i class="fa-solid fa-bell"></i>
+        <div>
+          <strong>Student Proximity &amp; Arrival Alerts</strong>
+          <span>Real-time notifications and haptic vibration when your bus approaches your stop.</span>
+        </div>
+      </div>
+    </div>
+    <div class="android-pwa-tip">
+      <i class="fa-solid fa-lightbulb" style="color:#f59e0b;font-size:1.1rem;flex-shrink:0;"></i>
+      <span>Tip: You can also install this system as a <strong>PWA Web App</strong> right now by opening your browser menu &rarr; <em>"Add to Home Screen"</em> / <em>"Install App"</em>.</span>
+    </div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-primary w-full" id="android-modal-action-btn" onclick="closeAndroidModal()">
+        Got It
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container" class="toast-container"></div>
 
-<!-- Leaflet -->
+<!-- Leaflet & Scripts -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/map.js"></script>
 
 <script>
-  // Nav scroll effect
+  // ── Global State ─────────────────────────────────────────────────────────────
+  let appConfig = {
+    android_app_url: null,
+    is_available: false,
+    app_name: 'GIET Smart Bus Tracker'
+  };
+
+  // ── Nav scroll effect ────────────────────────────────────────────────────────
   window.addEventListener('scroll', () => {
-    document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 60);
+    document.getElementById('main-nav')?.classList.toggle('scrolled', window.scrollY > 60);
   });
 
-  // Theme toggle on landing (dark bg)
+  // ── Theme toggle ─────────────────────────────────────────────────────────────
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const next = Theme.toggle();
     document.getElementById('theme-toggle').innerHTML = next === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
   });
 
-  // Hero Map
+  // ── Fetch Android App Configuration ──────────────────────────────────────────
+  async function loadAppConfig() {
+    try {
+      if (window.ConfigAPI && ConfigAPI.getAppConfig) {
+        const res = await ConfigAPI.getAppConfig();
+        if (res && res.success) {
+          appConfig = { ...appConfig, ...res };
+        }
+      }
+    } catch (err) {
+      console.warn('[Config] Using default app configuration');
+    }
+    updateAndroidButtons();
+  }
+
+  // ── Update Android Button UI based on Configuration ──────────────────────────
+  function updateAndroidButtons() {
+    const isAvailable = appConfig.is_available && appConfig.android_app_url;
+    const btnLabel = isAvailable ? 'Install Android App' : 'Android App Coming Soon';
+
+    const navBtnText = document.getElementById('nav-android-btn-text');
+    const heroBtnText = document.getElementById('hero-android-btn-text');
+    const navBtn = document.getElementById('nav-android-btn');
+    const heroBtn = document.getElementById('hero-android-btn');
+
+    if (navBtnText) navBtnText.textContent = btnLabel;
+    if (heroBtnText) heroBtnText.textContent = btnLabel;
+    if (navBtn) navBtn.title = isAvailable ? 'Download Android Application' : 'Android Application Coming Soon';
+    if (heroBtn) heroBtn.title = isAvailable ? 'Download Android Application' : 'Android Application Coming Soon';
+  }
+
+  // ── Handle Android Install Button Click ──────────────────────────────────────
+  function handleAndroidAppClick() {
+    const isAvailable = appConfig.is_available && appConfig.android_app_url;
+    if (isAvailable) {
+      window.open(appConfig.android_app_url, '_blank', 'noopener,noreferrer');
+    } else {
+      openAndroidModal();
+    }
+  }
+
+  function openAndroidModal() {
+    const modal = document.getElementById('android-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeAndroidModal(event) {
+    if (event && event.target && event.target !== document.getElementById('android-modal') && !event.target.classList.contains('modal-close-btn') && event.target.id !== 'android-modal-action-btn') {
+      return;
+    }
+    const modal = document.getElementById('android-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  // ── Login Dropdown Toggle ────────────────────────────────────────────────────
+  function toggleLoginDropdown(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('login-dropdown-menu');
+    if (menu) {
+      menu.classList.toggle('show');
+    }
+  }
+  document.addEventListener('click', () => {
+    document.getElementById('login-dropdown-menu')?.classList.remove('show');
+  });
+
+  // ── RBAC-Aware Homepage UI Renderer ──────────────────────────────────────────
+  async function renderAuthUI() {
+    const token = Auth.getToken();
+    let user = Auth.getUser();
+
+    const isAuthenticated = !!(token && user && user.role);
+
+    const navGuest = document.getElementById('nav-guest-actions');
+    const navUser = document.getElementById('nav-user-actions');
+    const heroGuest = document.getElementById('hero-guest-actions');
+    const heroUser = document.getElementById('hero-user-actions');
+
+    if (isAuthenticated) {
+      const userRole = normalizeRole(user.role);
+      const userLabel = Auth.getRoleLabel ? Auth.getRoleLabel(userRole) : userRole;
+      const dashUrl = Auth.getDashboardUrl ? Auth.getDashboardUrl(userRole) : ROLE_DASHBOARDS[userRole] || '/index.html';
+      const dashLabel = Auth.getDashboardLabel ? Auth.getDashboardLabel(userRole) : 'Dashboard';
+      const displayName = user.name || user.username || userLabel;
+
+      // 1. Navbar UI: Hide public guest actions, show authenticated user pill & dashboard
+      if (navGuest) navGuest.style.display = 'none';
+      if (navUser) {
+        navUser.style.display = 'flex';
+        const roleBadge = document.getElementById('nav-user-role-badge');
+        if (roleBadge) {
+          roleBadge.textContent = userRole;
+          roleBadge.className = `role-tag ${userRole}`;
+        }
+        const nameEl = document.getElementById('nav-user-name');
+        if (nameEl) nameEl.textContent = displayName;
+
+        const navDashBtn = document.getElementById('nav-dashboard-btn');
+        if (navDashBtn) navDashBtn.href = dashUrl;
+        const navDashText = document.getElementById('nav-dashboard-btn-text');
+        if (navDashText) navDashText.textContent = dashLabel;
+      }
+
+      // 2. Hero UI: Hide public guest actions, show user greeting and direct dashboard button
+      if (heroGuest) heroGuest.style.display = 'none';
+      if (heroUser) {
+        heroUser.style.display = 'block';
+        const heroName = document.getElementById('hero-user-name');
+        if (heroName) heroName.textContent = displayName;
+        const heroRole = document.getElementById('hero-user-role-label');
+        if (heroRole) heroRole.textContent = userLabel;
+
+        const heroDashBtn = document.getElementById('hero-dashboard-btn');
+        if (heroDashBtn) heroDashBtn.href = dashUrl;
+        const heroDashText = document.getElementById('hero-dashboard-btn-text');
+        if (heroDashText) heroDashText.textContent = `Open ${dashLabel}`;
+      }
+
+      // 3. Navigation links: Hide Portals anchor for logged-in users
+      const navPortals = document.getElementById('nav-portals-link');
+      if (navPortals) navPortals.style.display = 'none';
+
+      // Validate session with backend in background; if token expired or deleted, revert gracefully
+      if (Auth.validateSession) {
+        Auth.validateSession().then(validatedUser => {
+          if (!validatedUser) {
+            renderAuthUI();
+          }
+        }).catch(() => {});
+      }
+
+    } else {
+      // LOGGED OUT / PUBLIC STATE:
+      if (navGuest) navGuest.style.display = 'flex';
+      if (navUser) navUser.style.display = 'none';
+      if (heroGuest) heroGuest.style.display = 'flex';
+      if (heroUser) heroUser.style.display = 'none';
+
+      const navPortals = document.getElementById('nav-portals-link');
+      if (navPortals) navPortals.style.display = '';
+
+      updateAndroidButtons();
+    }
+  }
+
+  // ── Logout Handler ───────────────────────────────────────────────────────────
+  function handleLogout() {
+    Auth.clearAuth();
+    if (typeof Toast !== 'undefined' && Toast.info) {
+      Toast.info('Logged out successfully');
+    }
+    renderAuthUI();
+  }
+
+  // ── Portal Card Navigation Handler ───────────────────────────────────────────
+  function navigatePortal(targetRole, defaultLoginPage) {
+    const user = Auth.getUser();
+    if (user && user.role) {
+      const currentRole = normalizeRole(user.role);
+      const normalizedTarget = normalizeRole(targetRole);
+      if (currentRole === normalizedTarget) {
+        window.location.href = Auth.getDashboardUrl(currentRole);
+        return;
+      } else {
+        if (typeof Toast !== 'undefined' && Toast.warning) {
+          Toast.warning(`You are currently logged in as ${Auth.getRoleLabel(currentRole)}. Directing to your dashboard...`);
+        }
+        setTimeout(() => {
+          window.location.href = Auth.getDashboardUrl(currentRole);
+        }, 1000);
+        return;
+      }
+    }
+    // Not logged in -> go to login page
+    window.location.href = defaultLoginPage;
+  }
+
+  // ── Hero Interactive Map Setup ───────────────────────────────────────────────
   const heroMap = L.map('hero-map', {
     center: [19.0435, 83.8138], zoom: 14,
     zoomControl: false, scrollWheelZoom: false, dragging: false,
@@ -577,10 +1039,11 @@
     demoBuses.forEach(b => {
       b.lat += (Math.random() - 0.5) * 0.002;
       b.lng += (Math.random() - 0.5) * 0.002;
-      heroMarkers[b.id].setLatLng([b.lat, b.lng]);
+      heroMarkers[b.id]?.setLatLng([b.lat, b.lng]);
     });
     etaCount = Math.max(1, Math.min(8, etaCount + (Math.random() > 0.5 ? -1 : 1)));
-    document.getElementById('hero-eta').textContent = etaCount;
+    const etaEl = document.getElementById('hero-eta');
+    if (etaEl) etaEl.textContent = etaCount;
   }, 2000);
 
   // Smooth scroll for anchor links
@@ -589,6 +1052,12 @@
       e.preventDefault();
       document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
     });
+  });
+
+  // ── Initialization on DOM Ready ──────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    renderAuthUI();
+    loadAppConfig();
   });
 </script>
 </body>

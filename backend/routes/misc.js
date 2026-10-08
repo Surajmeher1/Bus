@@ -24,5 +24,19 @@ router.get('/reports',                 authenticate, authorize(ROLES.ADMIN), get
 router.put('/admin/change-password',   authenticate, authorize(ROLES.ADMIN), changeAdminPassword);
 router.get('/activity-logs',           authenticate, authorize(ROLES.ADMIN), getActivityLogs);
 
+// Public App Configuration (Configurable Android release URL & metadata)
+router.get('/config/app', (req, res) => {
+  const rawUrl = process.env.ANDROID_APP_URL ? process.env.ANDROID_APP_URL.trim() : '';
+  const isAvailable = !!(rawUrl && rawUrl !== 'coming-soon' && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')));
+  res.json({
+    success: true,
+    android_app_url: isAvailable ? rawUrl : null,
+    is_available: isAvailable,
+    app_name: 'GIET Smart Bus Tracker',
+    package_name: 'edu.giet.smartbus',
+    version: '1.0.0'
+  });
+});
+
 module.exports = router;
 

@@ -20,6 +20,20 @@ const ROLE_DASHBOARDS = Object.freeze({
   STUDENT: '/pages/student/dashboard.html'
 });
 
+const ROLE_LABELS = Object.freeze({
+  ADMIN: 'Admin',
+  MANAGER: 'Manager',
+  DRIVER: 'Driver',
+  STUDENT: 'Student'
+});
+
+const ROLE_DASHBOARD_LABELS = Object.freeze({
+  ADMIN: 'Admin Dashboard',
+  MANAGER: 'Manager Dashboard',
+  DRIVER: 'Driver Dashboard',
+  STUDENT: 'Student Dashboard'
+});
+
 function normalizeRole(role) {
   if (!role || typeof role !== 'string') return '';
   return role.trim().toUpperCase();
@@ -85,6 +99,35 @@ const Auth = {
         window.location.href = ROLE_DASHBOARDS[role];
       }
     }
+  },
+  getDashboardUrl: (role) => {
+    const r = normalizeRole(role || Auth.getRole());
+    return ROLE_DASHBOARDS[r] || '/index.html';
+  },
+  getDashboardLabel: (role) => {
+    const r = normalizeRole(role || Auth.getRole());
+    return ROLE_DASHBOARD_LABELS[r] || 'Dashboard';
+  },
+  getRoleLabel: (role) => {
+    const r = normalizeRole(role || Auth.getRole());
+    return ROLE_LABELS[r] || r || 'User';
+  },
+  validateSession: async () => {
+    const token = Auth.getToken();
+    if (!token) return null;
+    try {
+      const res = await API.get('/auth/me');
+      if (res && res.success && res.user) {
+        Auth.setAuth(token, res.user);
+        return res.user;
+      }
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        Auth.clearAuth();
+        return null;
+      }
+    }
+    return Auth.getUser();
   },
   logout: () => {
     Auth.clearAuth();
@@ -270,6 +313,11 @@ const FeedbackAPI = {
   getMy:     ()       => API.get('/feedback/my'),
   getByBus:  (busId)  => API.get(`/feedback/bus/${busId}`),
   getAll:    ()       => API.get('/feedback'),
+};
+
+// ── App & Platform Configuration Endpoints ─────────────────────────────────────
+const ConfigAPI = {
+  getAppConfig: () => API.get('/config/app')
 };
 
 // ── Admin Endpoints ────────────────────────────────────────────────────────────
@@ -517,5 +565,11 @@ const NativeApp = {
 };
 if (typeof window !== 'undefined') {
   window.NativeApp = NativeApp;
+  window.Auth = Auth;
+  window.ROLES = ROLES;
+  window.ROLE_DASHBOARDS = ROLE_DASHBOARDS;
+  window.ROLE_LABELS = ROLE_LABELS;
+  window.ROLE_DASHBOARD_LABELS = ROLE_DASHBOARD_LABELS;
+  window.ConfigAPI = ConfigAPI;
 }
 
