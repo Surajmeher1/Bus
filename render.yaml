@@ -6,8 +6,8 @@ services:
     region: oregon
     branch: feature/production-deployment
     rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: npm install && node --experimental-sqlite database/initDb.js
+    startCommand: node --experimental-sqlite server.js
     healthCheckPath: /health
     disk:
       name: busdata
