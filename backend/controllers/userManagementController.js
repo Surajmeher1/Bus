@@ -261,24 +261,28 @@ const createUser = async (req, res) => {
       email_message: emailMessage,
       emailSent,
       emailError: emailResult.reason || (emailSent ? null : 'SMTP not configured'),
-      dev_credentials: devCredentialsObj,
-      devCredentials: emailResult.devCredentials || devCredentialsObj,
-      dev_preview: devCredentialsObj,
-        data: {
-          system_user_id: systemUserId,
-          user_id: systemUserId,
-          email: cleanEmail,
-          name: name.trim(),
-          role: role.toLowerCase(),
-          email_status: emailStatus,
-          email_message: emailMessage,
-          emailSent,
-          emailError: emailResult.reason || null,
+      ...(process.env.NODE_ENV === 'production' ? {} : {
+        dev_credentials: devCredentialsObj,
+        devCredentials: emailResult.devCredentials || devCredentialsObj,
+        dev_preview: devCredentialsObj
+      }),
+      data: {
+        system_user_id: systemUserId,
+        user_id: systemUserId,
+        email: cleanEmail,
+        name: name.trim(),
+        role: role.toLowerCase(),
+        email_status: emailStatus,
+        email_message: emailMessage,
+        emailSent,
+        emailError: emailResult.reason || null,
+        ...(process.env.NODE_ENV === 'production' ? {} : {
           dev_credentials: devCredentialsObj,
           devCredentials: devCredentialsObj,
           dev_preview: devCredentialsObj
-        }
-      });
+        })
+      }
+    });
   } catch (err) {
     console.error('❌ User creation error:', err);
     res.status(500).json({ success: false, message: 'Server error: ' + err.message, error: err.message });

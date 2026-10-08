@@ -3,7 +3,32 @@
  * Centralized fetch wrapper with JWT injection, error handling & auth redirect
  */
 
-const API_BASE = 'http://localhost:5000/api/v1';
+/**
+ * Resolves the API base URL dynamically:
+ * 1. window.__APP_CONFIG__.API_BASE (if defined)
+ * 2. If running via local file:// protocol -> http://localhost:5000/api/v1
+ * 3. If running on dev live-server (e.g. port 5500, 3000) -> http://localhost:5000/api/v1
+ * 4. Production or same-origin backend -> `${window.location.origin}/api/v1`
+ */
+function resolveApiBase() {
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE) {
+    return window.__APP_CONFIG__.API_BASE.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.protocol === 'file:') {
+      return 'http://localhost:5000/api/v1';
+    }
+    const isDevPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      window.location.port && window.location.port !== '5000';
+    if (isDevPort) {
+      return 'http://localhost:5000/api/v1';
+    }
+    return `${window.location.origin}/api/v1`;
+  }
+  return 'http://localhost:5000/api/v1';
+}
+
+const API_BASE = resolveApiBase();
 
 // ── RBAC Role Definitions & Portal Mappings ───────────────────────────────────
 const ROLES = Object.freeze({

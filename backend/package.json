@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node --experimental-sqlite server.js",
     "dev": "nodemon --exec \"node --experimental-sqlite\" server.js",
-    "init-db": "node --experimental-sqlite database/initDb.js"
+    "init-db": "node --experimental-sqlite database/initDb.js",
+    "init-db:pg": "node database/initDb.pg.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

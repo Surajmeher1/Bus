@@ -36,11 +36,69 @@ app.use(
   })
 );
 
+// ── CORS Configuration ────────────────────────────────────────────────────────
+const getAllowedOrigins = () => {
+  const allowed = [];
+  if (process.env.CLIENT_URL) {
+    allowed.push(...process.env.CLIENT_URL.split(',').map(s => s.trim().replace(/\/+$/, '')));
+  }
+  if (process.env.APP_URL) {
+    allowed.push(...process.env.APP_URL.split(',').map(s => s.trim().replace(/\/+$/, '')));
+  }
+  return allowed.filter(Boolean);
+};
+
+const isOriginAllowed = (origin) => {
+  // Allow requests without Origin header (e.g. same-origin static requests, mobile webviews, curl)
+  if (!origin) return true;
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  // Allow localhost / local IP on any port in development
+  if (!isProduction) {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return true;
+    }
+  }
+
+  // Allow Capacitor Android native scheme
+  if (origin === 'capacitor://localhost' || origin === 'http://localhost') {
+    return true;
+  }
+
+  const allowed = getAllowedOrigins();
+  if (allowed.length > 0) {
+    return allowed.includes(origin);
+  }
+
+  // Fallback: in development allow all, in production require exact match
+  return !isProduction;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-simulate-smtp-configured', 'x-test-smtp']
+};
+
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -51,7 +109,7 @@ app.use((req, res, next) => {
 });
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
@@ -81,9 +139,13 @@ app.use('/api/v1/driver',   require('./routes/driver'));   // ← Review 1: Driv
 app.use('/api/v1',          require('./routes/admin'));
 app.use('/api/v1',          require('./routes/misc'));
 
-// Health check
+// ── Health Check ──────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Smart Bus Tracking API is running 🚌', timestamp: new Date() });
+  res.status(200).json({ success: true, message: 'Smart Bus Tracking API is running 🚌', timestamp: new Date() });
 });
 
 // Serve index.html for all non-API routes (SPA support)
@@ -94,7 +156,12 @@ app.get('*', (req, res) => {
 // ── Error Handler ─────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err.message);
-  res.status(500).json({ success: false, message: 'Internal server error.', error: err.message });
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(err.status || 500).json({
+    success: false,
+    message: isProd ? 'Internal server error.' : (err.message || 'Internal server error.'),
+    ...(isProd ? {} : { error: err.message })
+  });
 });
 
 // ── Socket Tracking ───────────────────────────────────────────────────────────

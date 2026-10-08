@@ -112,11 +112,12 @@ Gunupur, Odisha
     if (!this.isConfigured()) {
       // In development mode when SMTP is unconfigured: do not crash.
       // Return details safely so Admin UI can show them for dev inspection.
+      const isProduction = process.env.NODE_ENV === 'production';
       return {
         sent: false,
         reason: 'SMTP is not configured in environment variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD).',
-        devMode: true,
-        devCredentials: {
+        devMode: !isProduction,
+        devCredentials: isProduction ? undefined : {
           userId,
           system_user_id: userId,
           tempPassword,

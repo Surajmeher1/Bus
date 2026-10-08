@@ -474,9 +474,12 @@ async function loadRoutes() {
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
 function connectSocket() {
-  const socketUrl = (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.port !== '5500')
-    ? `${window.location.protocol}//${window.location.hostname}:5000`
-    : 'http://localhost:5000';
+  const socketUrl = (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.SOCKET_URL)
+    ? window.__APP_CONFIG__.SOCKET_URL.replace(/\/+$/, '')
+    : (typeof window !== 'undefined' && window.location && window.location.protocol !== 'file:' &&
+       !((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '5000'))
+      ? window.location.origin
+      : 'http://localhost:5000';
   socket = io(socketUrl, { transports: ['websocket', 'polling'] });
   socket.on('connect', () => console.log('🔌 Socket connected'));
   socket.on('driver:trip-started', (data) => {
