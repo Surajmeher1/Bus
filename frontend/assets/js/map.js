@@ -64,6 +64,116 @@ const BusMap = {
     });
   },
 
+  tileLayers: [],
+
+  // ── Configurable Tile Provider Settings ─────────────────────────────────
+  // Default: OSM HOT (Humanitarian OpenStreetMap Team: free, clean OSM tiles, no watermark, no 403)
+  tileConfig: {
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>',
+    subdomains: 'abc',
+    maxZoom: 19
+  },
+
+  async loadConfig() {
+    try {
+      let configData = null;
+      if (typeof ConfigAPI !== 'undefined' && ConfigAPI.getAppConfig) {
+        configData = await ConfigAPI.getAppConfig();
+      } else if (typeof fetch === 'function') {
+        const base = (typeof API_URL !== 'undefined') ? API_URL : '';
+        const res = await fetch(`${base}/api/v1/config/app`);
+        if (res.ok) {
+          configData = await res.json();
+        }
+      }
+      if (configData && configData.map && configData.map.tile_url) {
+        const newUrl = configData.map.tile_url;
+        const oldUrl = this.tileConfig.url;
+        this.tileConfig = {
+          url: newUrl,
+          attribution: configData.map.attribution || this.tileConfig.attribution,
+          subdomains: configData.map.subdomains || 'abc',
+          maxZoom: configData.map.max_zoom || 19
+        };
+        if (newUrl !== oldUrl && this.tileLayers && this.tileLayers.length > 0) {
+          this.tileLayers.forEach(layer => {
+            if (layer && typeof layer.setUrl === 'function') {
+              layer.setUrl(newUrl);
+            }
+          });
+        }
+      }
+    } catch (_) {
+      // Retain robust default
+    }
+  },
+
+  // Graceful fallback UI on tile load failure
+  showFallback(map, message = 'Map temporarily unavailable') {
+    if (!map) return;
+    const container = typeof map.getContainer === 'function' ? map.getContainer() : null;
+    if (!container || container.querySelector('.map-fallback-banner')) return;
+    const banner = document.createElement('div');
+    banner.className = 'map-fallback-banner';
+    banner.setAttribute('role', 'alert');
+    banner.style.cssText = `
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(8px);
+      color: #f8fafc;
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      pointer-events: none;
+    `;
+    banner.innerHTML = `<span style="color:#ef4444;font-size:0.875rem;">⚠️</span> <span>${message}</span>`;
+    container.appendChild(banner);
+  },
+
+  // Factory to create configured Leaflet tile layer with error monitoring
+  createTileLayer(options = {}) {
+    const cfg = this.tileConfig || {};
+    const url = options.url || cfg.url || 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+    const subdomains = options.subdomains || cfg.subdomains || 'abc';
+    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>');
+    const maxZoom = options.maxZoom || cfg.maxZoom || 19;
+
+    const layerOptions = {
+      subdomains,
+      maxZoom,
+      attribution,
+      ...options
+    };
+
+    const layer = L.tileLayer(url, layerOptions);
+    this.tileLayers.push(layer);
+
+    let consecutiveErrors = 0;
+    layer.on('tileerror', () => {
+      consecutiveErrors++;
+      if (consecutiveErrors >= 3 && layer._map) {
+        this.showFallback(layer._map, 'Map temporarily unavailable');
+      }
+    });
+
+    layer.on('tileload', () => {
+      if (consecutiveErrors > 0) consecutiveErrors--;
+    });
+
+    return layer;
+  },
+
   init(containerId, options = {}) {
     const defaults = {
       center: [19.0435, 83.8138], // Gunupur, Odisha default
@@ -72,10 +182,8 @@ const BusMap = {
     };
     const map = L.map(containerId, { ...defaults, ...options });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map);
+    const tileLayer = this.createTileLayer(options.tileOptions || {});
+    tileLayer.addTo(map);
 
     this.maps[containerId] = map;
     return map;
@@ -189,3 +297,14 @@ const BusMap = {
     this.markers = {};
   },
 };
+
+// Automatically fetch map tile configuration from backend
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      BusMap.loadConfig();
+    });
+  } else {
+    BusMap.loadConfig();
+  }
+}

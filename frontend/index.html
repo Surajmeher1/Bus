@@ -325,8 +325,6 @@
     .hero-user-banner { display: flex; align-items: center; gap: 14px; }
     .hero-user-heading { font-size: 1.25rem; font-weight: 800; color: white; }
     .hero-user-sub { font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 2px; }
-    .hero-other-portals { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 10px; }
-    .hero-sub-btn { font-size: 0.875rem !important; padding: 10px 16px !important; }
 
     /* Android App Modal */
     .custom-modal-backdrop {
@@ -377,7 +375,6 @@
       .user-greeting-pill { display: none; }
       .hide-mobile { display: none !important; }
       #nav-android-btn span { display: none; }
-      .hero-sub-btn { flex: 1; text-align: center; }
     }
   </style>
 </head>
@@ -469,7 +466,7 @@
       </p>
 
       <!-- Hero Actions Container -->
-      <div class="hero-actions-container" style="margin-bottom: 24px;">
+      <div class="hero-actions-container">
         <!-- Public / Logged-Out Actions -->
         <div id="hero-guest-actions" class="hero-actions">
           <a href="pages/auth/login.html" class="btn btn-white btn-lg" id="hero-main-login-btn">
@@ -478,20 +475,6 @@
           <button id="hero-android-btn" class="btn btn-android btn-lg" onclick="handleAndroidAppClick()">
             <i class="fa-brands fa-android"></i> <span id="hero-android-btn-text">Install Android App</span>
           </button>
-          <div class="hero-other-portals">
-            <a href="pages/student/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
-              <i class="fa-solid fa-graduation-cap"></i> Student
-            </a>
-            <a href="pages/driver/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
-              <i class="fa-solid fa-bus"></i> Driver
-            </a>
-            <a href="pages/manager/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
-              <i class="fa-solid fa-clipboard-check"></i> Manager
-            </a>
-            <a href="pages/admin/login.html" class="btn btn-outline btn-lg hero-sub-btn" style="border-color:rgba(255,255,255,0.4);color:white;">
-              <i class="fa-solid fa-user-shield"></i> Admin
-            </a>
-          </div>
         </div>
 
         <!-- Authenticated / Logged-In User Panel -->
@@ -1022,7 +1005,7 @@
     zoomControl: false, scrollWheelZoom: false, dragging: false,
     attributionControl: false
   });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heroMap);
+  BusMap.createTileLayer({ attributionControl: false }).addTo(heroMap);
 
   // Animated demo buses on hero map (Gunupur, Odisha)
   const demoBuses = [

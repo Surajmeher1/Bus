@@ -1933,9 +1933,7 @@ function initGeofenceMap(geofences = []) {
   if (!mapEl) return;
   if (!geofenceMap) {
     geofenceMap = L.map('geofence-map').setView([19.0494, 83.8242], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(geofenceMap);
+    BusMap.createTileLayer().addTo(geofenceMap);
   } else {
     geofenceMap.invalidateSize();
   }

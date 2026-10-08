@@ -24,7 +24,39 @@ router.get('/reports',                 authenticate, authorize(ROLES.ADMIN), get
 router.put('/admin/change-password',   authenticate, authorize(ROLES.ADMIN), changeAdminPassword);
 router.get('/activity-logs',           authenticate, authorize(ROLES.ADMIN), getActivityLogs);
 
-// Public App Configuration (Configurable Android release URL & metadata)
+// Helper: Resolve configurable production-safe map tile settings
+function getMapConfig() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  let tileUrl = process.env.MAP_TILE_URL ? process.env.MAP_TILE_URL.trim() : '';
+  let attribution = process.env.MAP_TILE_ATTRIBUTION ? process.env.MAP_TILE_ATTRIBUTION.trim() : '';
+  const subdomains = process.env.MAP_TILE_SUBDOMAINS ? process.env.MAP_TILE_SUBDOMAINS.trim() : 'abcd';
+  const maxZoom = parseInt(process.env.MAP_TILE_MAX_ZOOM, 10) || 19;
+  const apiKey = process.env.MAP_TILE_API_KEY ? process.env.MAP_TILE_API_KEY.trim() : '';
+
+  if (!tileUrl) {
+    // Production-safe high-availability hosted OSM tiles via Humanitarian OpenStreetMap Team (no watermark, no 403)
+    tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+    attribution = attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>';
+  } else {
+    // If an API key is specified and placeholder exists, inject safely
+    if (apiKey && tileUrl.includes('{apiKey}')) {
+      tileUrl = tileUrl.replace('{apiKey}', apiKey);
+    }
+    if (!attribution) {
+      attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    }
+  }
+
+  return {
+    tile_url: tileUrl,
+    attribution,
+    subdomains,
+    max_zoom: maxZoom,
+    is_production: isProduction
+  };
+}
+
+// Public App Configuration (Configurable Android release URL & map provider metadata)
 router.get('/config/app', (req, res) => {
   const rawUrl = process.env.ANDROID_APP_URL ? process.env.ANDROID_APP_URL.trim() : '';
   const isAvailable = !!(rawUrl && rawUrl !== 'coming-soon' && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')));
@@ -34,7 +66,8 @@ router.get('/config/app', (req, res) => {
     is_available: isAvailable,
     app_name: 'GIET Smart Bus Tracker',
     package_name: 'edu.giet.smartbus',
-    version: '1.0.0'
+    version: '1.0.0',
+    map: getMapConfig()
   });
 });
 

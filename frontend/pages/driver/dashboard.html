@@ -319,6 +319,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/map.js"></script>
 <script>
 // ── Auth Guard ────────────────────────────────────────────────────────────────
 Auth.redirectIfNotRole('driver');
@@ -352,9 +353,7 @@ async function init() {
 // ── Map Init ──────────────────────────────────────────────────────────────────
 function initMap() {
   driverMap = L.map('driver-map', { zoomControl: true }).setView([19.0435, 83.8138], 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors', maxZoom: 19
-  }).addTo(driverMap);
+  BusMap.createTileLayer().addTo(driverMap);
 
   // Click to add pickup point
   driverMap.on('click', (e) => {

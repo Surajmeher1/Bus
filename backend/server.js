@@ -27,7 +27,19 @@ app.use(
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
-        imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://unpkg.com", "https://images.unsplash.com"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https://*.tile.openstreetmap.org",
+          "https://*.tile.openstreetmap.fr",
+          "https://*.openstreetmap.fr",
+          "https://server.arcgisonline.com",
+          "https://*.basemaps.cartocdn.com",
+          "https://*.cartocdn.com",
+          "https://unpkg.com",
+          "https://images.unsplash.com"
+        ],
         connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
         workerSrc: ["'self'", "blob:"]
       }
