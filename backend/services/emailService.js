@@ -2,10 +2,30 @@
  * emailService.js
  * Handles sending credentials and notifications via SMTP with development fallbacks
  */
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
+
+function reloadEnv() {
+  const backendEnv = path.join(__dirname, '..', '.env');
+  const rootEnv = path.join(__dirname, '..', '..', '.env');
+  const rootEnvExample = path.join(__dirname, '..', '..', '.env.example');
+
+  if (fs.existsSync(backendEnv)) {
+    dotenv.config({ path: backendEnv, override: true });
+  }
+  if (fs.existsSync(rootEnv)) {
+    dotenv.config({ path: rootEnv, override: true });
+  }
+  if ((!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) && fs.existsSync(rootEnvExample)) {
+    dotenv.config({ path: rootEnvExample, override: true });
+  }
+}
 
 class EmailService {
   constructor() {
+    reloadEnv();
     this.host = process.env.SMTP_HOST || '';
     this.port = parseInt(process.env.SMTP_PORT) || 587;
     this.user = process.env.SMTP_USER || '';
@@ -15,35 +35,69 @@ class EmailService {
   }
 
   isConfigured() {
+    reloadEnv();
     const host = process.env.SMTP_HOST || this.host;
     const user = process.env.SMTP_USER || this.user;
     const pass = process.env.SMTP_PASSWORD || this.password;
     return !!(host && user && pass);
   }
 
+  getFromAddress() {
+    reloadEnv();
+    const rawFrom = process.env.SMTP_FROM || this.from;
+    const user = (process.env.SMTP_USER || this.user || '').trim();
+    const host = (process.env.SMTP_HOST || this.host || '').toLowerCase();
+    if (host.includes('gmail.com') && rawFrom && rawFrom.includes('@giet.edu')) {
+      return `"GIET Smart Bus System" <${user}>`;
+    }
+    return rawFrom || (user ? `"GIET Smart Bus System" <${user}>` : '"GIET Smart Bus Tracking" <noreply@giet.edu>');
+  }
+
   getTransporter() {
+    reloadEnv();
     if (!this.isConfigured()) return null;
-    const host = process.env.SMTP_HOST || this.host;
+    const host = (process.env.SMTP_HOST || this.host).trim();
     const port = parseInt(process.env.SMTP_PORT) || this.port;
-    const user = process.env.SMTP_USER || this.user;
-    const pass = process.env.SMTP_PASSWORD || this.password;
-    return nodemailer.createTransport({
+    const isSecure = process.env.SMTP_SECURE === 'true' || port === 465;
+    const user = (process.env.SMTP_USER || this.user).trim();
+    const pass = (process.env.SMTP_PASSWORD || this.password).replace(/\s+/g, '');
+
+    const configKey = `${host}:${port}:${isSecure}:${user}:${pass}`;
+    if (this._cachedTransporter && this._cachedConfigKey === configKey) {
+      return this._cachedTransporter;
+    }
+
+    this._cachedConfigKey = configKey;
+    this._cachedTransporter = nodemailer.createTransport({
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 100,
       host,
       port,
-      secure: port === 465,
+      secure: isSecure,
       auth: {
         user,
         pass
-      }
+      },
+      connectionTimeout: 20000,
+      greetingTimeout: 20000,
+      socketTimeout: 30000
     });
+    return this._cachedTransporter;
   }
 
   /**
    * Sends account credentials to a new @giet.edu user
    */
-  async sendAccountCredentials({ to, userId, tempPassword, role, name, simulateConfigured = false }) {
+  async sendAccountCredentials({ to, userId, tempPassword, role, name, simulateConfigured = false, simulateUnconfigured = false }) {
     if (simulateConfigured) {
       return { sent: true, reason: null, messageId: '<simulated-smtp@giet.edu>' };
+    }
+    if (simulateUnconfigured) {
+      return {
+        sent: false,
+        reason: 'SMTP is not configured in environment variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD).'
+      };
     }
     const loginUrl = `${this.appUrl}/pages/${role}/login.html`;
     const roleCapitalized = role.charAt(0).toUpperCase() + role.slice(1);
@@ -130,13 +184,21 @@ Gunupur, Odisha
 
     try {
       const transporter = this.getTransporter();
-      await transporter.sendMail({
-        from: this.from,
+      const mailOptions = {
+        from: this.getFromAddress(),
         to,
         subject: emailSubject,
         text: emailBody,
         html: htmlBody
-      });
+      };
+
+      // BCC admin account so the administrator always receives an inbox copy to verify delivery
+      const adminCopy = (process.env.SMTP_USER || this.user || '').trim();
+      if (adminCopy && adminCopy.toLowerCase() !== to.toLowerCase()) {
+        mailOptions.bcc = adminCopy;
+      }
+
+      await transporter.sendMail(mailOptions);
       return { sent: true, reason: null };
     } catch (err) {
       console.warn('⚠️  SMTP email delivery failed:', err.message);

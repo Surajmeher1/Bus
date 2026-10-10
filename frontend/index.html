@@ -1045,11 +1045,25 @@
     });
   });
 
+  // Expose methods on window for global access and testing
+  window.renderAuthUI = renderAuthUI;
+  window.loadAppConfig = loadAppConfig;
+  window.updateAndroidButtons = updateAndroidButtons;
+  window.handleAndroidAppClick = handleAndroidAppClick;
+  window.openAndroidModal = openAndroidModal;
+  window.closeAndroidModal = closeAndroidModal;
+  window.navigatePortal = navigatePortal;
+  window.handleLogout = handleLogout;
+
   // ── Initialization on DOM Ready ──────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     renderAuthUI();
     loadAppConfig();
   });
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    renderAuthUI();
+    loadAppConfig();
+  }
 </script>
 </body>
 </html>

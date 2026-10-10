@@ -268,11 +268,13 @@ async function runTests() {
     await pageCdp.connect();
     await pageCdp.send('Page.enable');
     await pageCdp.send('Runtime.enable');
+    await pageCdp.send('Page.navigate', { url: `http://localhost:${PORT}/index.html` });
 
-    // Wait for page to load
-    await new Promise(r => setTimeout(r, 2000));
+    // Wait for page scripts to load
+    await new Promise(r => setTimeout(r, 2500));
 
-    const ARTIFACT_DIR = 'C:\\Users\\suraj\\.gemini\\antigravity-ide\\brain\\97ab5efe-9058-4f1e-a9b3-49ffe7a18cd7';
+    const ARTIFACT_DIR = path.join(__dirname, '..', '.tmp_test_screenshots');
+    if (!fs.existsSync(ARTIFACT_DIR)) fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
 
     async function takeScreenshot(name) {
       const snap = await pageCdp.send('Page.captureScreenshot', { format: 'png' });

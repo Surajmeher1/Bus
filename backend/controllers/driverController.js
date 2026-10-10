@@ -274,6 +274,15 @@ const endTrip = (req, res) => {
       `).run(bus.active_trip_id);
     }
 
+    // Ensure any open running trip for this bus or driver is also cleanly marked completed
+    db.prepare(`
+      UPDATE trips SET
+        status = 'completed',
+        trip_state = 'COMPLETED',
+        end_time = datetime('now')
+      WHERE (bus_id = ? OR driver_id = ?) AND status = 'running'
+    `).run(bus.bus_id, req.user.id);
+
     db.prepare(`
       UPDATE buses SET
         status = 'inactive',

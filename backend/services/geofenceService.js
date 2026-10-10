@@ -172,6 +172,39 @@ class GeofenceService {
       return { isInside: true, error: err.message };
     }
   }
+
+  /**
+   * Directly record a geofence violation and notify admins
+   */
+  handleGeofenceViolation({ busId, driverId, tripId, geofenceId, latitude, longitude, busNumber, driverName, io }) {
+    const bus = db.prepare('SELECT last_valid_latitude, last_valid_longitude, tracking_status FROM buses WHERE bus_id = ?').get(busId);
+    const lastValidLat = bus?.last_valid_latitude || latitude;
+    const lastValidLng = bus?.last_valid_longitude || longitude;
+
+    const res = db.prepare(`
+      INSERT INTO geofence_violations (
+        bus_id, driver_id, trip_id, geofence_id, latitude, longitude,
+        last_valid_lat, last_valid_lng, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OUTSIDE_OPERATION_AREA')
+    `).run(busId, driverId || null, tripId || null, geofenceId || null, latitude, longitude, lastValidLat, lastValidLng);
+
+    db.prepare("UPDATE buses SET tracking_status = 'OUTSIDE_AREA' WHERE bus_id = ?").run(busId);
+
+    const now = new Date();
+    const timeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const notifTitle = '⚠️ BUS AREA VIOLATION';
+    const notifMsg = `Bus: ${busNumber || 'BUS-' + busId} | Driver: ${driverName || 'Assigned Driver'} | Time: ${timeFormatted} | Status: Outside operating area`;
+
+    db.prepare(`
+      INSERT INTO notifications (title, message, receiver_type, is_emergency)
+      VALUES (?, ?, 'all', 1)
+    `).run(notifTitle, notifMsg);
+
+    return {
+      violationId: Number(res.lastInsertRowid),
+      status: 'OUTSIDE_OPERATION_AREA'
+    };
+  }
 }
 
 module.exports = new GeofenceService();

@@ -95,7 +95,8 @@ async function run() {
       }).on('error', reject);
     });
 
-    const pageWsUrl = listData[0]?.webSocketDebuggerUrl;
+    const pageTarget = listData.find(t => t.type === 'page') || listData[0];
+    const pageWsUrl = pageTarget?.webSocketDebuggerUrl;
     if (!pageWsUrl) throw new Error('No Chrome webSocketDebuggerUrl found');
 
     cdp = new CdpClient(pageWsUrl);

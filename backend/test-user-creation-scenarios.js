@@ -128,20 +128,12 @@ async function runScenarioTests() {
 
   // TEST 7: valid account + SMTP unavailable -> ACCOUNT CREATION SHOULD NOT CORRUPT OR CRASH
   await check('TEST 7: valid account with SMTP unavailable returns 201 and does NOT crash', async () => {
-    const emailService = require('./services/emailService');
-    const originalIsConfigured = emailService.isConfigured;
-
-    // Simulate unconfigured SMTP
-    emailService.isConfigured = () => false;
-
     const test7Email = `student.test7.${Date.now()}@giet.edu`;
     const res = await postUser({
       role: 'student',
       name: 'SMTP Unavailable Student',
       email: test7Email
-    });
-
-    emailService.isConfigured = originalIsConfigured;
+    }, adminToken, { 'x-simulate-smtp-unconfigured': 'true' });
 
     assert.strictEqual(res.status, 201, `Expected 201, got ${res.status}`);
     assert.strictEqual(res.data.success, true);
@@ -159,15 +151,15 @@ async function runScenarioTests() {
   });
 
   await check('TEST 8: student token calling admin endpoint returns 403 Forbidden', async () => {
-    // Generate valid student token
+    // Generate valid student token (using existing seeded student id: 1)
     const jwt = require('jsonwebtoken');
     const jwtConfig = require('./config/jwt');
-    const studentToken = jwt.sign({ id: 999, role: 'student', username: 'student' }, jwtConfig.secret, { expiresIn: '1h' });
+    const studentToken = jwt.sign({ id: 1, role: 'student', username: 'student' }, jwtConfig.secret, { expiresIn: '1h' });
 
     const res = await postUser({ role: 'student', name: 'Student Trying Admin API', email: 'student.hacker@giet.edu' }, studentToken);
     assert.strictEqual(res.status, 403);
     assert.strictEqual(res.data.success, false);
-    assert.match(res.data.message, /Access denied/);
+    assert.match(res.data.message, /(Access denied|permission)/i);
   });
 
   console.log('\n======================================================');

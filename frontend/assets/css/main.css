@@ -595,13 +595,22 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-overlay {
   position: fixed; inset: 0; z-index: 10000;
   background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   padding: 20px;
   opacity: 0; pointer-events: none; visibility: hidden;
   transition: opacity var(--transition), visibility var(--transition);
 }
+.modal-overlay:not(.open) {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+.modal-overlay:not(.open) * {
+  pointer-events: none !important;
+}
 .modal-overlay.open {
-  opacity: 1; pointer-events: auto !important; visibility: visible;
+  display: flex !important;
+  opacity: 1 !important; pointer-events: auto !important; visibility: visible !important;
 }
 .modal {
   position: relative;
@@ -667,11 +676,11 @@ body.modal-open .app-layout {
   pointer-events: none !important;
   user-select: none;
 }
-body.modal-open .modal-overlay {
+body.modal-open .modal-overlay.open {
   pointer-events: auto !important;
 }
-body.modal-open .modal-overlay .modal,
-body.modal-open .modal-overlay .modal * {
+body.modal-open .modal-overlay.open .modal,
+body.modal-open .modal-overlay.open .modal * {
   pointer-events: auto !important;
 }
 

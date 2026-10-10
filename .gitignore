@@ -92,6 +92,10 @@ temp/
 *.tmp
 *.bak
 *.orig
+.tmp_*/
+scratch*
+test-admin-buttons.js
+
 
 # ─── Android & Mobile Build Artifacts ────────────────────────
 .gradle/

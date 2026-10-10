@@ -178,9 +178,14 @@
       <div class="driver-role">Driver Portal</div>
     </div>
   </div>
-  <button onclick="Auth.logout()" style="background:rgba(255,255,255,.15);border:none;color:white;padding:8px 14px;border-radius:10px;font-size:.8rem;cursor:pointer;">
-    <i class="fa-solid fa-right-from-bracket"></i> Logout
-  </button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button id="header-end-trip-btn" onclick="endTrip()" style="display:none;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:white;padding:8px 14px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,.4);align-items:center;gap:6px;">
+      <i class="fa-solid fa-stop-circle"></i> End Trip
+    </button>
+    <button onclick="Auth.logout()" style="background:rgba(255,255,255,.15);border:none;color:white;padding:8px 14px;border-radius:10px;font-size:.8rem;cursor:pointer;">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
+  </div>
 </div>
 
 <div class="driver-content">
@@ -221,21 +226,42 @@
   </div>
 
   <!-- Trip Controls -->
-  <div class="trip-controls">
+  <div class="trip-controls" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
     <button class="btn-start" id="btn-start-trip" onclick="startTrip()">
       <i class="fa-solid fa-play"></i> START TRIP
     </button>
-    <button class="btn-stop" id="btn-stop-trip" onclick="endTrip()">
-      <i class="fa-solid fa-stop"></i> END TRIP
+    <button class="btn-stop" id="btn-stop-trip" onclick="endTrip()" style="display:none;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;padding:18px;border-radius:16px;border:none;font-weight:800;font-size:1.15rem;cursor:pointer;box-shadow:0 6px 20px rgba(239,68,68,.4);width:100%;align-items:center;justify-content:center;gap:10px;">
+      <i class="fa-solid fa-circle-stop"></i> END TRIP (Automatic Stop)
     </button>
+    <div id="trip-end-hint" style="display:none;font-size:0.75rem;color:#6b7280;text-align:center;">
+      <i class="fa-solid fa-circle-info" style="color:#ef4444;"></i> Tap End Trip to immediately stop live GPS & set bus offline
+    </div>
+  </div>
+
+  <!-- Auto-End Destination Arrival Alert Card -->
+  <div class="card mb-16" id="auto-end-card" style="display:none;background:linear-gradient(135deg,#7c2d12,#ea580c);color:white;border:none;border-radius:16px;box-shadow:0 6px 20px rgba(234,88,12,.35);margin-bottom:16px;">
+    <div class="card-body" style="padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">🎯 FINAL DESTINATION REACHED</div>
+        <div style="font-size:1.05rem;font-weight:900;" id="auto-end-text">Trip ending automatically in <span id="auto-end-timer" style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px;">10</span>s</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="endTrip()" style="background:white;color:#ea580c;font-weight:800;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">
+          <i class="fa-solid fa-stop"></i> End Now
+        </button>
+        <button class="btn btn-sm" onclick="cancelAutoEnd()" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;">
+          Keep Running
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Next Stop Highlight Card (Active Trip) -->
   <div class="card mb-16" id="next-stop-card" style="display:none;background:linear-gradient(135deg,#064e3b,#047857);color:white;border:none;">
     <div class="card-body" style="padding:16px;">
       <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-bottom:4px;">NEXT STOP</div>
-      <div style="font-size:1.25rem;font-weight:900;margin-bottom:4px;" id="next-stop-name">📍 Library</div>
-      <div style="font-size:.8rem;opacity:.9;" id="next-stop-dist">Distance: ~1.2 km away</div>
+      <div style="font-size:1.25rem;font-weight:900;margin-bottom:4px;" id="next-stop-name">📍 Next Stop</div>
+      <div style="font-size:.8rem;opacity:.9;" id="next-stop-dist">Calculating arrival distance...</div>
     </div>
   </div>
 
@@ -315,6 +341,40 @@
   </div>
 </div>
 
+<!-- Trip Completed Summary Modal -->
+<div class="modal-overlay" id="trip-summary-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:white;border-radius:24px;max-width:420px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,.3);animation:scaleUp .25s ease;">
+    <div style="width:68px;height:68px;background:#d1fae5;color:#059669;font-size:2.2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      🏁
+    </div>
+    <h3 style="font-size:1.35rem;font-weight:800;color:#111827;margin:0 0 6px;">Trip Ended Automatically</h3>
+    <p style="font-size:.875rem;color:#6b7280;margin:0 0 20px;">Your bus is now OFFLINE and the trip has been logged.</p>
+    
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:22px;text-align:left;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.875rem;">
+        <span style="color:#64748b;">Bus Number:</span>
+        <b id="summary-bus-num" style="color:#0f172a;">—</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.875rem;">
+        <span style="color:#64748b;">Trip Duration:</span>
+        <b id="summary-duration" style="color:#0f172a;">—</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.875rem;">
+        <span style="color:#64748b;">GPS Updates Sent:</span>
+        <b id="summary-updates" style="color:#059669;">—</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.875rem;">
+        <span style="color:#64748b;">Bus Status:</span>
+        <span class="badge" style="background:#fee2e2;color:#991b1b;font-weight:800;padding:4px 10px;border-radius:6px;">OFFLINE</span>
+      </div>
+    </div>
+    
+    <button onclick="closeTripSummaryModal()" class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);border:none;padding:14px;border-radius:14px;font-weight:800;font-size:1rem;color:white;cursor:pointer;width:100%;">
+      <i class="fa-solid fa-check"></i> Done
+    </button>
+  </div>
+</div>
+
 <div id="toast-container" class="toast-container"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
@@ -337,6 +397,9 @@ let pendingPickupLatLng = null;
 let tripActive = false;
 let busData = null;
 let updateCount = 0;
+let tripStartTime = null;
+let autoEndTimerInterval = null;
+let autoEndTriggered = false;
 const user = Auth.getUser();
 const token = Auth.getToken();
 
@@ -383,7 +446,7 @@ async function loadMyBus() {
     drawPickupMarkers(busData.pickup_points || []);
 
     // Check if trip already running
-    if (busData.active_trip_id && busData.status === 'running') {
+    if (busData.status === 'running' || busData.active_trip_id) {
       setTripActiveUI(true, true); // already running
     }
   } catch (err) {
@@ -506,6 +569,13 @@ async function startTrip() {
     return;
   }
 
+  tripStartTime = Date.now();
+  autoEndTriggered = false;
+  if (autoEndTimerInterval) {
+    clearInterval(autoEndTimerInterval);
+    autoEndTimerInterval = null;
+  }
+
   // Call REST API to create trip record
   try {
     const routeId = document.getElementById('route-select').value || null;
@@ -562,6 +632,12 @@ function onGpsSuccess(position) {
   document.getElementById('gps-count').textContent = updateCount;
   document.getElementById('gps-dot').classList.add('active');
 
+  // Check destination arrival for automatic trip end
+  checkAutoEndTrip(latitude, longitude);
+
+  // Update Next Stop display
+  updateNextStopDisplay(latitude, longitude);
+
   // Move driver marker on map
   if (!driverMarker) {
     const icon = L.divIcon({
@@ -616,12 +692,25 @@ function showGpsError(message) {
   card.classList.add('visible');
 }
 
-// ── END TRIP ──────────────────────────────────────────────────────────────────
+// ── END TRIP (Automatic Stop) ─────────────────────────────────────────────────
 async function endTrip(skipApi = false) {
+  if (autoEndTimerInterval) {
+    clearInterval(autoEndTimerInterval);
+    autoEndTimerInterval = null;
+  }
+  const autoEndCard = document.getElementById('auto-end-card');
+  if (autoEndCard) autoEndCard.style.display = 'none';
+
+  const durationSec = tripStartTime ? Math.max(1, Math.round((Date.now() - tripStartTime) / 1000)) : 0;
+  const durationText = durationSec > 60
+    ? `${Math.floor(durationSec / 60)} min ${durationSec % 60} sec`
+    : `${durationSec} sec`;
+  const totalGpsUpdates = updateCount;
+
   // Release screen wakelock
   releaseWakeLock();
 
-  // Stop GPS
+  // Stop GPS watcher
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);
     watchId = null;
@@ -636,7 +725,9 @@ async function endTrip(skipApi = false) {
   if (!skipApi) {
     try {
       await API.post('/driver/end-trip', {});
-    } catch (_) {}
+    } catch (err) {
+      console.warn('Driver end-trip warning:', err.message);
+    }
   }
 
   setTripActiveUI(false, false);
@@ -644,7 +735,9 @@ async function endTrip(skipApi = false) {
   document.getElementById('gps-count').textContent = '0';
   updateCount = 0;
 
-  Toast.success('Trip ended. Bus is now offline.');
+  // Show summary modal
+  showTripSummaryModal(durationText, totalGpsUpdates);
+  Toast.success('Trip ended successfully. Bus is now offline.');
 }
 
 // ── UI State ──────────────────────────────────────────────────────────────────
@@ -652,12 +745,16 @@ function setTripActiveUI(active, wasAlreadyRunning) {
   tripActive = active;
   const startBtn = document.getElementById('btn-start-trip');
   const stopBtn  = document.getElementById('btn-stop-trip');
+  const headerStopBtn = document.getElementById('header-end-trip-btn');
+  const tripEndHint = document.getElementById('trip-end-hint');
   const gpsBanner = document.getElementById('status-banner');
   const gpsCard  = document.getElementById('gps-card');
 
   if (active) {
     startBtn.style.display = 'none';
-    stopBtn.classList.add('visible');
+    stopBtn.style.display = 'flex';
+    if (headerStopBtn) headerStopBtn.style.display = 'inline-flex';
+    if (tripEndHint) tripEndHint.style.display = 'block';
     gpsCard.style.display = 'block';
     if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'block';
     gpsBanner.className   = 'status-banner live';
@@ -669,14 +766,118 @@ function setTripActiveUI(active, wasAlreadyRunning) {
     document.getElementById('route-selector').style.display = 'none';
   } else {
     startBtn.style.display = 'flex';
-    stopBtn.classList.remove('visible');
+    stopBtn.style.display = 'none';
+    if (headerStopBtn) headerStopBtn.style.display = 'none';
+    if (tripEndHint) tripEndHint.style.display = 'none';
     gpsCard.style.display = 'none';
     if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'none';
+    const autoEndCard = document.getElementById('auto-end-card');
+    if (autoEndCard) autoEndCard.style.display = 'none';
     gpsBanner.className   = 'status-banner waiting';
     document.getElementById('status-emoji').textContent = '⚫';
     document.getElementById('status-text').textContent  = '⚫ TRIP STOPPED';
     document.getElementById('status-sub').textContent   = 'Start a new trip when ready';
   }
+}
+
+// ── Automatic Arrival Detection & Destination Helpers ─────────────────────────
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // meters
+  const phi1 = lat1 * Math.PI / 180;
+  const phi2 = lat2 * Math.PI / 180;
+  const dPhi = (lat2 - lat1) * Math.PI / 180;
+  const dLam = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
+            Math.cos(phi1) * Math.cos(phi2) *
+            Math.sin(dLam / 2) * Math.sin(dLam / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function checkAutoEndTrip(latitude, longitude) {
+  if (!tripActive || autoEndTriggered || !busData || !busData.stops || busData.stops.length === 0) return;
+  const lastStop = busData.stops[busData.stops.length - 1];
+  if (!lastStop || !lastStop.latitude || !lastStop.longitude) return;
+
+  const distMeters = calculateHaversineDistance(latitude, longitude, lastStop.latitude, lastStop.longitude);
+  if (distMeters <= 100) {
+    triggerAutoEndTrip(lastStop.stop_name || 'Terminal');
+  }
+}
+
+function updateNextStopDisplay(latitude, longitude) {
+  if (!busData || !busData.stops || busData.stops.length === 0) return;
+  const nextStopCard = document.getElementById('next-stop-card');
+  const nextStopName = document.getElementById('next-stop-name');
+  const nextStopDist = document.getElementById('next-stop-dist');
+  if (!nextStopCard || !nextStopName || !nextStopDist) return;
+
+  let closestStop = null;
+  let minDistance = Infinity;
+
+  busData.stops.forEach(s => {
+    if (s.latitude && s.longitude) {
+      const d = calculateHaversineDistance(latitude, longitude, s.latitude, s.longitude);
+      if (d < minDistance) {
+        minDistance = d;
+        closestStop = s;
+      }
+    }
+  });
+
+  if (closestStop) {
+    nextStopName.textContent = `📍 ${closestStop.stop_name}`;
+    const distText = minDistance < 1000 ? `${Math.round(minDistance)}m away` : `${(minDistance / 1000).toFixed(1)} km away`;
+    nextStopDist.textContent = `Distance: ${distText}`;
+  }
+}
+
+function triggerAutoEndTrip(destinationName) {
+  autoEndTriggered = true;
+  const card = document.getElementById('auto-end-card');
+  const textEl = document.getElementById('auto-end-text');
+  const timerEl = document.getElementById('auto-end-timer');
+  if (card) card.style.display = 'block';
+
+  let countdown = 10;
+  if (timerEl) timerEl.textContent = countdown;
+  if (textEl) textEl.innerHTML = `Reached <b>${destinationName}</b>! Trip ending automatically in <span id="auto-end-timer" style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px;">${countdown}</span>s`;
+
+  if (autoEndTimerInterval) clearInterval(autoEndTimerInterval);
+  autoEndTimerInterval = setInterval(() => {
+    countdown--;
+    const tEl = document.getElementById('auto-end-timer');
+    if (tEl) tEl.textContent = countdown;
+    if (countdown <= 0) {
+      clearInterval(autoEndTimerInterval);
+      autoEndTimerInterval = null;
+      endTrip();
+    }
+  }, 1000);
+}
+
+function cancelAutoEnd() {
+  if (autoEndTimerInterval) {
+    clearInterval(autoEndTimerInterval);
+    autoEndTimerInterval = null;
+  }
+  const card = document.getElementById('auto-end-card');
+  if (card) card.style.display = 'none';
+  Toast.info('Auto-end postponed. You can tap END TRIP whenever ready.');
+}
+
+function showTripSummaryModal(duration, updates) {
+  const modal = document.getElementById('trip-summary-modal');
+  if (!modal) return;
+  document.getElementById('summary-bus-num').textContent = busData?.bus_number || 'Assigned Bus';
+  document.getElementById('summary-duration').textContent = duration || '—';
+  document.getElementById('summary-updates').textContent = `${updates || 0} updates broadcasted`;
+  modal.style.display = 'flex';
+}
+
+function closeTripSummaryModal() {
+  const modal = document.getElementById('trip-summary-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 // ── Pickup Modal ──────────────────────────────────────────────────────────────

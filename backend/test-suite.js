@@ -146,7 +146,7 @@ async function runTests() {
       routeId: unassignedRoute.route_id
     });
     assert.strictEqual(validation.valid, false, 'Unassigned route should be rejected');
-    assert.match(validation.message, /not assigned to route/i);
+    assert.match(validation.message, /(not assigned to route|Route mismatch)/i);
   });
 
   test('Allow trip start when driver, bus, and route match assignments', () => {

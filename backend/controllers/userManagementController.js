@@ -212,6 +212,7 @@ const createUser = async (req, res) => {
 
 
     const simulateConfigured = (req.headers['x-simulate-smtp-configured'] === 'true' || req.headers['x-test-smtp'] === 'configured') && process.env.NODE_ENV !== 'production';
+    const simulateUnconfigured = (req.headers['x-simulate-smtp-unconfigured'] === 'true' || req.headers['x-test-smtp'] === 'unconfigured') && process.env.NODE_ENV !== 'production';
 
     // 8. Send credentials via email service
     const emailResult = await emailService.sendAccountCredentials({
@@ -220,9 +221,11 @@ const createUser = async (req, res) => {
       tempPassword,
       role: role.toLowerCase(),
       name: name.trim(),
-      simulateConfigured
+      simulateConfigured,
+      simulateUnconfigured
     });
 
+    console.log('[USER CREATE] emailResult:', emailResult);
     const emailSent = !!emailResult.sent;
     const emailStatus = emailSent ? 'sent' : 'failed';
     const emailMessage = emailSent
@@ -305,20 +308,21 @@ const changeTempPassword = async (req, res) => {
     }
 
     const { id, role } = req.user;
+    const normalizedRole = normalizeRole(role);
     let userRecord = null;
     let table = '';
     let idCol = '';
 
-    if (role === 'student') {
+    if (normalizedRole === ROLES.STUDENT) {
       table = 'students';
       idCol = 'student_id';
-    } else if (role === 'driver') {
+    } else if (normalizedRole === ROLES.DRIVER) {
       table = 'drivers';
       idCol = 'driver_id';
-    } else if (role === 'manager') {
+    } else if (normalizedRole === ROLES.MANAGER) {
       table = 'managers';
       idCol = 'manager_id';
-    } else if (role === 'admin') {
+    } else if (normalizedRole === ROLES.ADMIN) {
       table = 'admins';
       idCol = 'admin_id';
     } else {
@@ -382,10 +386,13 @@ const deleteUser = (req, res) => {
 
     // Security: Check if targeting primary system administrator account (ID 1, 'admin', or admin role)
     const roleHint = (req.query.role || req.body?.role || '').toLowerCase();
-    const isAdminTarget = cleanId === '1' || cleanId.toLowerCase() === 'admin' || cleanId.toLowerCase() === 'admin@university.edu' || roleHint === 'admin';
+    const isAdminTarget = cleanId.toLowerCase() === 'admin' ||
+                          cleanId.toLowerCase() === 'admin@university.edu' ||
+                          (roleHint === 'admin') ||
+                          (!roleHint && cleanId === '1');
     if (isAdminTarget) {
       const adminAcc = db.prepare(`SELECT admin_id as id, system_user_id, username as name, email, 'admin' as role FROM admins WHERE admin_id = ? OR username = ? OR email = ?`).get(cleanId, cleanId, cleanId);
-      if (adminAcc || cleanId === '1' || cleanId.toLowerCase() === 'admin') {
+      if (adminAcc || cleanId.toLowerCase() === 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Primary system administrator accounts cannot be deleted.'

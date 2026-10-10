@@ -19,7 +19,6 @@
     .sidebar { background: linear-gradient(180deg,#1a0530 0%,#2d0a4e 100%); }
     .nav-link.active { background: rgba(168,85,247,.25); }
     .sidebar-logo { background: linear-gradient(135deg,#a855f7,#7c3aed); }
-    .modal-overlay { display:flex; }
     .table-actions { display:flex; gap:6px; }
     .search-filter-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
     .tab-nav { display:flex; gap:0; border-bottom:2px solid var(--border-color); margin-bottom:20px; }
@@ -94,7 +93,7 @@
       <section id="section-dashboard" class="section fade-in">
         <div class="page-header">
           <div><h1 class="page-title">System Dashboard</h1><div class="page-subtitle">Real-time system overview</div></div>
-          <button class="btn btn-primary" onclick="loadDashboard()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+          <button class="btn btn-primary" id="btn-refresh-dashboard" onclick="loadDashboard(true)"><i class="fa-solid fa-arrows-rotate" id="icon-refresh-dashboard"></i> Refresh</button>
         </div>
 
         <div class="grid grid-5 mb-24" style="grid-template-columns:repeat(5,1fr);">
@@ -202,7 +201,7 @@
                   <option value="manager">Bus Managers</option>
                 </select>
               </div>
-              <button class="btn btn-outline btn-sm" onclick="loadUserManagement()" title="Refresh users"><i class="fa-solid fa-arrows-rotate"></i></button>
+              <button class="btn btn-outline btn-sm" id="btn-refresh-users" onclick="loadUserManagement(true)" title="Refresh users"><i class="fa-solid fa-arrows-rotate" id="icon-refresh-users"></i></button>
             </div>
           </div>
         </div>
@@ -247,7 +246,7 @@
                 <input id="student-search" placeholder="Search by name, roll, department..." oninput="searchStudents()"/>
               </div>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="loadStudents()"><i class="fa-solid fa-arrows-rotate"></i></button>
+            <button class="btn btn-outline btn-sm" id="btn-refresh-students" onclick="loadStudents(true)" title="Refresh students"><i class="fa-solid fa-arrows-rotate" id="icon-refresh-students"></i></button>
           </div>
           <div class="card-body" style="padding:0;">
             <div class="table-wrapper">
@@ -448,7 +447,7 @@
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-title">All Notifications</div><button class="btn btn-outline btn-sm" onclick="loadAllNotifs()">Refresh</button></div>
+            <div class="card-header"><div class="card-title">All Notifications</div><button class="btn btn-outline btn-sm" id="btn-refresh-notifs" onclick="loadAllNotifs(true)"><i class="fa-solid fa-arrows-rotate" id="icon-refresh-notifs"></i> Refresh</button></div>
             <div style="max-height:420px;overflow-y:auto;" id="all-notifs-list">
               <div style="padding:24px;text-align:center;color:var(--text-muted);">Loading...</div>
             </div>
@@ -458,7 +457,7 @@
 
       <!-- ═══ ACTIVITY LOGS ═══ -->
       <section id="section-logs" class="section fade-in" style="display:none;">
-        <div class="page-header"><h1 class="page-title">Activity Logs</h1><button class="btn btn-outline" onclick="loadLogs()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button></div>
+        <div class="page-header"><h1 class="page-title">Activity Logs</h1><button class="btn btn-outline" id="btn-refresh-logs" onclick="loadLogs(true)"><i class="fa-solid fa-arrows-rotate" id="icon-refresh-logs"></i> Refresh</button></div>
         <div class="card">
           <div class="card-body" style="padding:0;">
             <div class="table-wrapper">
@@ -505,7 +504,7 @@
 
 <!-- ── Modals ────────────────────────────────────────────────────────── -->
 <!-- Add Student -->
-<div class="modal-overlay" id="add-student-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="add-student-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add New Student</div><span class="modal-close" onclick="closeModal('add-student-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
@@ -526,7 +525,7 @@
 </div>
 
 <!-- Add Bus -->
-<div class="modal-overlay" id="add-bus-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="add-bus-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add New Bus</div><span class="modal-close" onclick="closeModal('add-bus-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
@@ -544,7 +543,7 @@
 </div>
 
 <!-- Add Driver -->
-<div class="modal-overlay" id="add-driver-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="add-driver-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add New Driver</div><span class="modal-close" onclick="closeModal('add-driver-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
@@ -564,7 +563,7 @@
 </div>
 
 <!-- Add Manager -->
-<div class="modal-overlay" id="add-manager-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="add-manager-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add New Manager</div><span class="modal-close" onclick="closeModal('add-manager-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
@@ -578,7 +577,7 @@
 </div>
 
 <!-- Add Route -->
-<div class="modal-overlay" id="add-route-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="add-route-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add New Route</div><span class="modal-close" onclick="closeModal('add-route-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
@@ -705,7 +704,7 @@
 
       <div class="modal-footer" style="flex-shrink:0;position:sticky;bottom:0;background:var(--bg-surface);border-top:1px solid var(--border-color);padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;z-index:10;">
         <button type="button" class="btn btn-outline" onclick="closeModal('create-user-modal')">Cancel</button>
-        <button type="submit" id="btn-submit-create-user" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+        <button type="button" id="btn-submit-create-user" class="btn btn-primary" onclick="handleCreateUserSubmit(event)"><i class="fa-solid fa-user-plus"></i> Create Account</button>
       </div>
     </form>
   </div>
@@ -764,13 +763,14 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline btn-sm" id="btn-toggle-dev-preview" onclick="toggleDevPreview()"><i class="fa-solid fa-eye"></i> Dev Preview</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyCredentials()"><i class="fa-solid fa-copy"></i> Copy Details</button>
       <button class="btn btn-primary" onclick="closeModal('user-credentials-modal')">Done</button>
     </div>
   </div>
 </div>
 
 <!-- ═══ Delete User Confirmation Modal ═══ -->
-<div class="modal-overlay" id="delete-user-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="delete-user-modal">
   <div class="modal" style="max-width:480px;">
     <div class="modal-header">
       <div class="modal-title" style="color:var(--danger);display:flex;align-items:center;gap:8px;">
@@ -812,7 +812,7 @@
 </div>
 
 <!-- ═══ Define Geofence Modal ═══ -->
-<div class="modal-overlay" id="add-geofence-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="add-geofence-modal">
   <div class="modal" style="max-width:540px;">
     <div class="modal-header">
       <div class="modal-title"><i class="fa-solid fa-draw-polygon" style="color:var(--primary-500);margin-right:8px;"></i>Define Bus Operating Area</div>
@@ -856,7 +856,7 @@
 </div>
 
 <!-- ═══ Manage Route Stops Modal ═══ -->
-<div class="modal-overlay" id="manage-route-stops-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="manage-route-stops-modal">
   <div class="modal" style="max-width:680px;">
     <div class="modal-header">
       <div>
@@ -925,7 +925,7 @@
 </div>
 
 <!-- ═══ Assign Route Modal ═══ -->
-<div class="modal-overlay" id="assign-route-modal" style="opacity:0;pointer-events:none;">
+<div class="modal-overlay" id="assign-route-modal">
   <div class="modal" style="max-width:500px;">
     <div class="modal-header">
       <div class="modal-title"><i class="fa-solid fa-link" style="color:var(--primary-500);margin-right:8px;"></i>Assign Route to Bus & Driver</div>
@@ -960,7 +960,8 @@
 
 <div id="toast-container" class="toast-container"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>if (typeof io === 'undefined') { document.write('<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"><\\/script>'); }</script>
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/socket-client.js"></script>
 <script src="../../assets/js/map.js"></script>
@@ -998,9 +999,10 @@ function openModal(id) {
   const m = document.getElementById(id);
   if (!m) return;
   m.classList.add('open');
-  m.style.opacity = '1';
-  m.style.pointerEvents = 'auto';
-  m.style.visibility = 'visible';
+  m.style.setProperty('display', 'flex', 'important');
+  m.style.setProperty('opacity', '1', 'important');
+  m.style.setProperty('pointer-events', 'auto', 'important');
+  m.style.setProperty('visibility', 'visible', 'important');
   document.body.classList.add('modal-open');
 }
 
@@ -1008,13 +1010,24 @@ function closeModal(id) {
   const m = document.getElementById(id);
   if (!m) return;
   m.classList.remove('open');
-  m.style.opacity = '0';
-  m.style.pointerEvents = 'none';
-  m.style.visibility = 'hidden';
+  m.style.setProperty('display', 'none', 'important');
+  m.style.setProperty('opacity', '0', 'important');
+  m.style.setProperty('pointer-events', 'none', 'important');
+  m.style.setProperty('visibility', 'hidden', 'important');
   if (!document.querySelector('.modal-overlay.open')) {
     document.body.classList.remove('modal-open');
   }
 }
+
+// Clean initial state: make sure all modals start hidden and body is not locked
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.classList.remove('open');
+  m.style.setProperty('display', 'none', 'important');
+  m.style.setProperty('opacity', '0', 'important');
+  m.style.setProperty('pointer-events', 'none', 'important');
+  m.style.setProperty('visibility', 'hidden', 'important');
+});
+document.body.classList.remove('modal-open');
 
 // Backdrop click closes modal only when clicking the backdrop itself
 document.querySelectorAll('.modal-overlay').forEach(m => {
@@ -1041,7 +1054,9 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────
-async function loadDashboard() {
+async function loadDashboard(isManual = false) {
+  const icon = document.getElementById('icon-refresh-dashboard');
+  if (icon) icon.classList.add('fa-spin');
   try {
     const [statsRes, reportsRes] = await Promise.all([AdminAPI.getStats(), AdminAPI.getReports()]);
     const s = statsRes.data || {};
@@ -1080,15 +1095,27 @@ async function loadDashboard() {
       },
       options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
-  } catch(e) { Toast.error(e.message); }
+    if (isManual) Toast.success('Dashboard data refreshed');
+  } catch(e) {
+    Toast.error(e.message);
+  } finally {
+    if (icon) icon.classList.remove('fa-spin');
+  }
 }
 
 // ── Students ──────────────────────────────────────────────────────────────────
-async function loadStudents() {
+async function loadStudents(isManual = false) {
+  const icon = document.getElementById('icon-refresh-students');
+  if (icon) icon.classList.add('fa-spin');
   try {
     const res = await StudentAPI.getAll();
     renderStudentTable(res.data || []);
-  } catch(e) {}
+    if (isManual) Toast.success('Students list refreshed');
+  } catch(e) {
+    if (isManual) Toast.error('Failed to load students: ' + e.message);
+  } finally {
+    if (icon) icon.classList.remove('fa-spin');
+  }
 }
 function renderStudentTable(students) {
   document.getElementById('students-tbody').innerHTML = students.length ? students.map(s => `
@@ -1468,17 +1495,23 @@ async function submitAssignRoute() {
 // ── User Management (GIET Institutional Controls) ─────────────────────────────
 let allUsersCached = [];
 
-async function loadUserManagement() {
+async function loadUserManagement(isManual = false) {
+  const icon = document.getElementById('icon-refresh-users');
+  if (icon) icon.classList.add('fa-spin');
   const role = document.getElementById('user-mgmt-role-filter')?.value || 'all';
   const search = document.getElementById('user-mgmt-search')?.value || '';
   const tbody = document.getElementById('user-mgmt-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</td></tr>';
   try {
     const res = await AdminAPI.getUsers({ role, search });
     allUsersCached = res.data || [];
     renderUsersTable(allUsersCached);
+    if (isManual) Toast.success('User list refreshed');
   } catch(e) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:24px;">Failed to load users: ${e.message}</td></tr>`;
+    if (isManual) Toast.error('Failed to load users: ' + e.message);
+  } finally {
+    if (icon) icon.classList.remove('fa-spin');
   }
 }
 
@@ -1706,12 +1739,19 @@ async function handleCreateUserSubmit(event) {
   const name = document.getElementById('new-user-name').value.trim();
   const email = document.getElementById('new-user-email').value.trim();
 
-  if (!name || !email) {
-    Toast.warning('Name and institutional email are required.');
+  if (!name) {
+    Toast.warning("Please enter the user's full name.");
+    document.getElementById('new-user-name')?.focus();
+    return;
+  }
+  if (!email) {
+    Toast.warning("Please enter an institutional @giet.edu email.");
+    document.getElementById('new-user-email')?.focus();
     return;
   }
   if (!isValidGietEmail(email)) {
     Toast.error('Invalid email! Only institutional emails ending strictly with @giet.edu are allowed.');
+    document.getElementById('new-user-email')?.focus();
     return;
   }
 
@@ -2110,22 +2150,31 @@ function renderDeptReportTab() {
 }
 
 // ── Notifications ──────────────────────────────────────────────────────────────
-async function loadAllNotifs() {
+async function loadAllNotifs(isManual = false) {
+  const icon = document.getElementById('icon-refresh-notifs');
+  if (icon) icon.classList.add('fa-spin');
   try {
     const res = await NotifAPI.getAll();
     const el = document.getElementById('all-notifs-list');
-    el.innerHTML = (res.data||[]).map(n => `
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <i class="fa-solid fa-${n.is_emergency?'triangle-exclamation':'bell'}" style="color:${n.is_emergency?'var(--danger)':'var(--primary-500)'};font-size:.8rem;"></i>
-          <span style="font-weight:600;font-size:.875rem;">${n.title}</span>
-          <span class="badge" style="background:var(--primary-100);color:var(--primary-700);font-size:.65rem;">${n.receiver_type}</span>
+    if (el) {
+      el.innerHTML = (res.data||[]).map(n => `
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <i class="fa-solid fa-${n.is_emergency?'triangle-exclamation':'bell'}" style="color:${n.is_emergency?'var(--danger)':'var(--primary-500)'};font-size:.8rem;"></i>
+            <span style="font-weight:600;font-size:.875rem;">${n.title}</span>
+            <span class="badge" style="background:var(--primary-100);color:var(--primary-700);font-size:.65rem;">${n.receiver_type}</span>
+          </div>
+          <div style="font-size:.8125rem;color:var(--text-secondary);">${n.message}</div>
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;">${new Date(n.created_at).toLocaleString()}</div>
         </div>
-        <div style="font-size:.8125rem;color:var(--text-secondary);">${n.message}</div>
-        <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;">${new Date(n.created_at).toLocaleString()}</div>
-      </div>
-    `).join('') || '<div style="padding:24px;text-align:center;color:var(--text-muted);">No notifications</div>';
-  } catch(e) {}
+      `).join('') || '<div style="padding:24px;text-align:center;color:var(--text-muted);">No notifications</div>';
+    }
+    if (isManual) Toast.success('Notifications refreshed');
+  } catch(e) {
+    if (isManual) Toast.error('Failed to load notifications: ' + e.message);
+  } finally {
+    if (icon) icon.classList.remove('fa-spin');
+  }
 }
 async function sendAdminNotif(isEmergency) {
   const title = document.getElementById('admin-notif-title').value;
@@ -2141,20 +2190,30 @@ async function sendAdminNotif(isEmergency) {
 }
 
 // ── Activity Logs ──────────────────────────────────────────────────────────────
-async function loadLogs() {
+async function loadLogs(isManual = false) {
+  const icon = document.getElementById('icon-refresh-logs');
+  if (icon) icon.classList.add('fa-spin');
   try {
     const res = await AdminAPI.getLogs();
-    document.getElementById('logs-tbody').innerHTML = (res.data||[]).map(l => `
-      <tr>
-        <td style="font-size:.75rem;white-space:nowrap;">${new Date(l.created_at).toLocaleString()}</td>
-        <td><span class="badge badge-primary" style="font-size:.7rem;">${l.user_type||'—'}</span></td>
-        <td style="font-size:.8rem;">${l.user_id||'—'}</td>
-        <td style="font-weight:600;font-size:.8125rem;">${l.action}</td>
-        <td style="font-size:.8rem;color:var(--text-secondary);">${l.details||'—'}</td>
-        <td style="font-size:.75rem;color:var(--text-muted);">${l.ip_address||'—'}</td>
-      </tr>
-    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No logs</td></tr>';
-  } catch(e) {}
+    const tbody = document.getElementById('logs-tbody');
+    if (tbody) {
+      tbody.innerHTML = (res.data||[]).map(l => `
+        <tr>
+          <td style="font-size:.75rem;white-space:nowrap;">${new Date(l.created_at).toLocaleString()}</td>
+          <td><span class="badge badge-primary" style="font-size:.7rem;">${l.user_type||'—'}</span></td>
+          <td style="font-size:.8rem;">${l.user_id||'—'}</td>
+          <td style="font-weight:600;font-size:.8125rem;">${l.action}</td>
+          <td style="font-size:.8rem;color:var(--text-secondary);">${l.details||'—'}</td>
+          <td style="font-size:.75rem;color:var(--text-muted);">${l.ip_address||'—'}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No logs</td></tr>';
+    }
+    if (isManual) Toast.success('Activity logs refreshed');
+  } catch(e) {
+    if (isManual) Toast.error('Failed to load logs: ' + e.message);
+  } finally {
+    if (icon) icon.classList.remove('fa-spin');
+  }
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────────
@@ -2275,13 +2334,31 @@ function renderAdminFleetList(buses) {
         <div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:4px;">
           <i class="fa-solid fa-route" style="margin-right:4px;"></i>${b.route_name || 'No route'}
         </div>
-        <div style="font-size:.78rem;color:var(--text-muted);display:flex;justify-content:space-between;">
+        <div style="font-size:.78rem;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
           <span><i class="fa-solid fa-user" style="margin-right:4px;"></i>${b.driver_name || 'No driver'}</span>
-          <span>${b.current_latitude ? `${b.current_latitude.toFixed(4)}, ${b.current_longitude.toFixed(4)}` : 'No GPS'}</span>
+          ${b.status === 'running' ? `<button class="btn btn-sm" onclick="adminEndTrip(${b.bus_id})" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:3px 8px;font-size:.72rem;font-weight:700;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-stop"></i> End Trip</button>` : ''}
         </div>
       </div>
     `;
   }).join('');
+}
+
+async function adminEndTrip(busId) {
+  if (!confirm('End active trip for this bus?')) return;
+  try {
+    const res = await API.get('/trips/today');
+    const runningTrip = (res.data || []).find(t => t.bus_id === busId && t.status === 'running');
+    if (runningTrip) {
+      await TripAPI.end(runningTrip.trip_id);
+    } else {
+      await BusAPI.stop(busId);
+    }
+    Toast.success('Trip ended successfully. Bus is now offline.');
+    loadLiveTracking();
+    loadDashboard();
+  } catch(e) {
+    Toast.error(e.message || 'Failed to end trip.');
+  }
 }
 </script>
 </body>

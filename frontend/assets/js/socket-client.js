@@ -36,6 +36,10 @@ let   trackingMap   = null;
 const SocketClient = {
   connect() {
     if (socket?.connected) return socket;
+    if (typeof io === 'undefined') {
+      console.warn('⚠️ Socket.IO client library not loaded; real-time socket tracking is standby.');
+      return null;
+    }
     socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
 
     socket.on('connect', () => {
