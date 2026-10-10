@@ -1,56 +1,35 @@
 services:
   - type: web
-    name: smart-university-bus-tracker
+    name: smart-bus-tracker
     runtime: node
-    plan: starter
-    region: oregon
+    plan: free
+    region: singapore
     branch: main
-    rootDir: backend
-    buildCommand: npm install && node --experimental-sqlite database/initDb.js
-    startCommand: node --experimental-sqlite server.js
+    buildCommand: npm run build
+    startCommand: npm start
     healthCheckPath: /health
-    disk:
-      name: busdata
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5000
+      - key: NODE_VERSION
+        value: 22.5.0
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 2h
-      - key: DB_PATH
-        value: /var/data/bustrack.db
-      - key: DATABASE_URL
-        sync: false
-      - key: CLIENT_URL
-        sync: false
-      - key: APP_URL
-        sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_SECURE
-        value: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM
-        value: '"GIET Smart Bus System" <noreply@giet.edu>'
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD
         value: Admin@123
-      - key: GPS_SIMULATION_INTERVAL
-        value: 3000
-      - key: ENABLE_GPS_SIMULATION
-        value: false
-      - key: GPS_TIMEOUT_SECONDS
-        value: 45
-      - key: ANDROID_APP_URL
-        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        value: mishrashreeshashish@gmail.com
+      - key: SMTP_PASSWORD
+        value: wosd hsfq mnef zthn
+      - key: SMTP_FROM
+        value: '"GIET Smart Bus System" <mishrashreeshashish@gmail.com>'
