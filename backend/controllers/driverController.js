@@ -8,6 +8,7 @@ const db = require('../config/db');
 const DriverModel = require('../models/driverModel');
 const gpsValidationService = require('../services/gpsValidationService');
 const { ROLES, normalizeRole } = require('../utils/roles');
+const { isValidGietEmail, generateSystemUserId } = require('../utils/validation');
 
 // ── GET ALL DRIVERS (Admin: all, Manager: assigned drivers only) ──────────────
 const getAllDrivers = (req, res) => {
@@ -72,13 +73,19 @@ const createDriver = async (req, res) => {
     const { name, email, password, phone, license_number, address } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name is required.' });
 
-    const hashedPwd = password ? await bcrypt.hash(password, 10) : null;
-    const result = db.prepare(`
-      INSERT INTO drivers (name, email, password, phone, license_number, address)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(name, email || null, hashedPwd, phone || null, license_number || null, address || null);
+    if (email && !isValidGietEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Official university email ending with @giet.edu is required.' });
+    }
 
-    res.status(201).json({ success: true, message: 'Driver created.', id: result.lastInsertRowid });
+    const systemUserId = generateSystemUserId('driver', db);
+    const hashedPwd = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('Driver@123', 10);
+    const result = db.prepare(`
+      INSERT INTO drivers (name, email, password, phone, license_number, address, is_active, system_user_id)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+    `).run(name, email ? email.trim().toLowerCase() : null, hashedPwd, phone || null, license_number || null, address || null, systemUserId);
+
+    req.logActivity?.('DRIVER_CREATED', `Driver ${name} created with ID ${systemUserId}`);
+    res.status(201).json({ success: true, message: 'Driver created successfully.', id: result.lastInsertRowid, system_user_id: systemUserId });
   } catch (err) {
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({ success: false, message: 'Email or license number already exists.' });
@@ -91,6 +98,10 @@ const createDriver = async (req, res) => {
 const updateDriver = async (req, res) => {
   try {
     const { name, email, phone, license_number, address, password, is_active } = req.body;
+    if (email && !isValidGietEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Official university email ending with @giet.edu is required.' });
+    }
+
     let hashedPwd = undefined;
     if (password) hashedPwd = await bcrypt.hash(password, 10);
 
@@ -105,7 +116,7 @@ const updateDriver = async (req, res) => {
         ${hashedPwd ? ', password = ?' : ''}
       WHERE driver_id = ?
     `).run(
-      name || null, email || null, phone || null,
+      name || null, email ? email.trim().toLowerCase() : null, phone || null,
       license_number || null, address || null,
       is_active !== undefined ? is_active : null,
       ...(hashedPwd ? [hashedPwd] : []),
@@ -133,8 +144,18 @@ const toggleDriverActive = (req, res) => {
 // ── DELETE DRIVER ─────────────────────────────────────────────────────────────
 const deleteDriver = (req, res) => {
   try {
+    const driver = db.prepare('SELECT * FROM drivers WHERE driver_id = ?').get(req.params.id);
+    if (!driver) return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+    // Safely unassign active buses & preserve related records before deletion
+    db.prepare('UPDATE buses SET driver_id = NULL WHERE driver_id = ?').run(req.params.id);
+    db.prepare('UPDATE trips SET driver_id = NULL WHERE driver_id = ?').run(req.params.id);
+    db.prepare('UPDATE geofence_violations SET driver_id = NULL WHERE driver_id = ?').run(req.params.id);
+    db.prepare('UPDATE pickup_points SET created_by_driver_id = NULL WHERE created_by_driver_id = ?').run(req.params.id);
+
     db.prepare('DELETE FROM drivers WHERE driver_id = ?').run(req.params.id);
-    res.json({ success: true, message: 'Driver deleted.' });
+    req.logActivity?.('DRIVER_DELETED', `Driver #${req.params.id} (${driver.name}) deleted`);
+    res.json({ success: true, message: 'Driver deleted successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

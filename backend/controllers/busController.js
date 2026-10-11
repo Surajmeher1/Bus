@@ -31,17 +31,33 @@ const getManagerBuses = (req, res) => {
 const createBus = (req, res) => {
   try {
     const { bus_number, registration_number, capacity, driver_id, manager_id, route_id } = req.body;
+    if (!bus_number || !registration_number) {
+      return res.status(400).json({ success: false, message: 'Bus number and registration number are required.' });
+    }
+    const cleanBusNum = bus_number.trim().toUpperCase();
+    const cleanRegNum = registration_number.trim().toUpperCase();
+
+    const existingBus = db.prepare('SELECT bus_id FROM buses WHERE bus_number = ? OR registration_number = ?').get(cleanBusNum, cleanRegNum);
+    if (existingBus) {
+      return res.status(409).json({ success: false, message: 'Bus number or registration number already exists.' });
+    }
+
+    const cap = parseInt(capacity) || 50;
+    const avail = req.body.available_seats !== undefined ? Math.min(parseInt(req.body.available_seats), cap) : cap;
+
     const result = BusModel.create({
-      bus_number, registration_number,
-      capacity: parseInt(capacity),
-      available_seats: parseInt(capacity),
-      driver_id: driver_id || null,
-      manager_id: manager_id || null,
-      route_id: route_id || null
+      bus_number: cleanBusNum,
+      registration_number: cleanRegNum,
+      capacity: cap,
+      available_seats: avail,
+      driver_id: driver_id ? parseInt(driver_id) : null,
+      manager_id: manager_id ? parseInt(manager_id) : null,
+      route_id: route_id ? parseInt(route_id) : null
     });
-    req.logActivity?.('BUS_CREATED', `Bus ${bus_number} created [ID: ${result.lastInsertRowid}]`);
+
+    req.logActivity?.('BUS_CREATED', `Bus ${cleanBusNum} created [ID: ${result.lastInsertRowid}]`);
     if (driver_id) {
-      req.logActivity?.('DRIVER_ASSIGNED', `Driver #${driver_id} assigned to Bus ${bus_number}`);
+      req.logActivity?.('DRIVER_ASSIGNED', `Driver #${driver_id} assigned to Bus ${cleanBusNum}`);
     }
     res.status(201).json({ success: true, message: 'Bus created.', id: result.lastInsertRowid });
   } catch (err) {
@@ -51,7 +67,19 @@ const createBus = (req, res) => {
 
 const updateBus = (req, res) => {
   try {
-    BusModel.update(req.params.id, req.body);
+    const bus = BusModel.findById(req.params.id);
+    if (!bus) return res.status(404).json({ success: false, message: 'Bus not found.' });
+
+    const updateData = { ...req.body };
+    if (updateData.capacity !== undefined) {
+      updateData.capacity = parseInt(updateData.capacity) || bus.capacity;
+    }
+    if (updateData.available_seats !== undefined) {
+      const targetCap = updateData.capacity || bus.capacity;
+      updateData.available_seats = Math.min(parseInt(updateData.available_seats), targetCap);
+    }
+
+    BusModel.update(req.params.id, updateData);
     req.logActivity?.('BUS_UPDATED', `Bus #${req.params.id} updated`);
     if (req.body.driver_id) {
       req.logActivity?.('DRIVER_ASSIGNED', `Driver #${req.body.driver_id} assigned to Bus #${req.params.id}`);
@@ -64,8 +92,20 @@ const updateBus = (req, res) => {
 
 const deleteBus = (req, res) => {
   try {
+    const bus = BusModel.findById(req.params.id);
+    if (!bus) return res.status(404).json({ success: false, message: 'Bus not found.' });
+
+    // Safely unassign or clean up dependent foreign key records before deleting bus
+    db.prepare('UPDATE students SET favorite_bus = NULL WHERE favorite_bus = ?').run(req.params.id);
+    db.prepare('UPDATE pickup_points SET bus_id = NULL WHERE bus_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM feedback WHERE bus_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM fuel_records WHERE bus_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM maintenance_records WHERE bus_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM geofence_violations WHERE bus_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM trips WHERE bus_id = ?').run(req.params.id);
+
     BusModel.delete(req.params.id);
-    req.logActivity?.('BUS_DELETED', `Bus #${req.params.id} deleted`);
+    req.logActivity?.('BUS_DELETED', `Bus #${req.params.id} (${bus.bus_number}) deleted`);
     res.json({ success: true, message: 'Bus deleted.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

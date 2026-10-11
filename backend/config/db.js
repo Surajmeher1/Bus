@@ -193,6 +193,14 @@ try {
   `).run();
 } catch (_) {}
 
+// Normalize legacy emails to strict @giet.edu policy
+try {
+  db.prepare("UPDATE admins SET email = 'admin@giet.edu' WHERE email LIKE '%@university.edu' OR email LIKE '%@driver.edu'").run();
+  db.prepare("UPDATE managers SET email = REPLACE(email, '@university.edu', '@giet.edu') WHERE email LIKE '%@university.edu'").run();
+  db.prepare("UPDATE drivers SET email = REPLACE(email, '@driver.edu', '.driver@giet.edu') WHERE email LIKE '%@driver.edu'").run();
+  db.prepare("UPDATE students SET email = REPLACE(email, '@student.edu', '@giet.edu') WHERE email LIKE '%@student.edu'").run();
+} catch (_) {}
+
 console.log('✅ Database migrations applied');
 
 module.exports = db;

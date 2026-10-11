@@ -102,9 +102,11 @@ test-admin-buttons.js
 android/.gradle/
 android/app/build/
 android/build/
-local.properties
 captures/
 *.apk
 *.aab
 .cxx/
+
+# ─── HAR & Network Captures ──────────────────────────────────
+*.har
 

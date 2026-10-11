@@ -66,7 +66,7 @@ const BusModel = {
       FROM buses b
       LEFT JOIN routes r ON b.route_id = r.route_id
       LEFT JOIN drivers d ON b.driver_id = d.driver_id
-      WHERE b.status != 'inactive'
+      ORDER BY b.bus_number
     `).all(),
 };
 

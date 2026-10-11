@@ -7,10 +7,20 @@ const db = require('../config/db');
 const getAllGeofences = (req, res) => {
   try {
     const geofences = db.prepare('SELECT * FROM geofences ORDER BY created_at DESC').all();
-    const parsed = geofences.map(g => ({
-      ...g,
-      coordinates: typeof g.coordinates === 'string' ? JSON.parse(g.coordinates) : g.coordinates
-    }));
+    const parsed = geofences.map(g => {
+      let coords = g.coordinates;
+      if (typeof coords === 'string') {
+        try {
+          coords = JSON.parse(coords);
+        } catch (_) {
+          coords = [];
+        }
+      }
+      return {
+        ...g,
+        coordinates: Array.isArray(coords) ? coords : []
+      };
+    });
     res.json({ success: true, data: parsed });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -21,11 +31,19 @@ const getGeofence = (req, res) => {
   try {
     const geofence = db.prepare('SELECT * FROM geofences WHERE geofence_id = ?').get(req.params.id);
     if (!geofence) return res.status(404).json({ success: false, message: 'Geofence not found.' });
+    let coords = geofence.coordinates;
+    if (typeof coords === 'string') {
+      try {
+        coords = JSON.parse(coords);
+      } catch (_) {
+        coords = [];
+      }
+    }
     res.json({
       success: true,
       data: {
         ...geofence,
-        coordinates: typeof geofence.coordinates === 'string' ? JSON.parse(geofence.coordinates) : geofence.coordinates
+        coordinates: Array.isArray(coords) ? coords : []
       }
     });
   } catch (err) {

@@ -195,8 +195,8 @@ async function apiFetch(endpoint, options = {}) {
         defaultMessage = 'Server error. Please try again later.';
       }
 
-      // Use backend message if clean, otherwise fallback to status-mapped message
-      const message = (data && data.message && response.status < 500) ? data.message : defaultMessage;
+      // Use backend message if provided, otherwise fallback to status-mapped message
+      const message = (data && data.message) ? data.message : defaultMessage;
       const err = new Error(message);
       err.status = response.status;
       err.data = data;

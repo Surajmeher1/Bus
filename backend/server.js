@@ -78,6 +78,14 @@ const isOriginAllowed = (origin) => {
     return true;
   }
 
+  // Allow Render deployed domain
+  try {
+    const originHost = new URL(origin).hostname;
+    if (originHost.endsWith('.onrender.com')) {
+      return true;
+    }
+  } catch (_) {}
+
   const allowed = getAllowedOrigins();
   if (allowed.length > 0) {
     return allowed.includes(origin);

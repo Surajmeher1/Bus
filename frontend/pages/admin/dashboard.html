@@ -44,7 +44,7 @@
       <div class="nav-item"><a class="nav-link" href="#" data-section="live-tracking"><i class="fa-solid fa-location-crosshairs"></i><span>Live Tracking</span></a></div>
       <div class="nav-section-title">Management</div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="user-management"><i class="fa-solid fa-users-gear"></i><span>User Management</span></a></div>
-      <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span><span id="sidebar-student-count" class="badge badge-primary" style="margin-left:auto;font-size:0.7rem;padding:2px 7px;">0</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="buses"><i class="fa-solid fa-bus"></i><span>Buses</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="drivers"><i class="fa-solid fa-id-card"></i><span>Drivers</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="managers"><i class="fa-solid fa-user-tie"></i><span>Bus Managers</span></a></div>
@@ -512,7 +512,7 @@
         <div class="form-group"><label class="form-label">Full Name *</label><input id="new-stu-name" class="form-control"/></div>
         <div class="form-group"><label class="form-label">Roll Number *</label><input id="new-stu-roll" class="form-control"/></div>
       </div>
-      <div class="form-group"><label class="form-label">Email *</label><input id="new-stu-email" class="form-control" type="email"/></div>
+      <div class="form-group"><label class="form-label">Email (@giet.edu) *</label><input id="new-stu-email" class="form-control" type="email" placeholder="student@giet.edu"/></div>
       <div class="grid grid-2" style="gap:16px;">
         <div class="form-group"><label class="form-label">Phone</label><input id="new-stu-phone" class="form-control"/></div>
         <div class="form-group"><label class="form-label">Semester</label><select id="new-stu-sem" class="form-control"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
@@ -549,7 +549,7 @@
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Full Name *</label><input id="new-drv-name" class="form-control" placeholder="Driver Full Name"/></div>
       <div class="grid grid-2" style="gap:16px;">
-        <div class="form-group"><label class="form-label">Login Email *</label><input id="new-drv-email" class="form-control" type="email" placeholder="driver@university.edu"/></div>
+        <div class="form-group"><label class="form-label">Login Email (@giet.edu) *</label><input id="new-drv-email" class="form-control" type="email" placeholder="driver01@giet.edu"/></div>
         <div class="form-group"><label class="form-label">Password *</label><input id="new-drv-pw" class="form-control" type="password" placeholder="Driver@123"/></div>
       </div>
       <div class="grid grid-2" style="gap:16px;">
@@ -568,7 +568,7 @@
     <div class="modal-header"><div class="modal-title">Add New Manager</div><span class="modal-close" onclick="closeModal('add-manager-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Full Name *</label><input id="new-mgr-name" class="form-control"/></div>
-      <div class="form-group"><label class="form-label">Email *</label><input id="new-mgr-email" class="form-control" type="email"/></div>
+      <div class="form-group"><label class="form-label">Email (@giet.edu) *</label><input id="new-mgr-email" class="form-control" type="email" placeholder="manager@giet.edu"/></div>
       <div class="form-group"><label class="form-label">Phone</label><input id="new-mgr-phone" class="form-control"/></div>
       <div class="form-group"><label class="form-label">Password</label><input id="new-mgr-pw" class="form-control" type="password" placeholder="Manager@123"/></div>
     </div>
@@ -1062,7 +1062,11 @@ async function loadDashboard(isManual = false) {
     const s = statsRes.data || {};
     const r = reportsRes.data || {};
 
-    document.getElementById('s-students').textContent = s.totalStudents || 0;
+    const stuCount = s.totalStudents || 0;
+    document.getElementById('s-students').textContent = stuCount;
+    const sidebarStuBadge = document.getElementById('sidebar-student-count');
+    if (sidebarStuBadge) sidebarStuBadge.textContent = stuCount;
+
     document.getElementById('s-buses').textContent    = s.totalBuses || 0;
     document.getElementById('s-active').textContent   = s.activeTrips || 0;
     document.getElementById('s-routes').textContent   = s.totalRoutes || 0;
@@ -1109,10 +1113,16 @@ async function loadStudents(isManual = false) {
   if (icon) icon.classList.add('fa-spin');
   try {
     const res = await StudentAPI.getAll();
-    renderStudentTable(res.data || []);
+    const students = Array.isArray(res) ? res : (res.data || res.students || []);
+    renderStudentTable(students);
+    const countBadge = document.getElementById('sidebar-student-count');
+    if (countBadge) countBadge.textContent = students.length;
+    const statEl = document.getElementById('s-students');
+    if (statEl) statEl.textContent = students.length;
     if (isManual) Toast.success('Students list refreshed');
   } catch(e) {
-    if (isManual) Toast.error('Failed to load students: ' + e.message);
+    Toast.error('Failed to load students: ' + (e.message || 'Server error'));
+    document.getElementById('students-tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:24px;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Failed to load students: ${e.message || 'Server error'}</td></tr>`;
   } finally {
     if (icon) icon.classList.remove('fa-spin');
   }
@@ -1130,7 +1140,7 @@ function renderStudentTable(students) {
         <button class="btn btn-icon btn-danger btn-sm" onclick="deleteStudent(${s.student_id})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
       </div></td>
     </tr>
-  `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No students found</td></tr>';
+  `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No students found</td></tr>';
 }
 async function searchStudents() {
   const q = document.getElementById('student-search').value.trim();
@@ -1152,19 +1162,24 @@ async function loadBuses() {
     allRoutesCached = routeRes.data||[]; allDriversCached = driverRes.data||[]; allManagersCached = mgrRes.data||[];
     populateBusModalSelects();
     const buses = busRes.data || [];
-    document.getElementById('buses-tbody').innerHTML = buses.length ? buses.map(b => `
-      <tr>
-        <td><b>${b.bus_number}</b></td>
-        <td style="font-size:.8rem;">${b.registration_number}</td>
-        <td>${b.route_name||'—'}</td>
-        <td>${b.driver_name||'—'}</td>
-        <td>${b.manager_name||'—'}</td>
-        <td><span class="badge badge-${b.status}">${b.status}</span></td>
-        <td>${b.available_seats}/${b.capacity}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteBus(${b.bus_id})"><i class="fa-solid fa-trash-can"></i></button></td>
-      </tr>
-    `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No buses</td></tr>';
-  } catch(e) {}
+    document.getElementById('buses-tbody').innerHTML = buses.length ? buses.map(b => {
+      const occupied = Math.max(0, (b.capacity || 0) - (b.available_seats || 0));
+      return `
+        <tr>
+          <td><b>${b.bus_number}</b></td>
+          <td style="font-size:.8rem;">${b.registration_number}</td>
+          <td>${b.route_name||'—'}</td>
+          <td>${b.driver_name||'—'}</td>
+          <td>${b.manager_name||'—'}</td>
+          <td><span class="badge badge-${b.status}">${b.status}</span></td>
+          <td><span title="${b.available_seats} of ${b.capacity} seats available">${occupied} / ${b.capacity} occupied <small style="color:var(--text-muted);display:block;">(${b.available_seats} free)</small></span></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteBus(${b.bus_id})" title="Delete Bus"><i class="fa-solid fa-trash-can"></i></button></td>
+        </tr>
+      `;
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No buses</td></tr>';
+  } catch(e) {
+    Toast.error('Failed to load buses: ' + (e.message || 'Server error'));
+  }
 }
 function populateBusModalSelects() {
   document.getElementById('new-bus-route').innerHTML = '<option value="">No Route</option>' + allRoutesCached.map(r=>`<option value="${r.route_id}">${r.route_name}</option>`).join('');
@@ -1972,11 +1987,17 @@ function initGeofenceMap(geofences = []) {
   const mapEl = document.getElementById('geofence-map');
   if (!mapEl) return;
   if (!geofenceMap) {
-    geofenceMap = L.map('geofence-map').setView([19.0494, 83.8242], 13);
+    geofenceMap = L.map('geofence-map', {
+      center: [19.0494, 83.8242],
+      zoom: 13,
+      zoomControl: true
+    });
     BusMap.createTileLayer().addTo(geofenceMap);
-  } else {
-    geofenceMap.invalidateSize();
   }
+
+  setTimeout(() => {
+    if (geofenceMap) geofenceMap.invalidateSize();
+  }, 150);
 
   geofencePolygonLayers.forEach(l => geofenceMap.removeLayer(l));
   geofencePolygonLayers = [];
@@ -2002,9 +2023,20 @@ function initGeofenceMap(geofences = []) {
     }
   });
 
-  if (bounds.length > 0) {
-    geofenceMap.fitBounds(bounds, { padding: [20, 20] });
-  }
+  setTimeout(() => {
+    if (geofenceMap) {
+      geofenceMap.invalidateSize();
+      if (bounds.length > 0) {
+        try {
+          geofenceMap.fitBounds(bounds, { padding: [25, 25] });
+        } catch (_) {
+          geofenceMap.setView([19.0494, 83.8242], 13);
+        }
+      } else {
+        geofenceMap.setView([19.0494, 83.8242], 13);
+      }
+    }
+  }, 300);
 }
 
 function openAddGeofenceModal() {
@@ -2272,9 +2304,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 let adminLiveMap = null;
 
 async function initAdminLiveMap() {
+  const mapEl = document.getElementById('admin-live-map');
+  if (!mapEl) return;
+
   if (!adminLiveMap) {
-    adminLiveMap = BusMap.init('admin-live-map', { zoom: 13 });
+    adminLiveMap = BusMap.init('admin-live-map', { center: [19.0494, 83.8242], zoom: 13 });
   }
+
+  setTimeout(() => {
+    if (adminLiveMap) adminLiveMap.invalidateSize();
+  }, 150);
+
   try {
     const [busRes, routeRes, pickupRes] = await Promise.all([
       BusAPI.getAll(), RouteAPI.getAll(), PickupAPI.getAll()
@@ -2283,9 +2323,13 @@ async function initAdminLiveMap() {
     const routes = routeRes.data || [];
     const pickups = pickupRes.data || [];
 
-    // Plot bus markers
+    BusMap.clearMarkers();
+
+    // Plot all bus markers (use current GPS or fallback to campus terminal position)
     buses.forEach(bus => {
-      if (bus.current_latitude) BusMap.addBusMarker(adminLiveMap, bus);
+      const lat = (bus.current_latitude && bus.current_latitude !== 0) ? bus.current_latitude : 19.0494;
+      const lng = (bus.current_longitude && bus.current_longitude !== 0) ? bus.current_longitude : 83.8242;
+      BusMap.addBusMarker(adminLiveMap, { ...bus, current_latitude: lat, current_longitude: lng });
     });
 
     // Draw route lines
@@ -2304,9 +2348,17 @@ async function initAdminLiveMap() {
         .addTo(adminLiveMap);
     });
 
-    BusMap.fitToBuses(adminLiveMap);
+    setTimeout(() => {
+      if (adminLiveMap) {
+        adminLiveMap.invalidateSize();
+        BusMap.fitToBuses(adminLiveMap);
+      }
+    }, 250);
+
     renderAdminFleetList(buses);
-  } catch(e) {}
+  } catch(e) {
+    console.error('[Admin Live Tracking error]:', e);
+  }
 }
 
 function renderAdminFleetList(buses) {

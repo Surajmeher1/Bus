@@ -30,8 +30,10 @@ const RouteModel = {
     `).run({ ...data, route_id: id }),
 
   delete: (id) => {
-    // Unassign routes from buses first to prevent broken foreign keys
+    // Unassign routes from buses, trips, and pickup points to prevent foreign key constraint violations
     db.prepare('UPDATE buses SET route_id = NULL WHERE route_id = ?').run(id);
+    db.prepare('UPDATE trips SET route_id = NULL WHERE route_id = ?').run(id);
+    db.prepare('UPDATE pickup_points SET route_id = NULL WHERE route_id = ?').run(id);
     db.prepare('DELETE FROM bus_stops WHERE route_id = ?').run(id);
     return db.prepare('DELETE FROM routes WHERE route_id = ?').run(id);
   },
