@@ -736,24 +736,24 @@
         <hr style="border:none;border-top:1px dashed var(--border-color);margin:4px 0;"/>
         <div class="flex-between">
           <span style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">Generated User ID:</span>
-          <code id="cred-user-id" style="font-size:1.05rem;font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);"></code>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <code id="cred-user-id" style="font-size:1.05rem;font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);"></code>
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyUserId()" title="Copy User ID" style="padding:4px 8px;font-size:0.75rem;"><i class="fa-solid fa-copy"></i></button>
+          </div>
+        </div>
+        <div class="flex-between" style="background:rgba(239,68,68,0.07);padding:8px 12px;border-radius:6px;border:1px dashed rgba(239,68,68,0.35);">
+          <div>
+            <span style="font-size:0.85rem;color:var(--text-primary);font-weight:600;display:block;">Temporary Password:</span>
+            <span style="font-size:0.72rem;color:var(--text-muted);">User must change on first login</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <code id="cred-temp-pw" style="font-size:1.05rem;font-weight:700;color:var(--danger);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid rgba(239,68,68,0.3);letter-spacing:0.5px;"></code>
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyTempPassword()" title="Copy Password" style="padding:4px 8px;font-size:0.75rem;"><i class="fa-solid fa-copy"></i></button>
+          </div>
         </div>
         <div class="flex-between">
           <span style="font-size:0.85rem;color:var(--text-secondary);">Email Delivery Status:</span>
           <span id="cred-delivery-status" style="font-size:0.85rem;font-weight:600;"></span>
-        </div>
-      </div>
-
-      <!-- Development-only safe temporary credential-preview mechanism -->
-      <div id="dev-credential-preview" style="display:none;margin-top:14px;padding:12px;background:rgba(245,158,11,0.08);border:1px dashed var(--warning);border-radius:var(--radius-md);">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--warning);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-          <i class="fa-solid fa-code"></i> DEVELOPMENT CREDENTIAL PREVIEW (SAFE DEV MODE)
-        </div>
-        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:4px;">
-          Temporary Password: <code id="cred-temp-pw" style="font-weight:700;color:var(--danger);background:var(--bg-surface);padding:3px 8px;border-radius:4px;"></code>
-        </div>
-        <div style="font-size:0.72rem;color:var(--text-muted);">
-          Note: In production environments, credentials are only emailed to the user and never exposed in the UI.
         </div>
       </div>
 
@@ -762,8 +762,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline btn-sm" id="btn-toggle-dev-preview" onclick="toggleDevPreview()"><i class="fa-solid fa-eye"></i> Dev Preview</button>
-      <button class="btn btn-secondary btn-sm" onclick="copyCredentials()"><i class="fa-solid fa-copy"></i> Copy Details</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyCredentials()"><i class="fa-solid fa-copy"></i> Copy Full Credentials</button>
       <button class="btn btn-primary" onclick="closeModal('user-credentials-modal')">Done</button>
     </div>
   </div>
@@ -1819,9 +1818,13 @@ async function handleCreateUserSubmit(event) {
 
     // Retrieve credentials object robustly from API payload
     const creds = res.dev_preview || res.dev_credentials || res.devCredentials || (res.data && res.data.devCredentials) || res.data || {};
+    const extractedPw = res.temporary_password || res.tempPassword ||
+      (res.data && (res.data.temporary_password || res.data.tempPassword)) ||
+      creds.temporary_password || creds.tempPassword || '';
+
     lastCreatedCredentials = {
-      system_user_id: res.user_id || creds.system_user_id || creds.userId || 'GIET-USR-0000',
-      temporary_password: creds.temporary_password || creds.tempPassword || '******',
+      system_user_id: res.user_id || (res.data && res.data.user_id) || creds.system_user_id || creds.userId || 'GIET-USR-0000',
+      temporary_password: extractedPw,
       role: (res.data?.role || res.role || role),
       email: (res.data?.email || res.email || email),
       name: (res.data?.name || res.name || name)
@@ -1833,11 +1836,9 @@ async function handleCreateUserSubmit(event) {
       document.getElementById('cred-role-badge').textContent = lastCreatedCredentials.role.toUpperCase();
       document.getElementById('cred-user-id').textContent = lastCreatedCredentials.system_user_id;
 
-      // Ensure dev preview starts hidden
-      const devPreviewBox = document.getElementById('dev-credential-preview');
-      if (devPreviewBox) {
-        devPreviewBox.style.display = 'none';
-        document.getElementById('cred-temp-pw').textContent = lastCreatedCredentials.temporary_password;
+      const tempPwEl = document.getElementById('cred-temp-pw');
+      if (tempPwEl) {
+        tempPwEl.textContent = lastCreatedCredentials.temporary_password || '******';
       }
 
       const alertBox = document.getElementById('cred-email-alert');
@@ -1863,13 +1864,6 @@ async function handleCreateUserSubmit(event) {
         if (deliveryStatusEl) {
           deliveryStatusEl.style.color = 'var(--danger)';
           deliveryStatusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Email Delivery Failed';
-        }
-        // Automatically open credential preview so admin can provide temporary credentials to user immediately
-        const devPreviewBox = document.getElementById('dev-credential-preview');
-        if (devPreviewBox) {
-          devPreviewBox.style.display = 'block';
-          const btn = document.getElementById('btn-toggle-dev-preview');
-          if (btn) btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Hide Dev Preview';
         }
       }
       openModal('user-credentials-modal');
@@ -1919,11 +1913,29 @@ function toggleDevPreview() {
   }
 }
 
+function copyUserId() {
+  if (!lastCreatedCredentials || !lastCreatedCredentials.system_user_id) return;
+  navigator.clipboard.writeText(lastCreatedCredentials.system_user_id).then(() => {
+    Toast.success('User ID copied to clipboard!');
+  }).catch(() => {
+    Toast.info('User ID: ' + lastCreatedCredentials.system_user_id);
+  });
+}
+
+function copyTempPassword() {
+  if (!lastCreatedCredentials || !lastCreatedCredentials.temporary_password) return;
+  navigator.clipboard.writeText(lastCreatedCredentials.temporary_password).then(() => {
+    Toast.success('Temporary password copied to clipboard!');
+  }).catch(() => {
+    Toast.info('Password: ' + lastCreatedCredentials.temporary_password);
+  });
+}
+
 function copyCredentials() {
   if (!lastCreatedCredentials) return;
   const text = `GIET Smart Bus Credentials:\nUser ID: ${lastCreatedCredentials.system_user_id}\nTemporary Password: ${lastCreatedCredentials.temporary_password}\nRole: ${lastCreatedCredentials.role}\nEmail: ${lastCreatedCredentials.email}\nNote: Password must be changed on first login.`;
   navigator.clipboard.writeText(text).then(() => {
-    Toast.success('Credentials copied to clipboard!');
+    Toast.success('Full credentials copied to clipboard!');
   }).catch(() => {
     Toast.info(`User ID: ${lastCreatedCredentials.system_user_id} | Password: ${lastCreatedCredentials.temporary_password}`);
   });
