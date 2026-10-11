@@ -21,6 +21,24 @@ try {
   db.exec('PRAGMA synchronous = NORMAL');
   console.log('✅ SQLite database connected:', DB_PATH);
 
+  // Polyfill / Fix for early Node.js node:sqlite (v22.5.0) ghost row bug
+  // where StatementSync.prototype.get() returns an object with all-null values instead of undefined when no row matches.
+  const origPrepare = db.prepare.bind(db);
+  db.prepare = function(sql) {
+    const stmt = origPrepare(sql);
+    const origGet = stmt.get.bind(stmt);
+    stmt.get = function(...args) {
+      const row = origGet(...args);
+      if (!row) return undefined;
+      const values = Object.values(row);
+      if (values.length > 0 && values.every(v => v === null || v === undefined)) {
+        return undefined;
+      }
+      return row;
+    };
+    return stmt;
+  };
+
   // Auto-initialize schema & seed demo users on startup if tables/data are missing
   const { initDb } = require('../database/initDb');
   initDb(db);

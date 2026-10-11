@@ -108,12 +108,19 @@ const createUser = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     // 3. Unique email check across all user tables
-    const inStudents = db.prepare('SELECT 1 FROM students WHERE email = ?').get(cleanEmail);
-    const inDrivers  = db.prepare('SELECT 1 FROM drivers WHERE email = ?').get(cleanEmail);
-    const inManagers = db.prepare('SELECT 1 FROM managers WHERE email = ?').get(cleanEmail);
-    const inAdmins   = db.prepare('SELECT 1 FROM admins WHERE email = ?').get(cleanEmail);
+    const inStudents = db.prepare('SELECT student_id, email FROM students WHERE email = ?').get(cleanEmail);
+    const inDrivers  = db.prepare('SELECT driver_id, email FROM drivers WHERE email = ?').get(cleanEmail);
+    const inManagers = db.prepare('SELECT manager_id, email FROM managers WHERE email = ?').get(cleanEmail);
+    const inAdmins   = db.prepare('SELECT admin_id, email FROM admins WHERE email = ?').get(cleanEmail);
 
-    if (inStudents || inDrivers || inManagers || inAdmins) {
+    const hasConflict = Boolean(
+      (inStudents && inStudents.student_id) ||
+      (inDrivers && inDrivers.driver_id) ||
+      (inManagers && inManagers.manager_id) ||
+      (inAdmins && inAdmins.admin_id)
+    );
+
+    if (hasConflict) {
       return res.status(409).json({
         success: false,
         message: `The email '${cleanEmail}' is already registered in the system.`
@@ -139,8 +146,8 @@ const createUser = async (req, res) => {
     if (role.toLowerCase() === 'student') {
       const roll = roll_number ? roll_number.trim() : systemUserId;
       // Check duplicate roll number
-      const existingRoll = db.prepare('SELECT 1 FROM students WHERE roll_number = ?').get(roll);
-      if (existingRoll) {
+      const existingRoll = db.prepare('SELECT student_id FROM students WHERE roll_number = ?').get(roll);
+      if (existingRoll && existingRoll.student_id) {
         return res.status(409).json({
           success: false,
           message: `Student roll number '${roll}' already exists.`
@@ -167,8 +174,8 @@ const createUser = async (req, res) => {
     } else if (role.toLowerCase() === 'driver') {
       const lic = license_number ? license_number.trim() : null;
       if (lic) {
-        const existingLic = db.prepare('SELECT 1 FROM drivers WHERE license_number = ?').get(lic);
-        if (existingLic) {
+        const existingLic = db.prepare('SELECT driver_id FROM drivers WHERE license_number = ?').get(lic);
+        if (existingLic && existingLic.driver_id) {
           return res.status(409).json({
             success: false,
             message: `License number '${lic}' is already registered.`
@@ -455,7 +462,7 @@ const deleteUser = (req, res) => {
     }
 
     // 5. If user not found, return 404
-    if (!targetUser) {
+    if (!targetUser || !targetUser.id) {
       return res.status(404).json({
         success: false,
         message: `User '${cleanId}' not found.`

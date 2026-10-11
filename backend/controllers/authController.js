@@ -61,7 +61,7 @@ const driverLogin = async (req, res) => {
       WHERE email = ? OR system_user_id = ?
     `).get(cleanInput, cleanInput);
 
-    if (!driver) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    if (!driver || !driver.driver_id) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
     if (!driver.is_active) {
       return res.status(403).json({ success: false, message: 'Account disabled. Contact admin.' });
@@ -120,7 +120,7 @@ const managerLogin = async (req, res) => {
       WHERE email = ? OR system_user_id = ?
     `).get(cleanInput, cleanInput);
 
-    if (!manager) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    if (!manager || !manager.manager_id) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
     const valid = await bcrypt.compare(password, manager.password);
     if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
@@ -202,7 +202,7 @@ const studentLogin = async (req, res) => {
       WHERE email = ? OR system_user_id = ? OR roll_number = ?
     `).get(cleanInput, cleanInput, cleanInput);
 
-    if (!student) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    if (!student || !student.student_id) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
     const valid = await bcrypt.compare(password, student.password);
     if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
@@ -252,7 +252,7 @@ const unifiedLogin = async (req, res) => {
       WHERE LOWER(username) = ? OR LOWER(email) = ? OR system_user_id = ?
     `).get(cleanLower, cleanLower, cleanInput);
 
-    if (admin) {
+    if (admin && admin.admin_id) {
       const valid = await bcrypt.compare(password, admin.password);
       if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
@@ -284,7 +284,7 @@ const unifiedLogin = async (req, res) => {
       WHERE LOWER(email) = ? OR system_user_id = ?
     `).get(cleanLower, cleanInput);
 
-    if (manager) {
+    if (manager && manager.manager_id) {
       const valid = await bcrypt.compare(password, manager.password);
       if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
@@ -317,7 +317,7 @@ const unifiedLogin = async (req, res) => {
       WHERE LOWER(email) = ? OR system_user_id = ? OR phone = ?
     `).get(cleanLower, cleanInput, cleanInput);
 
-    if (driver) {
+    if (driver && driver.driver_id) {
       if (!driver.is_active) {
         return res.status(403).json({ success: false, message: 'Driver account is disabled. Contact your administrator.' });
       }
@@ -367,7 +367,7 @@ const unifiedLogin = async (req, res) => {
       WHERE LOWER(email) = ? OR system_user_id = ? OR roll_number = ?
     `).get(cleanLower, cleanInput, cleanInput);
 
-    if (student) {
+    if (student && student.student_id) {
       const valid = await bcrypt.compare(password, student.password);
       if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 

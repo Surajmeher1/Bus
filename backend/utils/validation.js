@@ -39,12 +39,19 @@ function generateSystemUserId(role, db) {
     uniqueId = `${prefix}-${randomDigits}`;
 
     // Check collision across all user tables
-    const inStudents = db.prepare('SELECT 1 FROM students WHERE system_user_id = ?').get(uniqueId);
-    const inDrivers  = db.prepare('SELECT 1 FROM drivers WHERE system_user_id = ?').get(uniqueId);
-    const inManagers = db.prepare('SELECT 1 FROM managers WHERE system_user_id = ?').get(uniqueId);
-    const inAdmins   = db.prepare('SELECT 1 FROM admins WHERE system_user_id = ?').get(uniqueId);
+    const inStudents = db.prepare('SELECT student_id FROM students WHERE system_user_id = ?').get(uniqueId);
+    const inDrivers  = db.prepare('SELECT driver_id FROM drivers WHERE system_user_id = ?').get(uniqueId);
+    const inManagers = db.prepare('SELECT manager_id FROM managers WHERE system_user_id = ?').get(uniqueId);
+    const inAdmins   = db.prepare('SELECT admin_id FROM admins WHERE system_user_id = ?').get(uniqueId);
 
-    if (!inStudents && !inDrivers && !inManagers && !inAdmins) {
+    const isColliding = Boolean(
+      (inStudents && inStudents.student_id) ||
+      (inDrivers && inDrivers.driver_id) ||
+      (inManagers && inManagers.manager_id) ||
+      (inAdmins && inAdmins.admin_id)
+    );
+
+    if (!isColliding) {
       exists = false;
     }
   }
