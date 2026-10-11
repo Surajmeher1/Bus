@@ -121,9 +121,19 @@ const createUser = async (req, res) => {
     );
 
     if (hasConflict) {
+      const conflictSource = (inStudents && inStudents.student_id) ? 'Student'
+        : (inDrivers && inDrivers.driver_id) ? 'Driver'
+        : (inManagers && inManagers.manager_id) ? 'Manager'
+        : 'Admin';
       return res.status(409).json({
         success: false,
-        message: `The email '${cleanEmail}' is already registered in the system.`
+        message: `The email '${cleanEmail}' is already registered in the system (${conflictSource}).`,
+        conflict: {
+          student: inStudents && inStudents.student_id ? inStudents : null,
+          driver: inDrivers && inDrivers.driver_id ? inDrivers : null,
+          manager: inManagers && inManagers.manager_id ? inManagers : null,
+          admin: inAdmins && inAdmins.admin_id ? inAdmins : null
+        }
       });
     }
 
@@ -479,7 +489,8 @@ const deleteUser = (req, res) => {
 
 
     // 7. Database Safety: Check active dependencies
-    if (targetUser.role === 'driver') {
+    const targetRole = (targetUser.role || '').toLowerCase();
+    if (targetRole === 'driver') {
       // Check active bus assignment
       const assignedBus = db.prepare('SELECT bus_id, bus_number FROM buses WHERE driver_id = ?').get(targetUser.id);
       if (assignedBus) {
@@ -505,7 +516,7 @@ const deleteUser = (req, res) => {
 
       // Delete driver record
       db.prepare('DELETE FROM drivers WHERE driver_id = ?').run(targetUser.id);
-    } else if (targetUser.role === 'manager') {
+    } else if (targetRole === 'manager') {
       // Check active bus assignment
       const assignedBus = db.prepare('SELECT bus_id, bus_number FROM buses WHERE manager_id = ?').get(targetUser.id);
       if (assignedBus) {
@@ -517,7 +528,7 @@ const deleteUser = (req, res) => {
 
       // Delete manager record
       db.prepare('DELETE FROM managers WHERE manager_id = ?').run(targetUser.id);
-    } else if (targetUser.role === 'student') {
+    } else if (targetRole === 'student') {
       // Clean up student's feedback records to prevent foreign key errors while keeping all other data intact
       db.prepare('DELETE FROM feedback WHERE student_id = ?').run(targetUser.id);
 

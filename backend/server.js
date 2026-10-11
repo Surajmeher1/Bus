@@ -158,7 +158,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'Smart Bus Tracking API is running 🚌', timestamp: new Date() });
+  res.status(200).json({ success: true, message: 'Smart Bus Tracking API is running 🚌', timestamp: new Date(), version: '2.0.1' });
 });
 
 // Serve index.html for all non-API routes (SPA support)
