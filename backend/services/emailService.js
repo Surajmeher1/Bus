@@ -213,7 +213,7 @@ Gunupur, Odisha
         const errMsg = data.message || `HTTP ${response.status} ${response.statusText}`;
         console.warn(`⚠️ Brevo API delivery failed: ${errMsg}`);
 
-        if (!this.isResendConfigured() && !this.isSmtpConfigured()) {
+        if (!this.isSmtpConfigured()) {
           return {
             sent: false,
             reason: `Brevo API delivery failed: ${errMsg}`,
