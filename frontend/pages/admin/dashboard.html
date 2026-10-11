@@ -1857,10 +1857,19 @@ async function handleCreateUserSubmit(event) {
         alertBox.style.background = 'rgba(239,68,68,0.1)';
         alertBox.style.color = 'var(--danger)';
         alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
-        alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Account created, but email could not be sent. Check SMTP configuration.';
+        const errDetail = res.emailError || (res.data && res.data.emailError) || '';
+        alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Account created, but email could not be sent. Check SMTP configuration.' +
+          (errDetail ? `<div style="font-size:0.75rem;margin-top:5px;font-weight:400;opacity:0.95;"><b>Reason:</b> ${escapeHtml(errDetail)}</div>` : '');
         if (deliveryStatusEl) {
-          deliveryStatusEl.style.color = 'var(--warning)';
-          deliveryStatusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Email Failed / Unconfigured';
+          deliveryStatusEl.style.color = 'var(--danger)';
+          deliveryStatusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Email Delivery Failed';
+        }
+        // Automatically open credential preview so admin can provide temporary credentials to user immediately
+        const devPreviewBox = document.getElementById('dev-credential-preview');
+        if (devPreviewBox) {
+          devPreviewBox.style.display = 'block';
+          const btn = document.getElementById('btn-toggle-dev-preview');
+          if (btn) btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Hide Dev Preview';
         }
       }
       openModal('user-credentials-modal');
