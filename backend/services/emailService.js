@@ -86,6 +86,15 @@ class EmailService {
     });
   }
 
+  getAppUrl(overrideAppUrl = null) {
+    reloadEnv();
+    if (overrideAppUrl && typeof overrideAppUrl === 'string' && overrideAppUrl.trim()) {
+      return overrideAppUrl.trim().replace(/\/+$/, '');
+    }
+    const envUrl = (process.env.APP_URL || process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || this.appUrl || 'http://localhost:5000').trim();
+    return envUrl.replace(/\/+$/, '');
+  }
+
   getTransporter() {
     return this.createTransporter();
   }
@@ -93,17 +102,18 @@ class EmailService {
   /**
    * Sends account credentials to a new @giet.edu user
    */
-  async sendAccountCredentials({ to, userId, tempPassword, role, name, simulateConfigured = false, simulateUnconfigured = false }) {
+  async sendAccountCredentials({ to, userId, tempPassword, role, name, simulateConfigured = false, simulateUnconfigured = false, appUrl = null }) {
     if (simulateConfigured) {
       return { sent: true, reason: null, messageId: '<simulated-smtp@giet.edu>' };
     }
     if (simulateUnconfigured) {
       return {
         sent: false,
-        reason: 'Email service is not configured in environment variables (RESEND_API_KEY or SMTP).'
+        reason: 'Email service is not configured in environment variables (BREVO_API_KEY or SMTP).'
       };
     }
-    const loginUrl = `${this.appUrl}/pages/${role}/login.html`;
+    const baseAppUrl = this.getAppUrl(appUrl);
+    const loginUrl = `${baseAppUrl}/pages/${role}/login.html`;
     const roleCapitalized = role.charAt(0).toUpperCase() + role.slice(1);
 
     const emailSubject = 'GIET Smart Bus Tracking — Your Account';

@@ -231,6 +231,20 @@ const createUser = async (req, res) => {
     const simulateConfigured = (req.headers['x-simulate-smtp-configured'] === 'true' || req.headers['x-test-smtp'] === 'configured') && process.env.NODE_ENV !== 'production';
     const simulateUnconfigured = (req.headers['x-simulate-smtp-unconfigured'] === 'true' || req.headers['x-test-smtp'] === 'unconfigured') && process.env.NODE_ENV !== 'production';
 
+    // Determine the public URL of the application from the incoming request or environment
+    let requestAppUrl = null;
+    const origin = req.headers['origin'] || req.headers['referer'];
+    if (origin) {
+      try {
+        const parsed = new URL(origin);
+        requestAppUrl = `${parsed.protocol}//${parsed.host}`;
+      } catch (e) {}
+    }
+    if (!requestAppUrl && req.headers['host']) {
+      const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+      requestAppUrl = `${proto}://${req.headers['host']}`;
+    }
+
     // 8. Send credentials via email service
     const emailResult = await emailService.sendAccountCredentials({
       to: cleanEmail,
@@ -239,7 +253,8 @@ const createUser = async (req, res) => {
       role: role.toLowerCase(),
       name: name.trim(),
       simulateConfigured,
-      simulateUnconfigured
+      simulateUnconfigured,
+      appUrl: requestAppUrl
     });
 
     console.log('[USER CREATE] emailResult:', emailResult);
