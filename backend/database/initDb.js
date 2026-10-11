@@ -212,14 +212,20 @@ console.log('✅ Tables created successfully');
 // ─── SEED DATA ───────────────────────────────────────────────────────────────
 
 const adminCount = db.prepare('SELECT COUNT(*) as c FROM admins').get().c;
-if (adminCount === 0) {
-  console.log('🌱 Seeding initial data...');
+const busCount   = db.prepare('SELECT COUNT(*) as c FROM buses').get().c;
+
+if (adminCount === 0 || busCount === 0) {
+  console.log('🌱 Seeding initial database records (buses, routes, demo users)...');
 
   const hashPwd = (pwd) => bcrypt.hashSync(pwd, 10);
 
   // Admin
-  db.prepare(`INSERT INTO admins (username, password, email) VALUES (?, ?, ?)`)
-    .run('admin', hashPwd('Admin@123'), 'admin@university.edu');
+  if (adminCount === 0) {
+    db.prepare(`INSERT INTO admins (username, password, email) VALUES (?, ?, ?)`)
+      .run('admin', hashPwd('Admin@123'), 'admin@university.edu');
+  }
+
+  if (busCount === 0) {
 
   // Managers (kept for backward compatibility)
   const m1 = db.prepare(`INSERT INTO managers (name, email, phone, password) VALUES (?, ?, ?, ?)`)
@@ -297,15 +303,16 @@ if (adminCount === 0) {
   notifStmt.run('Welcome to Smart Bus Tracker', 'Track your university bus in real time!', 'all', 0);
   notifStmt.run('BUS-001 Now Live', 'Driver Rahul has started the trip. BUS-001 is live.', 'all', 0);
 
-  console.log('✅ Seed data inserted successfully');
-  console.log('\n📋 Default Credentials:');
-  console.log('   Admin     → username: admin              | password: Admin@123');
-  console.log('   Driver 1  → email: rahul@driver.edu      | password: Driver@123  ← NEW');
-  console.log('   Driver 2  → email: suresh@driver.edu     | password: Driver@123  ← NEW');
-  console.log('   Driver 3  → email: vijay@driver.edu      | password: Driver@123  ← NEW');
-  console.log('   Manager 1 → email: rajesh@university.edu | password: Manager@123');
-  console.log('   Student 1 → email: arjun@student.edu     | password: Student@123');
-  console.log('   Student 2 → email: sneha@student.edu     | password: Student@123\n');
+    console.log('✅ Seed data inserted successfully');
+    console.log('\n📋 Default Credentials:');
+    console.log('   Admin     → username: admin              | password: Admin@123');
+    console.log('   Driver 1  → email: rahul@driver.edu      | password: Driver@123');
+    console.log('   Driver 2  → email: suresh@driver.edu     | password: Driver@123');
+    console.log('   Driver 3  → email: vijay@driver.edu      | password: Driver@123');
+    console.log('   Manager 1 → email: rajesh@university.edu | password: Manager@123');
+    console.log('   Student 1 → email: arjun@student.edu     | password: Student@123');
+    console.log('   Student 2 → email: sneha@student.edu     | password: Student@123\n');
+  }
 } else {
     console.log('ℹ️  Database already seeded, verifying admin account...');
     const defaultAdminUsername = process.env.ADMIN_USERNAME || 'admin';
