@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
-const { Resend } = require('resend');
 
 function reloadEnv() {
   const backendEnv = path.join(__dirname, '..', '.env');
@@ -23,8 +22,6 @@ function reloadEnv() {
 class EmailService {
   constructor() {
     reloadEnv();
-    this.resendApiKey = process.env.RESEND_API_KEY || '';
-    this.resendFrom = process.env.RESEND_FROM || '"GIET Smart Bus System" <onboarding@resend.dev>';
     this.host = process.env.SMTP_HOST || '';
     this.port = parseInt(process.env.SMTP_PORT) || 587;
     this.user = process.env.SMTP_USER || '';
@@ -39,12 +36,6 @@ class EmailService {
     return !!key;
   }
 
-  isResendConfigured() {
-    reloadEnv();
-    const key = (process.env.RESEND_API_KEY || this.resendApiKey || '').trim();
-    return !!key;
-  }
-
   isSmtpConfigured() {
     reloadEnv();
     const host = (process.env.SMTP_HOST || this.host || '').trim();
@@ -54,19 +45,7 @@ class EmailService {
   }
 
   isConfigured() {
-    return this.isBrevoConfigured() || this.isResendConfigured() || this.isSmtpConfigured();
-  }
-
-  getResendClient() {
-    reloadEnv();
-    const apiKey = (process.env.RESEND_API_KEY || this.resendApiKey || '').trim();
-    if (!apiKey) return null;
-    return new Resend(apiKey);
-  }
-
-  getResendFromAddress() {
-    reloadEnv();
-    return (process.env.RESEND_FROM || this.resendFrom || 'onboarding@resend.dev').trim();
+    return this.isBrevoConfigured() || this.isSmtpConfigured();
   }
 
   getFromAddress() {
@@ -249,95 +228,13 @@ Gunupur, Odisha
             } : null
           };
         }
-        console.log('🔄 Falling back to next configured provider...');
+        console.log('🔄 Falling back to SMTP fallback...');
       } catch (brevoErr) {
         console.warn(`⚠️ Brevo API exception: ${brevoErr.message}`);
-        if (!this.isResendConfigured() && !this.isSmtpConfigured()) {
+        if (!this.isSmtpConfigured()) {
           return {
             sent: false,
             reason: `Brevo API delivery failed: ${brevoErr.message}`,
-            devMode: process.env.NODE_ENV !== 'production',
-            devCredentials: process.env.NODE_ENV !== 'production' ? {
-              userId,
-              system_user_id: userId,
-              tempPassword,
-              temporary_password: tempPassword,
-              email: to,
-              role
-            } : null
-          };
-        }
-      }
-    }
-
-    // ── 2. RESEND API DELIVERY (Preferred & Recommended for Cloud) ──
-    if (this.isResendConfigured()) {
-      try {
-        const resend = this.getResendClient();
-        const fromAddress = this.getResendFromAddress();
-        console.log(`📨 Sending credentials via Resend API to: ${to} (from: ${fromAddress})`);
-
-        let resendResponse = await resend.emails.send({
-          from: fromAddress,
-          to: [to],
-          subject: emailSubject,
-          text: emailBody,
-          html: htmlBody
-        });
-
-        // If in Resend Sandbox (domain not verified), automatically redirect test email to allowed developer email
-        if (resendResponse.error && resendResponse.error.message && resendResponse.error.message.includes('only send testing emails to your own email address')) {
-          const match = resendResponse.error.message.match(/\(([^)]+)\)/);
-          const allowedRecipient = process.env.RESEND_TEST_EMAIL || (match ? match[1] : null);
-
-          if (allowedRecipient && allowedRecipient.toLowerCase() !== to.toLowerCase()) {
-            console.log(`ℹ️ Resend Sandbox: Redirecting email to verified account (${allowedRecipient}) for ${to}`);
-            const sandboxNotice = `<div style="padding:10px 14px;background:#fef3c7;border:1px solid #fde047;border-radius:6px;margin-bottom:15px;font-size:13px;color:#854d0e;">⚠️ <b>Resend Sandbox Notice:</b> This email was addressed to <code>${to}</code> and delivered to your verified test inbox <code>${allowedRecipient}</code> because custom domains are not yet verified on Resend.</div>`;
-            resendResponse = await resend.emails.send({
-              from: fromAddress,
-              to: [allowedRecipient],
-              subject: `[Test Delivery for ${to}] ${emailSubject}`,
-              text: `[Test Delivery for ${to}]\n\n` + emailBody,
-              html: sandboxNotice + htmlBody
-            });
-          }
-        }
-
-        const data = resendResponse.data;
-        const error = resendResponse.error;
-
-        if (!error && data && data.id) {
-          console.log(`✅ Email sent successfully via Resend API! ID: ${data.id}`);
-          return { sent: true, reason: null, messageId: data.id };
-        }
-
-        const resendErrMsg = error ? (error.message || JSON.stringify(error)) : 'Unknown Resend error';
-        console.warn(`⚠️  Resend API delivery failed: ${resendErrMsg}`);
-
-        // If SMTP is NOT configured, return Resend error immediately
-        if (!this.isSmtpConfigured()) {
-          return {
-            sent: false,
-            reason: `Resend API delivery failed: ${resendErrMsg}`,
-            devMode: process.env.NODE_ENV !== 'production',
-            devCredentials: process.env.NODE_ENV !== 'production' ? {
-              userId,
-              system_user_id: userId,
-              tempPassword,
-              temporary_password: tempPassword,
-              email: to,
-              role
-            } : null
-          };
-        }
-
-        console.log('🔄 Falling back to SMTP...');
-      } catch (resendEx) {
-        console.warn(`⚠️  Resend API exception: ${resendEx.message}`);
-        if (!this.isSmtpConfigured()) {
-          return {
-            sent: false,
-            reason: `Resend API delivery failed: ${resendEx.message}`,
             devMode: process.env.NODE_ENV !== 'production',
             devCredentials: process.env.NODE_ENV !== 'production' ? {
               userId,
@@ -357,7 +254,18 @@ Gunupur, Odisha
       const isProduction = process.env.NODE_ENV === 'production';
       return {
         sent: false,
-        reason: 'Email service is not configured in environment variables (RESEND_API_KEY or SMTP).',
+        reason: 'Email service is not configured in environment variables (BREVO_API_KEY or SMTP).',
+        devMode: !isProduction,
+        devCredentials: isProduction ? undefined : {
+          userId,
+          system_user_id: userId,
+          tempPassword,
+          temporary_password: tempPassword,
+          email: to,
+          role
+        }
+      };
+    }
         devMode: !isProduction,
         devCredentials: isProduction ? undefined : {
           userId,

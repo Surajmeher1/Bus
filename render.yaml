@@ -27,7 +27,3 @@ services:
         value: surajmeher886@gmail.com
       - key: BREVO_SENDER_NAME
         value: GIET Smart Bus System
-      - key: RESEND_API_KEY
-        sync: false
-      - key: RESEND_FROM
-        value: onboarding@resend.dev
