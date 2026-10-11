@@ -53,25 +53,17 @@ class EmailService {
     return rawFrom || (user ? `"GIET Smart Bus System" <${user}>` : '"GIET Smart Bus Tracking" <noreply@giet.edu>');
   }
 
-  getTransporter() {
+  createTransporter(customPort = null, customSecure = null) {
     reloadEnv();
     if (!this.isConfigured()) return null;
     const host = (process.env.SMTP_HOST || this.host).trim();
-    const port = parseInt(process.env.SMTP_PORT) || this.port;
-    const isSecure = process.env.SMTP_SECURE === 'true' || port === 465;
+    const port = customPort !== null ? customPort : (parseInt(process.env.SMTP_PORT) || this.port);
+    const isSecure = customSecure !== null ? customSecure : (process.env.SMTP_SECURE === 'true' || port === 465);
     const user = (process.env.SMTP_USER || this.user).trim();
     const pass = (process.env.SMTP_PASSWORD || this.password).replace(/\s+/g, '');
 
-    const configKey = `${host}:${port}:${isSecure}:${user}:${pass}`;
-    if (this._cachedTransporter && this._cachedConfigKey === configKey) {
-      return this._cachedTransporter;
-    }
-
-    this._cachedConfigKey = configKey;
-    this._cachedTransporter = nodemailer.createTransport({
-      pool: true,
-      maxConnections: 3,
-      maxMessages: 100,
+    return nodemailer.createTransport({
+      pool: false,
       host,
       port,
       secure: isSecure,
@@ -79,11 +71,17 @@ class EmailService {
         user,
         pass
       },
-      connectionTimeout: 20000,
-      greetingTimeout: 20000,
-      socketTimeout: 30000
+      connectionTimeout: 9000,
+      greetingTimeout: 9000,
+      socketTimeout: 15000,
+      tls: {
+        rejectUnauthorized: false
+      }
     });
-    return this._cachedTransporter;
+  }
+
+  getTransporter() {
+    return this.createTransporter();
   }
 
   /**
@@ -182,39 +180,56 @@ Gunupur, Odisha
       };
     }
 
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to,
+      subject: emailSubject,
+      text: emailBody,
+      html: htmlBody
+    };
+
+    // BCC admin account so the administrator always receives an inbox copy to verify delivery
+    const adminCopy = (process.env.SMTP_USER || this.user || '').trim();
+    if (adminCopy && adminCopy.toLowerCase() !== to.toLowerCase()) {
+      mailOptions.bcc = adminCopy;
+    }
+
+    const currentPort = parseInt(process.env.SMTP_PORT) || this.port;
+    const currentSecure = process.env.SMTP_SECURE === 'true' || currentPort === 465;
+
+    // 1. Primary Attempt
     try {
-      const transporter = this.getTransporter();
-      const mailOptions = {
-        from: this.getFromAddress(),
-        to,
-        subject: emailSubject,
-        text: emailBody,
-        html: htmlBody
-      };
-
-      // BCC admin account so the administrator always receives an inbox copy to verify delivery
-      const adminCopy = (process.env.SMTP_USER || this.user || '').trim();
-      if (adminCopy && adminCopy.toLowerCase() !== to.toLowerCase()) {
-        mailOptions.bcc = adminCopy;
-      }
-
+      const transporter = this.createTransporter(currentPort, currentSecure);
       await transporter.sendMail(mailOptions);
       return { sent: true, reason: null };
-    } catch (err) {
-      console.warn('⚠️  SMTP email delivery failed:', err.message);
-      return {
-        sent: false,
-        reason: `Email delivery failed: ${err.message}`,
-        devMode: process.env.NODE_ENV !== 'production',
-        devCredentials: process.env.NODE_ENV !== 'production' ? {
-          userId,
-          system_user_id: userId,
-          tempPassword,
-          temporary_password: tempPassword,
-          email: to,
-          role
-        } : null
-      };
+    } catch (primaryErr) {
+      console.warn(`⚠️  Primary SMTP (port ${currentPort}) failed: ${primaryErr.message}. Attempting fallback port...`);
+
+      // 2. Automatic Fallback Attempt (switch between 465 SSL and 587 STARTTLS)
+      const altPort = currentPort === 465 ? 587 : 465;
+      const altSecure = altPort === 465;
+
+      try {
+        const fallbackTransporter = this.createTransporter(altPort, altSecure);
+        await fallbackTransporter.sendMail(mailOptions);
+        console.log(`✅ SMTP fallback delivery succeeded on port ${altPort}!`);
+        return { sent: true, reason: null };
+      } catch (fallbackErr) {
+        console.warn(`⚠️  Fallback SMTP (port ${altPort}) also failed: ${fallbackErr.message}`);
+        return {
+          sent: false,
+          reason: `Email delivery failed: ${primaryErr.message}`,
+          devMode: process.env.NODE_ENV !== 'production',
+          devCredentials: process.env.NODE_ENV !== 'production' ? {
+            userId,
+            system_user_id: userId,
+            tempPassword,
+            temporary_password: tempPassword,
+            email: to,
+            role
+          } : null
+        };
+      }
     }
   }
 }
