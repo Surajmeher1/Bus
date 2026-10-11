@@ -88,11 +88,23 @@ class EmailService {
 
   getAppUrl(overrideAppUrl = null) {
     reloadEnv();
-    if (overrideAppUrl && typeof overrideAppUrl === 'string' && overrideAppUrl.trim()) {
-      return overrideAppUrl.trim().replace(/\/+$/, '');
+    const configuredUrl = (process.env.APP_URL || process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || '').trim();
+    
+    // 1. If a public production URL is configured, use it (ensures emails work from anywhere)
+    if (configuredUrl && !configuredUrl.includes('localhost') && !configuredUrl.includes('127.0.0.1')) {
+      return configuredUrl.replace(/\/+$/, '');
     }
-    const envUrl = (process.env.APP_URL || process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || this.appUrl || 'http://localhost:5000').trim();
-    return envUrl.replace(/\/+$/, '');
+
+    // 2. If the request was made from a public domain, use that domain
+    if (overrideAppUrl && typeof overrideAppUrl === 'string' && overrideAppUrl.trim()) {
+      const cleanOverride = overrideAppUrl.trim().replace(/\/+$/, '');
+      if (!cleanOverride.includes('localhost') && !cleanOverride.includes('127.0.0.1')) {
+        return cleanOverride;
+      }
+    }
+
+    // 3. Fallback to official live Render website
+    return configuredUrl ? configuredUrl.replace(/\/+$/, '') : 'https://giet-smart-bus-tracker.onrender.com';
   }
 
   getTransporter() {
