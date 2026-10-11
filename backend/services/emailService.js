@@ -189,13 +189,34 @@ Gunupur, Odisha
         const fromAddress = this.getResendFromAddress();
         console.log(`📨 Sending credentials via Resend API to: ${to} (from: ${fromAddress})`);
 
-        const { data, error } = await resend.emails.send({
+        let resendResponse = await resend.emails.send({
           from: fromAddress,
           to: [to],
           subject: emailSubject,
           text: emailBody,
           html: htmlBody
         });
+
+        // If in Resend Sandbox (domain not verified), automatically redirect test email to allowed developer email
+        if (resendResponse.error && resendResponse.error.message && resendResponse.error.message.includes('only send testing emails to your own email address')) {
+          const match = resendResponse.error.message.match(/\(([^)]+)\)/);
+          const allowedRecipient = process.env.RESEND_TEST_EMAIL || (match ? match[1] : null);
+
+          if (allowedRecipient && allowedRecipient.toLowerCase() !== to.toLowerCase()) {
+            console.log(`ℹ️ Resend Sandbox: Redirecting email to verified account (${allowedRecipient}) for ${to}`);
+            const sandboxNotice = `<div style="padding:10px 14px;background:#fef3c7;border:1px solid #fde047;border-radius:6px;margin-bottom:15px;font-size:13px;color:#854d0e;">⚠️ <b>Resend Sandbox Notice:</b> This email was addressed to <code>${to}</code> and delivered to your verified test inbox <code>${allowedRecipient}</code> because custom domains are not yet verified on Resend.</div>`;
+            resendResponse = await resend.emails.send({
+              from: fromAddress,
+              to: [allowedRecipient],
+              subject: `[Test Delivery for ${to}] ${emailSubject}`,
+              text: `[Test Delivery for ${to}]\n\n` + emailBody,
+              html: sandboxNotice + htmlBody
+            });
+          }
+        }
+
+        const data = resendResponse.data;
+        const error = resendResponse.error;
 
         if (!error && data && data.id) {
           console.log(`✅ Email sent successfully via Resend API! ID: ${data.id}`);
