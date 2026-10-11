@@ -33,6 +33,12 @@ class EmailService {
     this.appUrl = process.env.APP_URL || 'http://localhost:5000';
   }
 
+  isBrevoConfigured() {
+    reloadEnv();
+    const key = (process.env.BREVO_API_KEY || '').trim();
+    return !!key;
+  }
+
   isResendConfigured() {
     reloadEnv();
     const key = (process.env.RESEND_API_KEY || this.resendApiKey || '').trim();
@@ -48,7 +54,7 @@ class EmailService {
   }
 
   isConfigured() {
-    return this.isResendConfigured() || this.isSmtpConfigured();
+    return this.isBrevoConfigured() || this.isResendConfigured() || this.isSmtpConfigured();
   }
 
   getResendClient() {
@@ -182,7 +188,89 @@ Gunupur, Odisha
       </div>
     `;
 
-    // ── 1. RESEND API DELIVERY (Preferred & Recommended for Cloud) ──
+    // ── 1. BREVO EMAIL API (Free 300/day, no custom domain required) ──
+    if (this.isBrevoConfigured()) {
+      try {
+        const apiKey = (process.env.BREVO_API_KEY || '').trim();
+        const senderEmail = (process.env.BREVO_SENDER_EMAIL || 'surajmeher886@gmail.com').trim();
+        const senderName = process.env.BREVO_SENDER_NAME || 'GIET Smart Bus System';
+
+        console.log(`📨 Sending credentials via Brevo API to: ${to} (from: ${senderEmail})`);
+
+        const brevoPayload = {
+          sender: {
+            name: senderName,
+            email: senderEmail
+          },
+          to: [
+            {
+              email: to,
+              name: name || 'User'
+            }
+          ],
+          subject: emailSubject,
+          htmlContent: htmlBody,
+          textContent: emailBody
+        };
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json',
+            'accept': 'application/json'
+          },
+          body: JSON.stringify(brevoPayload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && (data.messageId || data.id)) {
+          const msgId = data.messageId || data.id;
+          console.log(`✅ Email sent successfully via Brevo API to ${to}! (Message ID: ${msgId})`);
+          return { sent: true, reason: null, messageId: msgId };
+        }
+
+        const errMsg = data.message || `HTTP ${response.status} ${response.statusText}`;
+        console.warn(`⚠️ Brevo API delivery failed: ${errMsg}`);
+
+        if (!this.isResendConfigured() && !this.isSmtpConfigured()) {
+          return {
+            sent: false,
+            reason: `Brevo API delivery failed: ${errMsg}`,
+            devMode: process.env.NODE_ENV !== 'production',
+            devCredentials: process.env.NODE_ENV !== 'production' ? {
+              userId,
+              system_user_id: userId,
+              tempPassword,
+              temporary_password: tempPassword,
+              email: to,
+              role
+            } : null
+          };
+        }
+        console.log('🔄 Falling back to next configured provider...');
+      } catch (brevoErr) {
+        console.warn(`⚠️ Brevo API exception: ${brevoErr.message}`);
+        if (!this.isResendConfigured() && !this.isSmtpConfigured()) {
+          return {
+            sent: false,
+            reason: `Brevo API delivery failed: ${brevoErr.message}`,
+            devMode: process.env.NODE_ENV !== 'production',
+            devCredentials: process.env.NODE_ENV !== 'production' ? {
+              userId,
+              system_user_id: userId,
+              tempPassword,
+              temporary_password: tempPassword,
+              email: to,
+              role
+            } : null
+          };
+        }
+      }
+    }
+
+    // ── 2. RESEND API DELIVERY (Preferred & Recommended for Cloud) ──
     if (this.isResendConfigured()) {
       try {
         const resend = this.getResendClient();
