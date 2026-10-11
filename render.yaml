@@ -21,6 +21,12 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         value: Admin@123
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: surajmeher886@gmail.com
+      - key: BREVO_SENDER_NAME
+        value: GIET Smart Bus System
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM
