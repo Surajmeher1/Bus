@@ -266,17 +266,6 @@ Gunupur, Odisha
         }
       };
     }
-        devMode: !isProduction,
-        devCredentials: isProduction ? undefined : {
-          userId,
-          system_user_id: userId,
-          tempPassword,
-          temporary_password: tempPassword,
-          email: to,
-          role
-        }
-      };
-    }
 
     const mailOptions = {
       from: this.getFromAddress(),
