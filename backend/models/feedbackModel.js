@@ -34,8 +34,17 @@ const FeedbackModel = {
       VALUES (@student_id, @bus_id, @message, @rating)
     `).run(data),
 
-  getAverageRating: (busId) =>
-    db.prepare('SELECT AVG(rating) as avg, COUNT(*) as total FROM feedback WHERE bus_id = ?').get(busId),
+  getAverageRating: (busId) => {
+    try {
+      const row = db.prepare('SELECT AVG(rating) as avg, COUNT(*) as total FROM feedback WHERE bus_id = ?').get(busId);
+      return {
+        avg: row && row.avg != null ? Number(Number(row.avg).toFixed(1)) : 0,
+        total: row && row.total != null ? Number(row.total) : 0,
+      };
+    } catch (_) {
+      return { avg: 0, total: 0 };
+    }
+  },
 };
 
 module.exports = FeedbackModel;

@@ -312,11 +312,11 @@ async function startSuite() {
   // ── 7. STATS & FLEET CONSISTENCY ──
   console.log('\n--- 7. Stats & Fleet Consistency ---');
   runTest('Database counts are consistent across tables and stats query', () => {
-    const stuCount = db.prepare('SELECT COUNT(*) as count FROM students').get().count;
-    const busCount = db.prepare('SELECT COUNT(*) as count FROM buses').get().count;
-    const drvCount = db.prepare('SELECT COUNT(*) as count FROM drivers').get().count;
-    const mgrCount = db.prepare('SELECT COUNT(*) as count FROM managers').get().count;
-    const rCount = db.prepare('SELECT COUNT(*) as count FROM routes').get().count;
+    const stuCount = db.prepare('SELECT COUNT(*) as count FROM students').get()?.count || 0;
+    const busCount = db.prepare('SELECT COUNT(*) as count FROM buses').get()?.count || 0;
+    const drvCount = db.prepare('SELECT COUNT(*) as count FROM drivers').get()?.count || 0;
+    const mgrCount = db.prepare('SELECT COUNT(*) as count FROM managers').get()?.count || 0;
+    const rCount = db.prepare('SELECT COUNT(*) as count FROM routes').get()?.count || 0;
 
     assert.ok(stuCount >= 1, `Expected at least 1 student, got ${stuCount}`);
     assert.ok(busCount >= 1, `Expected at least 1 bus, got ${busCount}`);

@@ -11,20 +11,39 @@ const AdminModel = {
     db.prepare('UPDATE admins SET password = ? WHERE admin_id = ?').run(password, id),
 
   getStats: () => {
-    const totalStudents  = db.prepare('SELECT COUNT(*) as c FROM students').get().c;
-    const totalBuses     = db.prepare('SELECT COUNT(*) as c FROM buses').get().c;
-    const activeBuses    = db.prepare("SELECT COUNT(*) as c FROM buses WHERE status = 'running'").get().c;
-    const delayedBuses   = db.prepare("SELECT COUNT(*) as c FROM buses WHERE status = 'delayed'").get().c;
-    const totalDrivers   = db.prepare('SELECT COUNT(*) as c FROM drivers').get().c;
-    const totalManagers  = db.prepare('SELECT COUNT(*) as c FROM managers').get().c;
-    const totalRoutes    = db.prepare('SELECT COUNT(*) as c FROM routes').get().c;
-    const activeTrips    = db.prepare("SELECT COUNT(*) as c FROM trips WHERE status = 'running'").get().c;
-    const totalFeedback  = db.prepare('SELECT COUNT(*) as c FROM feedback').get().c;
-    const avgRating      = db.prepare('SELECT AVG(rating) as avg FROM feedback').get().avg;
+    const getCount = (query) => {
+      try {
+        const row = db.prepare(query).get();
+        return row && row.c != null ? Number(row.c) : 0;
+      } catch (_) {
+        return 0;
+      }
+    };
+
+    const totalStudents  = getCount('SELECT COUNT(*) as c FROM students');
+    const totalBuses     = getCount('SELECT COUNT(*) as c FROM buses');
+    const activeBuses    = getCount("SELECT COUNT(*) as c FROM buses WHERE status = 'running'");
+    const delayedBuses   = getCount("SELECT COUNT(*) as c FROM buses WHERE status = 'delayed'");
+    const totalDrivers   = getCount('SELECT COUNT(*) as c FROM drivers');
+    const totalManagers  = getCount('SELECT COUNT(*) as c FROM managers');
+    const totalRoutes    = getCount('SELECT COUNT(*) as c FROM routes');
+    const activeTrips    = getCount("SELECT COUNT(*) as c FROM trips WHERE status = 'running'");
+    const totalFeedback  = getCount('SELECT COUNT(*) as c FROM feedback');
+
+    let avgRating = 0;
+    try {
+      const avgRow = db.prepare('SELECT AVG(rating) as avg FROM feedback').get();
+      if (avgRow && avgRow.avg != null) {
+        avgRating = Number(Number(avgRow.avg).toFixed(1));
+      }
+    } catch (_) {
+      avgRating = 0;
+    }
+
     return {
       totalStudents, totalBuses, activeBuses, delayedBuses,
       totalDrivers, totalManagers, totalRoutes, activeTrips,
-      totalFeedback, avgRating: avgRating ? avgRating.toFixed(1) : 0
+      totalFeedback, avgRating
     };
   },
 

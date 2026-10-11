@@ -18,6 +18,8 @@ const geofenceService = require('./services/geofenceService');
 const gpsValidationService = require('./services/gpsValidationService');
 const etaService = require('./services/etaService');
 const routeModel = require('./models/routeModel');
+const AdminModel = require('./models/adminModel');
+const FeedbackModel = require('./models/feedbackModel');
 
 let passedTests = 0;
 let failedTests = 0;
@@ -310,6 +312,32 @@ async function runTests() {
       // Restore order
       routeModel.reorderStops(testRoute.route_id, stops.map(s => s.stop_id));
     }
+  });
+
+  // ── TEST GROUP 8: ADMIN STATS & FEEDBACK AGGREGATE SAFETY ──
+  console.log('\n--- 8. Admin Stats & Feedback Query Safety ---');
+
+  test('AdminModel.getStats() safely returns all stats without throwing', () => {
+    const stats = AdminModel.getStats();
+    assert.ok(typeof stats === 'object' && stats !== null, 'Stats should be an object');
+    assert.strictEqual(typeof stats.totalStudents, 'number', 'totalStudents should be a number');
+    assert.strictEqual(typeof stats.totalBuses, 'number', 'totalBuses should be a number');
+    assert.strictEqual(typeof stats.totalDrivers, 'number', 'totalDrivers should be a number');
+    assert.strictEqual(typeof stats.totalManagers, 'number', 'totalManagers should be a number');
+    assert.strictEqual(typeof stats.totalRoutes, 'number', 'totalRoutes should be a number');
+    assert.strictEqual(typeof stats.activeBuses, 'number', 'activeBuses should be a number');
+    assert.strictEqual(typeof stats.activeTrips, 'number', 'activeTrips should be a number');
+    assert.strictEqual(typeof stats.totalFeedback, 'number', 'totalFeedback should be a number');
+    assert.strictEqual(typeof stats.avgRating, 'number', 'avgRating should be a number');
+  });
+
+  test('FeedbackModel.getAverageRating() returns safe numbers even for non-existent bus', () => {
+    const res = FeedbackModel.getAverageRating(999999);
+    assert.ok(res !== null && typeof res === 'object', 'Result should be an object');
+    assert.strictEqual(typeof res.avg, 'number', 'res.avg should be a number');
+    assert.strictEqual(typeof res.total, 'number', 'res.total should be a number');
+    assert.strictEqual(res.total, 0, 'Total should be 0 for nonexistent bus');
+    assert.strictEqual(res.avg, 0, 'Avg should be 0 for nonexistent bus');
   });
 
   console.log('\n======================================================');
