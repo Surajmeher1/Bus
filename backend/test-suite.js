@@ -116,6 +116,9 @@ async function runTests() {
     const updated = db.prepare('SELECT * FROM students WHERE system_user_id = ?').get(testStudentId);
     assert.strictEqual(updated.must_change_password, 0, 'must_change_password must be reset to 0');
     assert.ok(bcrypt.compareSync(newPermanentPw, updated.password));
+
+    // Clean up temporary test student
+    db.prepare('DELETE FROM students WHERE system_user_id = ?').run(testStudentId);
   });
 
   // ── TEST GROUP 3: ANTI-FAKE BUS & TRIP VALIDATION ──

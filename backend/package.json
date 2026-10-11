@@ -7,7 +7,8 @@
     "start": "node --experimental-sqlite server.js",
     "dev": "nodemon --exec \"node --experimental-sqlite\" server.js",
     "init-db": "node --experimental-sqlite database/initDb.js",
-    "init-db:pg": "node database/initDb.pg.js"
+    "init-db:pg": "node database/initDb.pg.js",
+    "reset-users": "node --experimental-sqlite database/resetUsers.js"
   },
   "engines": {
     "node": ">=22.5.0"

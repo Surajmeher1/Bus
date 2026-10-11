@@ -15,7 +15,8 @@ function initDb(targetDb = null) {
   let db = targetDb;
 
   if (!db) {
-    const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bustrack.db');
+    const rawDbPath = process.env.DB_PATH || './database/bustrack.db';
+    const DB_PATH = path.isAbsolute(rawDbPath) ? rawDbPath : path.resolve(__dirname, '..', rawDbPath);
     const DB_DIR  = path.dirname(DB_PATH);
 
     if (!fs.existsSync(DB_DIR)) {
@@ -278,11 +279,7 @@ if (managerCount === 0) {
     INSERT INTO managers (name, email, phone, password, system_user_id)
     VALUES (?, ?, ?, ?, ?)
   `).run('Rajesh Kumar', 'rajesh@giet.edu', '9876543210', hashPwd('Manager@123'), 'GIET-MGR-1001');
-  db.prepare(`
-    INSERT INTO managers (name, email, phone, password, system_user_id)
-    VALUES (?, ?, ?, ?, ?)
-  `).run('Priya Sharma', 'priya@giet.edu', '9876543211', hashPwd('Manager@123'), 'GIET-MGR-1002');
-  console.log('👔 Managers seeded: rajesh@giet.edu, priya@giet.edu');
+  console.log('👔 Manager seeded: rajesh@giet.edu');
 }
 
 // ─── DRIVERS SEED ───────────────────────────────────────────────────────────
@@ -292,15 +289,7 @@ if (driverCount === 0) {
     INSERT INTO drivers (name, email, password, phone, license_number, address, system_user_id)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run('Rahul Verma', 'rahul.driver@giet.edu', hashPwd('Driver@123'), '9123456789', 'OD-05-12345', 'GIET Campus Road, Gunupur', 'GIET-DRV-1001');
-  db.prepare(`
-    INSERT INTO drivers (name, email, password, phone, license_number, address, system_user_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run('Suresh Babu', 'suresh.driver@giet.edu', hashPwd('Driver@123'), '9123456790', 'OD-05-76543', 'College Square, Gunupur', 'GIET-DRV-1002');
-  db.prepare(`
-    INSERT INTO drivers (name, email, password, phone, license_number, address, system_user_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run('Vijay Singh', 'vijay.driver@giet.edu', hashPwd('Driver@123'), '9123456791', 'OD-05-11223', 'Station Road, Gunupur', 'GIET-DRV-1003');
-  console.log('🚌 Drivers seeded with @giet.edu');
+  console.log('🚌 Driver seeded with @giet.edu: rahul.driver@giet.edu');
 }
 
 // ─── ROUTES SEED ────────────────────────────────────────────────────────────
@@ -389,12 +378,8 @@ if (studentCount === 0) {
     INSERT INTO students (roll_number, name, email, phone, department, semester, password, favorite_bus, system_user_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stuStmt.run('CS2021001', 'Arjun Mehta',   'arjun@giet.edu',   '9000001111', 'Computer Science', 6, hashPwd('Student@123'), b1Id, 'GIET-STU-1001');
-  stuStmt.run('EC2021002', 'Sneha Patel',   'sneha@giet.edu',   '9000002222', 'Electronics',      4, hashPwd('Student@123'), b2Id, 'GIET-STU-1002');
-  stuStmt.run('ME2022003', 'Rahul Sharma',  'rahul.student@giet.edu', '9000003333', 'Mechanical', 3, hashPwd('Student@123'), b1Id, 'GIET-STU-1003');
-  stuStmt.run('CE2022004', 'Ananya Singh',  'ananya@giet.edu',  '9000004444', 'Civil',            2, hashPwd('Student@123'), null, 'GIET-STU-1004');
-  stuStmt.run('CS2023005', 'Karthik Reddy', 'karthik@giet.edu', '9000005555', 'Computer Science', 1, hashPwd('Student@123'), b3Id, 'GIET-STU-1005');
-  console.log('🎓 Students seeded with @giet.edu');
+  stuStmt.run('CS2021001', 'Arjun Mehta', 'arjun@giet.edu', '9000001111', 'Computer Science', 6, hashPwd('Student@123'), b1Id, 'GIET-STU-1001');
+  console.log('🎓 Student seeded with @giet.edu: arjun@giet.edu');
 }
 
 // ─── GEOFENCE SEED ──────────────────────────────────────────────────────────
