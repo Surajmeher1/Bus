@@ -6,11 +6,11 @@ const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 function reloadEnv() {
   const backendEnv = path.join(__dirname, '..', '.env');
   const rootEnv = path.join(__dirname, '..', '..', '.env');
-  const rootEnvExample = path.join(__dirname, '..', '..', '.env.example');
 
   if (fs.existsSync(backendEnv)) {
     dotenv.config({ path: backendEnv, override: true });
@@ -18,14 +18,13 @@ function reloadEnv() {
   if (fs.existsSync(rootEnv)) {
     dotenv.config({ path: rootEnv, override: true });
   }
-  if ((!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) && fs.existsSync(rootEnvExample)) {
-    dotenv.config({ path: rootEnvExample, override: true });
-  }
 }
 
 class EmailService {
   constructor() {
     reloadEnv();
+    this.resendApiKey = process.env.RESEND_API_KEY || '';
+    this.resendFrom = process.env.RESEND_FROM || '"GIET Smart Bus System" <onboarding@resend.dev>';
     this.host = process.env.SMTP_HOST || '';
     this.port = parseInt(process.env.SMTP_PORT) || 587;
     this.user = process.env.SMTP_USER || '';
@@ -34,12 +33,34 @@ class EmailService {
     this.appUrl = process.env.APP_URL || 'http://localhost:5000';
   }
 
-  isConfigured() {
+  isResendConfigured() {
     reloadEnv();
-    const host = process.env.SMTP_HOST || this.host;
-    const user = process.env.SMTP_USER || this.user;
-    const pass = process.env.SMTP_PASSWORD || this.password;
+    const key = (process.env.RESEND_API_KEY || this.resendApiKey || '').trim();
+    return !!key;
+  }
+
+  isSmtpConfigured() {
+    reloadEnv();
+    const host = (process.env.SMTP_HOST || this.host || '').trim();
+    const user = (process.env.SMTP_USER || this.user || '').trim();
+    const pass = (process.env.SMTP_PASSWORD || this.password || '').trim();
     return !!(host && user && pass);
+  }
+
+  isConfigured() {
+    return this.isResendConfigured() || this.isSmtpConfigured();
+  }
+
+  getResendClient() {
+    reloadEnv();
+    const apiKey = (process.env.RESEND_API_KEY || this.resendApiKey || '').trim();
+    if (!apiKey) return null;
+    return new Resend(apiKey);
+  }
+
+  getResendFromAddress() {
+    reloadEnv();
+    return (process.env.RESEND_FROM || this.resendFrom || 'onboarding@resend.dev').trim();
   }
 
   getFromAddress() {
@@ -55,7 +76,7 @@ class EmailService {
 
   createTransporter(customPort = null, customSecure = null) {
     reloadEnv();
-    if (!this.isConfigured()) return null;
+    if (!this.isSmtpConfigured()) return null;
     const host = (process.env.SMTP_HOST || this.host).trim();
     const port = customPort !== null ? customPort : (parseInt(process.env.SMTP_PORT) || this.port);
     const isSecure = customSecure !== null ? customSecure : (process.env.SMTP_SECURE === 'true' || port === 465);
@@ -94,7 +115,7 @@ class EmailService {
     if (simulateUnconfigured) {
       return {
         sent: false,
-        reason: 'SMTP is not configured in environment variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD).'
+        reason: 'Email service is not configured in environment variables (RESEND_API_KEY or SMTP).'
       };
     }
     const loginUrl = `${this.appUrl}/pages/${role}/login.html`;
@@ -161,13 +182,73 @@ Gunupur, Odisha
       </div>
     `;
 
-    if (!this.isConfigured()) {
-      // In development mode when SMTP is unconfigured: do not crash.
-      // Return details safely so Admin UI can show them for dev inspection.
+    // ── 1. RESEND API DELIVERY (Preferred & Recommended for Cloud) ──
+    if (this.isResendConfigured()) {
+      try {
+        const resend = this.getResendClient();
+        const fromAddress = this.getResendFromAddress();
+        console.log(`📨 Sending credentials via Resend API to: ${to} (from: ${fromAddress})`);
+
+        const { data, error } = await resend.emails.send({
+          from: fromAddress,
+          to: [to],
+          subject: emailSubject,
+          text: emailBody,
+          html: htmlBody
+        });
+
+        if (!error && data && data.id) {
+          console.log(`✅ Email sent successfully via Resend API! ID: ${data.id}`);
+          return { sent: true, reason: null, messageId: data.id };
+        }
+
+        const resendErrMsg = error ? (error.message || JSON.stringify(error)) : 'Unknown Resend error';
+        console.warn(`⚠️  Resend API delivery failed: ${resendErrMsg}`);
+
+        // If SMTP is NOT configured, return Resend error immediately
+        if (!this.isSmtpConfigured()) {
+          return {
+            sent: false,
+            reason: `Resend API delivery failed: ${resendErrMsg}`,
+            devMode: process.env.NODE_ENV !== 'production',
+            devCredentials: process.env.NODE_ENV !== 'production' ? {
+              userId,
+              system_user_id: userId,
+              tempPassword,
+              temporary_password: tempPassword,
+              email: to,
+              role
+            } : null
+          };
+        }
+
+        console.log('🔄 Falling back to SMTP...');
+      } catch (resendEx) {
+        console.warn(`⚠️  Resend API exception: ${resendEx.message}`);
+        if (!this.isSmtpConfigured()) {
+          return {
+            sent: false,
+            reason: `Resend API delivery failed: ${resendEx.message}`,
+            devMode: process.env.NODE_ENV !== 'production',
+            devCredentials: process.env.NODE_ENV !== 'production' ? {
+              userId,
+              system_user_id: userId,
+              tempPassword,
+              temporary_password: tempPassword,
+              email: to,
+              role
+            } : null
+          };
+        }
+      }
+    }
+
+    // ── 2. SMTP FALLBACK DELIVERY ──
+    if (!this.isSmtpConfigured()) {
       const isProduction = process.env.NODE_ENV === 'production';
       return {
         sent: false,
-        reason: 'SMTP is not configured in environment variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD).',
+        reason: 'Email service is not configured in environment variables (RESEND_API_KEY or SMTP).',
         devMode: !isProduction,
         devCredentials: isProduction ? undefined : {
           userId,

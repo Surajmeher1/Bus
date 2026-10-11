@@ -21,15 +21,7 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         value: Admin@123
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "465"
-      - key: SMTP_SECURE
-        value: "true"
-      - key: SMTP_USER
-        value: mishrashreeshashish@gmail.com
-      - key: SMTP_PASSWORD
-        value: wosd hsfq mnef zthn
-      - key: SMTP_FROM
-        value: '"GIET Smart Bus System" <mishrashreeshashish@gmail.com>'
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: onboarding@resend.dev

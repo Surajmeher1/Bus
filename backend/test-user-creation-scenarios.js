@@ -152,9 +152,10 @@ async function runScenarioTests() {
 
   await check('TEST 8: student token calling admin endpoint returns 403 Forbidden', async () => {
     // Generate valid student token (using existing seeded student id: 1)
+    require('dotenv').config({ path: require('path').join(__dirname, '.env') });
     const jwt = require('jsonwebtoken');
-    const jwtConfig = require('./config/jwt');
-    const studentToken = jwt.sign({ id: 1, role: 'student', username: 'student' }, jwtConfig.secret, { expiresIn: '1h' });
+    const secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_in_production_min_32_chars';
+    const studentToken = jwt.sign({ id: 1, role: 'student', username: 'student' }, secret, { expiresIn: '1h' });
 
     const res = await postUser({ role: 'student', name: 'Student Trying Admin API', email: 'student.hacker@giet.edu' }, studentToken);
     assert.strictEqual(res.status, 403);
