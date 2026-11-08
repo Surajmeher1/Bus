@@ -15,17 +15,12 @@ function resolveApiBase() {
     return window.__APP_CONFIG__.API_BASE.replace(/\/+$/, '');
   }
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.protocol === 'file:') {
-      return 'http://localhost:5000/api/v1';
-    }
-    const isDevPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-      window.location.port && window.location.port !== '5000';
-    if (isDevPort) {
-      return 'http://localhost:5000/api/v1';
+    if (window.location.protocol === 'file:' || window.location.protocol === 'capacitor:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'https://giet-smart-bus-tracker.onrender.com/api/v1';
     }
     return `${window.location.origin}/api/v1`;
   }
-  return 'http://localhost:5000/api/v1';
+  return 'https://giet-smart-bus-tracker.onrender.com/api/v1';
 }
 
 const API_BASE = resolveApiBase();

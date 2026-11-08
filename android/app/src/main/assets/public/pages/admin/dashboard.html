@@ -44,7 +44,7 @@
       <div class="nav-item"><a class="nav-link" href="#" data-section="live-tracking"><i class="fa-solid fa-location-crosshairs"></i><span>Live Tracking</span></a></div>
       <div class="nav-section-title">Management</div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="user-management"><i class="fa-solid fa-users-gear"></i><span>User Management</span></a></div>
-      <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span></a></div>
+      <div class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="fa-solid fa-graduation-cap"></i><span>Students</span><span id="sidebar-student-count" class="badge badge-primary" style="margin-left:auto;font-size:0.7rem;padding:2px 7px;">0</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="buses"><i class="fa-solid fa-bus"></i><span>Buses</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="drivers"><i class="fa-solid fa-id-card"></i><span>Drivers</span></a></div>
       <div class="nav-item"><a class="nav-link" href="#" data-section="managers"><i class="fa-solid fa-user-tie"></i><span>Bus Managers</span></a></div>
@@ -512,7 +512,7 @@
         <div class="form-group"><label class="form-label">Full Name *</label><input id="new-stu-name" class="form-control"/></div>
         <div class="form-group"><label class="form-label">Roll Number *</label><input id="new-stu-roll" class="form-control"/></div>
       </div>
-      <div class="form-group"><label class="form-label">Email *</label><input id="new-stu-email" class="form-control" type="email"/></div>
+      <div class="form-group"><label class="form-label">Email (@giet.edu) *</label><input id="new-stu-email" class="form-control" type="email" placeholder="student@giet.edu"/></div>
       <div class="grid grid-2" style="gap:16px;">
         <div class="form-group"><label class="form-label">Phone</label><input id="new-stu-phone" class="form-control"/></div>
         <div class="form-group"><label class="form-label">Semester</label><select id="new-stu-sem" class="form-control"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
@@ -549,7 +549,7 @@
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Full Name *</label><input id="new-drv-name" class="form-control" placeholder="Driver Full Name"/></div>
       <div class="grid grid-2" style="gap:16px;">
-        <div class="form-group"><label class="form-label">Login Email *</label><input id="new-drv-email" class="form-control" type="email" placeholder="driver@university.edu"/></div>
+        <div class="form-group"><label class="form-label">Login Email (@giet.edu) *</label><input id="new-drv-email" class="form-control" type="email" placeholder="driver01@giet.edu"/></div>
         <div class="form-group"><label class="form-label">Password *</label><input id="new-drv-pw" class="form-control" type="password" placeholder="Driver@123"/></div>
       </div>
       <div class="grid grid-2" style="gap:16px;">
@@ -568,7 +568,7 @@
     <div class="modal-header"><div class="modal-title">Add New Manager</div><span class="modal-close" onclick="closeModal('add-manager-modal')"><i class="fa-solid fa-xmark"></i></span></div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Full Name *</label><input id="new-mgr-name" class="form-control"/></div>
-      <div class="form-group"><label class="form-label">Email *</label><input id="new-mgr-email" class="form-control" type="email"/></div>
+      <div class="form-group"><label class="form-label">Email (@giet.edu) *</label><input id="new-mgr-email" class="form-control" type="email" placeholder="manager@giet.edu"/></div>
       <div class="form-group"><label class="form-label">Phone</label><input id="new-mgr-phone" class="form-control"/></div>
       <div class="form-group"><label class="form-label">Password</label><input id="new-mgr-pw" class="form-control" type="password" placeholder="Manager@123"/></div>
     </div>
@@ -736,24 +736,24 @@
         <hr style="border:none;border-top:1px dashed var(--border-color);margin:4px 0;"/>
         <div class="flex-between">
           <span style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">Generated User ID:</span>
-          <code id="cred-user-id" style="font-size:1.05rem;font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);"></code>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <code id="cred-user-id" style="font-size:1.05rem;font-weight:700;color:var(--primary-600);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);"></code>
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyUserId()" title="Copy User ID" style="padding:4px 8px;font-size:0.75rem;"><i class="fa-solid fa-copy"></i></button>
+          </div>
+        </div>
+        <div class="flex-between" style="background:rgba(239,68,68,0.07);padding:8px 12px;border-radius:6px;border:1px dashed rgba(239,68,68,0.35);">
+          <div>
+            <span style="font-size:0.85rem;color:var(--text-primary);font-weight:600;display:block;">Temporary Password:</span>
+            <span style="font-size:0.72rem;color:var(--text-muted);">User must change on first login</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <code id="cred-temp-pw" style="font-size:1.05rem;font-weight:700;color:var(--danger);background:var(--bg-surface);padding:4px 10px;border-radius:4px;border:1px solid rgba(239,68,68,0.3);letter-spacing:0.5px;"></code>
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyTempPassword()" title="Copy Password" style="padding:4px 8px;font-size:0.75rem;"><i class="fa-solid fa-copy"></i></button>
+          </div>
         </div>
         <div class="flex-between">
           <span style="font-size:0.85rem;color:var(--text-secondary);">Email Delivery Status:</span>
           <span id="cred-delivery-status" style="font-size:0.85rem;font-weight:600;"></span>
-        </div>
-      </div>
-
-      <!-- Development-only safe temporary credential-preview mechanism -->
-      <div id="dev-credential-preview" style="display:none;margin-top:14px;padding:12px;background:rgba(245,158,11,0.08);border:1px dashed var(--warning);border-radius:var(--radius-md);">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--warning);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-          <i class="fa-solid fa-code"></i> DEVELOPMENT CREDENTIAL PREVIEW (SAFE DEV MODE)
-        </div>
-        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:4px;">
-          Temporary Password: <code id="cred-temp-pw" style="font-weight:700;color:var(--danger);background:var(--bg-surface);padding:3px 8px;border-radius:4px;"></code>
-        </div>
-        <div style="font-size:0.72rem;color:var(--text-muted);">
-          Note: In production environments, credentials are only emailed to the user and never exposed in the UI.
         </div>
       </div>
 
@@ -762,8 +762,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline btn-sm" id="btn-toggle-dev-preview" onclick="toggleDevPreview()"><i class="fa-solid fa-eye"></i> Dev Preview</button>
-      <button class="btn btn-secondary btn-sm" onclick="copyCredentials()"><i class="fa-solid fa-copy"></i> Copy Details</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyCredentials()"><i class="fa-solid fa-copy"></i> Copy Full Credentials</button>
       <button class="btn btn-primary" onclick="closeModal('user-credentials-modal')">Done</button>
     </div>
   </div>
@@ -1062,7 +1061,11 @@ async function loadDashboard(isManual = false) {
     const s = statsRes.data || {};
     const r = reportsRes.data || {};
 
-    document.getElementById('s-students').textContent = s.totalStudents || 0;
+    const stuCount = s.totalStudents || 0;
+    document.getElementById('s-students').textContent = stuCount;
+    const sidebarStuBadge = document.getElementById('sidebar-student-count');
+    if (sidebarStuBadge) sidebarStuBadge.textContent = stuCount;
+
     document.getElementById('s-buses').textContent    = s.totalBuses || 0;
     document.getElementById('s-active').textContent   = s.activeTrips || 0;
     document.getElementById('s-routes').textContent   = s.totalRoutes || 0;
@@ -1109,10 +1112,16 @@ async function loadStudents(isManual = false) {
   if (icon) icon.classList.add('fa-spin');
   try {
     const res = await StudentAPI.getAll();
-    renderStudentTable(res.data || []);
+    const students = Array.isArray(res) ? res : (res.data || res.students || []);
+    renderStudentTable(students);
+    const countBadge = document.getElementById('sidebar-student-count');
+    if (countBadge) countBadge.textContent = students.length;
+    const statEl = document.getElementById('s-students');
+    if (statEl) statEl.textContent = students.length;
     if (isManual) Toast.success('Students list refreshed');
   } catch(e) {
-    if (isManual) Toast.error('Failed to load students: ' + e.message);
+    Toast.error('Failed to load students: ' + (e.message || 'Server error'));
+    document.getElementById('students-tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:24px;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Failed to load students: ${e.message || 'Server error'}</td></tr>`;
   } finally {
     if (icon) icon.classList.remove('fa-spin');
   }
@@ -1130,7 +1139,7 @@ function renderStudentTable(students) {
         <button class="btn btn-icon btn-danger btn-sm" onclick="deleteStudent(${s.student_id})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
       </div></td>
     </tr>
-  `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No students found</td></tr>';
+  `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No students found</td></tr>';
 }
 async function searchStudents() {
   const q = document.getElementById('student-search').value.trim();
@@ -1152,19 +1161,24 @@ async function loadBuses() {
     allRoutesCached = routeRes.data||[]; allDriversCached = driverRes.data||[]; allManagersCached = mgrRes.data||[];
     populateBusModalSelects();
     const buses = busRes.data || [];
-    document.getElementById('buses-tbody').innerHTML = buses.length ? buses.map(b => `
-      <tr>
-        <td><b>${b.bus_number}</b></td>
-        <td style="font-size:.8rem;">${b.registration_number}</td>
-        <td>${b.route_name||'—'}</td>
-        <td>${b.driver_name||'—'}</td>
-        <td>${b.manager_name||'—'}</td>
-        <td><span class="badge badge-${b.status}">${b.status}</span></td>
-        <td>${b.available_seats}/${b.capacity}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteBus(${b.bus_id})"><i class="fa-solid fa-trash-can"></i></button></td>
-      </tr>
-    `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No buses</td></tr>';
-  } catch(e) {}
+    document.getElementById('buses-tbody').innerHTML = buses.length ? buses.map(b => {
+      const occupied = Math.max(0, (b.capacity || 0) - (b.available_seats || 0));
+      return `
+        <tr>
+          <td><b>${b.bus_number}</b></td>
+          <td style="font-size:.8rem;">${b.registration_number}</td>
+          <td>${b.route_name||'—'}</td>
+          <td>${b.driver_name||'—'}</td>
+          <td>${b.manager_name||'—'}</td>
+          <td><span class="badge badge-${b.status}">${b.status}</span></td>
+          <td><span title="${b.available_seats} of ${b.capacity} seats available">${occupied} / ${b.capacity} occupied <small style="color:var(--text-muted);display:block;">(${b.available_seats} free)</small></span></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteBus(${b.bus_id})" title="Delete Bus"><i class="fa-solid fa-trash-can"></i></button></td>
+        </tr>
+      `;
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No buses</td></tr>';
+  } catch(e) {
+    Toast.error('Failed to load buses: ' + (e.message || 'Server error'));
+  }
 }
 function populateBusModalSelects() {
   document.getElementById('new-bus-route').innerHTML = '<option value="">No Route</option>' + allRoutesCached.map(r=>`<option value="${r.route_id}">${r.route_name}</option>`).join('');
@@ -1804,9 +1818,13 @@ async function handleCreateUserSubmit(event) {
 
     // Retrieve credentials object robustly from API payload
     const creds = res.dev_preview || res.dev_credentials || res.devCredentials || (res.data && res.data.devCredentials) || res.data || {};
+    const extractedPw = res.temporary_password || res.tempPassword ||
+      (res.data && (res.data.temporary_password || res.data.tempPassword)) ||
+      creds.temporary_password || creds.tempPassword || '';
+
     lastCreatedCredentials = {
-      system_user_id: res.user_id || creds.system_user_id || creds.userId || 'GIET-USR-0000',
-      temporary_password: creds.temporary_password || creds.tempPassword || '******',
+      system_user_id: res.user_id || (res.data && res.data.user_id) || creds.system_user_id || creds.userId || 'GIET-USR-0000',
+      temporary_password: extractedPw,
       role: (res.data?.role || res.role || role),
       email: (res.data?.email || res.email || email),
       name: (res.data?.name || res.name || name)
@@ -1818,11 +1836,9 @@ async function handleCreateUserSubmit(event) {
       document.getElementById('cred-role-badge').textContent = lastCreatedCredentials.role.toUpperCase();
       document.getElementById('cred-user-id').textContent = lastCreatedCredentials.system_user_id;
 
-      // Ensure dev preview starts hidden
-      const devPreviewBox = document.getElementById('dev-credential-preview');
-      if (devPreviewBox) {
-        devPreviewBox.style.display = 'none';
-        document.getElementById('cred-temp-pw').textContent = lastCreatedCredentials.temporary_password;
+      const tempPwEl = document.getElementById('cred-temp-pw');
+      if (tempPwEl) {
+        tempPwEl.textContent = lastCreatedCredentials.temporary_password || '******';
       }
 
       const alertBox = document.getElementById('cred-email-alert');
@@ -1842,10 +1858,12 @@ async function handleCreateUserSubmit(event) {
         alertBox.style.background = 'rgba(239,68,68,0.1)';
         alertBox.style.color = 'var(--danger)';
         alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
-        alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Account created, but email could not be sent. Check SMTP configuration.';
+        const errDetail = res.emailError || (res.data && res.data.emailError) || '';
+        alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Account created, but email could not be sent. Check SMTP configuration.' +
+          (errDetail ? `<div style="font-size:0.75rem;margin-top:5px;font-weight:400;opacity:0.95;"><b>Reason:</b> ${escapeHtml(errDetail)}</div>` : '');
         if (deliveryStatusEl) {
-          deliveryStatusEl.style.color = 'var(--warning)';
-          deliveryStatusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Email Failed / Unconfigured';
+          deliveryStatusEl.style.color = 'var(--danger)';
+          deliveryStatusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Email Delivery Failed';
         }
       }
       openModal('user-credentials-modal');
@@ -1895,11 +1913,29 @@ function toggleDevPreview() {
   }
 }
 
+function copyUserId() {
+  if (!lastCreatedCredentials || !lastCreatedCredentials.system_user_id) return;
+  navigator.clipboard.writeText(lastCreatedCredentials.system_user_id).then(() => {
+    Toast.success('User ID copied to clipboard!');
+  }).catch(() => {
+    Toast.info('User ID: ' + lastCreatedCredentials.system_user_id);
+  });
+}
+
+function copyTempPassword() {
+  if (!lastCreatedCredentials || !lastCreatedCredentials.temporary_password) return;
+  navigator.clipboard.writeText(lastCreatedCredentials.temporary_password).then(() => {
+    Toast.success('Temporary password copied to clipboard!');
+  }).catch(() => {
+    Toast.info('Password: ' + lastCreatedCredentials.temporary_password);
+  });
+}
+
 function copyCredentials() {
   if (!lastCreatedCredentials) return;
   const text = `GIET Smart Bus Credentials:\nUser ID: ${lastCreatedCredentials.system_user_id}\nTemporary Password: ${lastCreatedCredentials.temporary_password}\nRole: ${lastCreatedCredentials.role}\nEmail: ${lastCreatedCredentials.email}\nNote: Password must be changed on first login.`;
   navigator.clipboard.writeText(text).then(() => {
-    Toast.success('Credentials copied to clipboard!');
+    Toast.success('Full credentials copied to clipboard!');
   }).catch(() => {
     Toast.info(`User ID: ${lastCreatedCredentials.system_user_id} | Password: ${lastCreatedCredentials.temporary_password}`);
   });
@@ -1972,11 +2008,17 @@ function initGeofenceMap(geofences = []) {
   const mapEl = document.getElementById('geofence-map');
   if (!mapEl) return;
   if (!geofenceMap) {
-    geofenceMap = L.map('geofence-map').setView([19.0494, 83.8242], 13);
+    geofenceMap = L.map('geofence-map', {
+      center: [19.0494, 83.8242],
+      zoom: 13,
+      zoomControl: true
+    });
     BusMap.createTileLayer().addTo(geofenceMap);
-  } else {
-    geofenceMap.invalidateSize();
   }
+
+  setTimeout(() => {
+    if (geofenceMap) geofenceMap.invalidateSize();
+  }, 150);
 
   geofencePolygonLayers.forEach(l => geofenceMap.removeLayer(l));
   geofencePolygonLayers = [];
@@ -2002,9 +2044,20 @@ function initGeofenceMap(geofences = []) {
     }
   });
 
-  if (bounds.length > 0) {
-    geofenceMap.fitBounds(bounds, { padding: [20, 20] });
-  }
+  setTimeout(() => {
+    if (geofenceMap) {
+      geofenceMap.invalidateSize();
+      if (bounds.length > 0) {
+        try {
+          geofenceMap.fitBounds(bounds, { padding: [25, 25] });
+        } catch (_) {
+          geofenceMap.setView([19.0494, 83.8242], 13);
+        }
+      } else {
+        geofenceMap.setView([19.0494, 83.8242], 13);
+      }
+    }
+  }, 300);
 }
 
 function openAddGeofenceModal() {
@@ -2272,9 +2325,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 let adminLiveMap = null;
 
 async function initAdminLiveMap() {
+  const mapEl = document.getElementById('admin-live-map');
+  if (!mapEl) return;
+
   if (!adminLiveMap) {
-    adminLiveMap = BusMap.init('admin-live-map', { zoom: 13 });
+    adminLiveMap = BusMap.init('admin-live-map', { center: [19.0494, 83.8242], zoom: 13 });
   }
+
+  setTimeout(() => {
+    if (adminLiveMap) adminLiveMap.invalidateSize();
+  }, 150);
+
   try {
     const [busRes, routeRes, pickupRes] = await Promise.all([
       BusAPI.getAll(), RouteAPI.getAll(), PickupAPI.getAll()
@@ -2283,9 +2344,13 @@ async function initAdminLiveMap() {
     const routes = routeRes.data || [];
     const pickups = pickupRes.data || [];
 
-    // Plot bus markers
+    BusMap.clearMarkers();
+
+    // Plot all bus markers (use current GPS or fallback to campus terminal position)
     buses.forEach(bus => {
-      if (bus.current_latitude) BusMap.addBusMarker(adminLiveMap, bus);
+      const lat = (bus.current_latitude && bus.current_latitude !== 0) ? bus.current_latitude : 19.0494;
+      const lng = (bus.current_longitude && bus.current_longitude !== 0) ? bus.current_longitude : 83.8242;
+      BusMap.addBusMarker(adminLiveMap, { ...bus, current_latitude: lat, current_longitude: lng });
     });
 
     // Draw route lines
@@ -2304,9 +2369,17 @@ async function initAdminLiveMap() {
         .addTo(adminLiveMap);
     });
 
-    BusMap.fitToBuses(adminLiveMap);
+    setTimeout(() => {
+      if (adminLiveMap) {
+        adminLiveMap.invalidateSize();
+        BusMap.fitToBuses(adminLiveMap);
+      }
+    }, 250);
+
     renderAdminFleetList(buses);
-  } catch(e) {}
+  } catch(e) {
+    console.error('[Admin Live Tracking error]:', e);
+  }
 }
 
 function renderAdminFleetList(buses) {

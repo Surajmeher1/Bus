@@ -13,17 +13,12 @@ function resolveSocketUrl() {
     return window.__APP_CONFIG__.SOCKET_URL.replace(/\/+$/, '');
   }
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.protocol === 'file:') {
-      return 'http://localhost:5000';
-    }
-    const isDevPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-      window.location.port && window.location.port !== '5000';
-    if (isDevPort) {
-      return 'http://localhost:5000';
+    if (window.location.protocol === 'file:' || window.location.protocol === 'capacitor:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'https://giet-smart-bus-tracker.onrender.com';
     }
     return window.location.origin;
   }
-  return 'http://localhost:5000';
+  return 'https://giet-smart-bus-tracker.onrender.com';
 }
 
 const SOCKET_URL = resolveSocketUrl();

@@ -16,8 +16,8 @@
 
 window.__APP_CONFIG__ = Object.assign(
   {
-    API_BASE: '',   // Empty = auto-detect from origin; or 'https://your-backend.onrender.com/api/v1'
-    SOCKET_URL: '', // Empty = auto-detect from origin; or 'https://your-backend.onrender.com'
+    API_BASE: 'https://giet-smart-bus-tracker.onrender.com/api/v1',
+    SOCKET_URL: 'https://giet-smart-bus-tracker.onrender.com',
     APP_NAME: 'Smart University Bus Tracking System',
     VERSION: '2.0.0'
   },

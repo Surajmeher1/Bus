@@ -287,8 +287,17 @@ const BusMap = {
   fitToBuses(map) {
     const markerList = Object.values(this.markers);
     if (markerList.length > 0) {
-      const group = L.featureGroup(markerList);
-      map.fitBounds(group.getBounds().pad(0.15));
+      try {
+        const group = L.featureGroup(markerList);
+        const bounds = group.getBounds();
+        if (bounds && bounds.isValid()) {
+          map.fitBounds(bounds.pad(0.15));
+          return;
+        }
+      } catch (_) {}
+    }
+    if (map && typeof map.setView === 'function') {
+      map.setView([19.0494, 83.8242], 13);
     }
   },
 
