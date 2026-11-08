@@ -607,6 +607,25 @@ const NativeApp = {
     return /android/i.test(navigator.userAgent) ? 'android' : 'web';
   }
 };
+
+// Auto-mark DOM for native Android app / mobile device styling
+if (typeof document !== 'undefined') {
+  const applyNativeClasses = () => {
+    if (NativeApp.isNative()) {
+      document.documentElement.classList.add('is-native-app');
+      document.body?.classList.add('is-native-app');
+    }
+    if (/android/i.test(navigator.userAgent)) {
+      document.documentElement.classList.add('is-android-device');
+      document.body?.classList.add('is-android-device');
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyNativeClasses);
+  } else {
+    applyNativeClasses();
+  }
+}
 if (typeof window !== 'undefined') {
   window.NativeApp = NativeApp;
   window.Auth = Auth;

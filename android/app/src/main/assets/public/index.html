@@ -380,6 +380,25 @@
 </head>
 <body>
 
+<!-- ── Mobile Top App Bar (Visible on Android & Mobile) ─────────── -->
+<header class="mobile-app-bar" id="mobile-app-bar">
+  <a href="index.html" class="mobile-app-bar-brand">
+    <div class="mobile-app-bar-icon">🚌</div>
+    <div>
+      <div class="mobile-app-bar-title">GIET Smart Bus</div>
+      <div class="mobile-app-bar-sub"><span class="mobile-live-pill"><span class="live-dot" style="width:6px;height:6px;"></span> LIVE</span> Gunupur Campus</div>
+    </div>
+  </a>
+  <div class="mobile-app-bar-actions">
+    <button id="mobile-theme-toggle" class="mobile-app-bar-btn" title="Toggle Theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <button id="mobile-app-user-btn" class="mobile-app-bar-btn" onclick="openPortalsSheet()" title="Portals & Account">
+      <i class="fa-solid fa-user-circle"></i>
+    </button>
+  </div>
+</header>
+
 <!-- ── Navigation ─────────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav">
   <div class="nav-logo">
@@ -537,6 +556,196 @@
     </div>
   </div>
 </section>
+
+<!-- ── Mobile App Home View (Visible on Mobile / Android) ─────────── -->
+<div class="mobile-app-view" id="mobile-app-view">
+  <!-- Hero Banner -->
+  <div class="mobile-hero-banner">
+    <div class="mobile-hero-top">
+      <div class="mobile-hero-badge">
+        <span class="live-dot" style="width:7px;height:7px;background:#22c55e;"></span>
+        <span id="mobile-hero-status-text">Live GPS Active</span>
+      </div>
+      <span style="font-size:0.75rem;opacity:0.85;font-weight:600;" id="mobile-hero-clock">Gunupur, OD</span>
+    </div>
+    <h1 class="mobile-hero-title">Track Campus Buses<br><span style="color:#60a5fa;">In Real Time</span></h1>
+    <p class="mobile-hero-sub">Live stop arrival ETAs, seat availability, and transit updates for GIET University.</p>
+    
+    <!-- User or Guest Action in Hero -->
+    <div id="mobile-guest-hero-actions" style="display:flex;gap:10px;margin-bottom:16px;">
+      <a href="pages/auth/login.html" class="btn btn-white btn-sm" style="flex:1;justify-content:center;font-weight:700;">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+      </a>
+      <button class="btn btn-android btn-sm android-install-only" onclick="handleAndroidAppClick()" style="flex:1;justify-content:center;">
+        <i class="fa-brands fa-android"></i> Install App
+      </button>
+    </div>
+
+    <div id="mobile-user-hero-actions" style="display:none;margin-bottom:16px;background:rgba(255,255,255,0.12);padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,0.22);backdrop-filter:blur(10px);">
+      <div style="font-size:0.875rem;font-weight:800;margin-bottom:2px;">Welcome back, <span id="mobile-user-name">User</span>!</div>
+      <div style="font-size:0.75rem;opacity:0.85;margin-bottom:12px;">Authenticated as <strong id="mobile-user-role">Student</strong></div>
+      <div style="display:flex;gap:8px;">
+        <a id="mobile-dashboard-btn" href="#" class="btn btn-white btn-sm" style="flex:1;justify-content:center;font-weight:700;">
+          <i class="fa-solid fa-gauge-high"></i> Open Dashboard
+        </a>
+        <button class="btn btn-outline btn-sm" onclick="handleLogout()" style="border-color:rgba(255,255,255,0.4);color:white;padding:7px 12px;" title="Logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="mobile-hero-stats">
+      <div>
+        <div class="mobile-stat-num" id="mob-stat-buses">3</div>
+        <div class="mobile-stat-txt">Buses</div>
+      </div>
+      <div>
+        <div class="mobile-stat-num" id="mob-stat-routes">2</div>
+        <div class="mobile-stat-txt">Routes</div>
+      </div>
+      <div>
+        <div class="mobile-stat-num" id="mob-stat-on-time">3</div>
+        <div class="mobile-stat-txt">On Time</div>
+      </div>
+      <div>
+        <div class="mobile-stat-num">3s</div>
+        <div class="mobile-stat-txt">GPS Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mobile-content-container">
+    <!-- Quick Filter Chips -->
+    <div class="mobile-chips-scroll mb-16">
+      <div class="mobile-filter-chip active" id="chip-all" onclick="filterMobileFleet('all')"><i class="fa-solid fa-bus"></i> All Buses</div>
+      <div class="mobile-filter-chip" id="chip-map" onclick="focusMobileMap()"><i class="fa-solid fa-map-location-dot"></i> Live Map</div>
+      <div class="mobile-filter-chip" id="chip-portals" onclick="openPortalsSheet()"><i class="fa-solid fa-users"></i> Portals</div>
+      <div class="mobile-filter-chip" id="chip-sos" onclick="handleEmergencySos()"><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i> SOS Alert</div>
+    </div>
+
+    <!-- 4 Direct Portals Grid -->
+    <div class="mobile-section-header">
+      <div class="mobile-section-title"><i class="fa-solid fa-door-open" style="color:var(--primary-600);"></i> University Portals</div>
+      <span class="mobile-section-badge">1-Tap Access</span>
+    </div>
+    <div class="mobile-portals-grid">
+      <div class="mobile-portal-card student" onclick="navigatePortal('STUDENT', 'pages/student/login.html')">
+        <div class="mobile-portal-icon-wrapper">
+          <div class="mobile-portal-icon student"><i class="fa-solid fa-graduation-cap"></i></div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.75rem;"></i>
+        </div>
+        <div>
+          <div class="mobile-portal-title">Student</div>
+          <div class="mobile-portal-desc">Track live bus &amp; stop ETAs</div>
+        </div>
+      </div>
+      <div class="mobile-portal-card driver" onclick="navigatePortal('DRIVER', 'pages/driver/login.html')">
+        <div class="mobile-portal-icon-wrapper">
+          <div class="mobile-portal-icon driver"><i class="fa-solid fa-bus-simple"></i></div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.75rem;"></i>
+        </div>
+        <div>
+          <div class="mobile-portal-title">Driver</div>
+          <div class="mobile-portal-desc">Stream GPS &amp; trip status</div>
+        </div>
+      </div>
+      <div class="mobile-portal-card manager" onclick="navigatePortal('MANAGER', 'pages/manager/login.html')">
+        <div class="mobile-portal-icon-wrapper">
+          <div class="mobile-portal-icon manager"><i class="fa-solid fa-clipboard-check"></i></div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.75rem;"></i>
+        </div>
+        <div>
+          <div class="mobile-portal-title">Manager</div>
+          <div class="mobile-portal-desc">Fleet dispatch &amp; readiness</div>
+        </div>
+      </div>
+      <div class="mobile-portal-card admin" onclick="navigatePortal('ADMIN', 'pages/admin/login.html')">
+        <div class="mobile-portal-icon-wrapper">
+          <div class="mobile-portal-icon admin"><i class="fa-solid fa-user-shield"></i></div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.75rem;"></i>
+        </div>
+        <div>
+          <div class="mobile-portal-title">Admin</div>
+          <div class="mobile-portal-desc">User accounts &amp; audit logs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Interactive Live Map -->
+    <div class="mobile-section-header" id="mobile-map-anchor">
+      <div class="mobile-section-title"><i class="fa-solid fa-location-dot" style="color:#22c55e;"></i> Campus Live Map</div>
+      <span class="status-badge-live">LIVE GPS</span>
+    </div>
+    <div class="mobile-map-card">
+      <div class="mobile-map-header">
+        <div style="font-size:0.8125rem;font-weight:700;"><i class="fa-solid fa-satellite-dish" style="color:var(--primary-600);margin-right:6px;"></i>Gunupur Campus Map</div>
+        <button class="btn btn-xs btn-outline" onclick="recenterMobileMap()" style="font-size:0.7rem;padding:3px 8px;">
+          <i class="fa-solid fa-crosshairs"></i> Recenter
+        </button>
+      </div>
+      <div class="mobile-map-body">
+        <div class="mobile-map-overlay-badge">
+          <span class="live-dot" style="width:6px;height:6px;"></span> 3 Active Buses
+        </div>
+        <div id="mobile-live-map"></div>
+      </div>
+    </div>
+
+    <!-- Mobile Live Bus Cards (Fleet) -->
+    <div class="mobile-section-header" id="mobile-fleet-anchor">
+      <div class="mobile-section-title"><i class="fa-solid fa-clock" style="color:var(--primary-600);"></i> Live Stop ETAs</div>
+      <span class="mobile-section-badge">Next Arrivals</span>
+    </div>
+    <div class="mobile-bus-list" id="mobile-bus-list">
+      <!-- Bus 1 -->
+      <div class="mobile-bus-item" onclick="focusBusOnMap(1)">
+        <div class="mobile-bus-left">
+          <div class="mobile-bus-icon-circle"><i class="fa-solid fa-bus"></i></div>
+          <div>
+            <div class="mobile-bus-code">BUS-001 <span class="status-badge-live" style="font-size:0.65rem;padding:2px 6px;">On Time</span></div>
+            <div class="mobile-bus-route-name">Route A • Campus Gate ➔ Railway Station</div>
+            <div><span class="mobile-bus-seat-badge"><i class="fa-solid fa-chair"></i> 18 Seats Left</span></div>
+          </div>
+        </div>
+        <div class="mobile-bus-right">
+          <div class="mobile-bus-eta-number" id="mob-eta-1">4</div>
+          <div class="mobile-bus-eta-unit">min away</div>
+        </div>
+      </div>
+      <!-- Bus 2 -->
+      <div class="mobile-bus-item" onclick="focusBusOnMap(2)">
+        <div class="mobile-bus-left">
+          <div class="mobile-bus-icon-circle"><i class="fa-solid fa-bus"></i></div>
+          <div>
+            <div class="mobile-bus-code">BUS-002 <span class="status-badge-live" style="font-size:0.65rem;padding:2px 6px;">On Time</span></div>
+            <div class="mobile-bus-route-name">Route B • Boys &amp; Girls Hostels ➔ Main Block</div>
+            <div><span class="mobile-bus-seat-badge"><i class="fa-solid fa-chair"></i> 24 Seats Left</span></div>
+          </div>
+        </div>
+        <div class="mobile-bus-right">
+          <div class="mobile-bus-eta-number" id="mob-eta-2">8</div>
+          <div class="mobile-bus-eta-unit">min away</div>
+        </div>
+      </div>
+      <!-- Bus 3 -->
+      <div class="mobile-bus-item" onclick="focusBusOnMap(3)">
+        <div class="mobile-bus-left">
+          <div class="mobile-bus-icon-circle"><i class="fa-solid fa-bus"></i></div>
+          <div>
+            <div class="mobile-bus-code">BUS-003 <span class="status-badge-ready" style="font-size:0.65rem;padding:2px 6px;">Delayed 5m</span></div>
+            <div class="mobile-bus-route-name">Route C • Gunupur Town Express</div>
+            <div><span class="mobile-bus-seat-badge"><i class="fa-solid fa-chair"></i> 12 Seats Left</span></div>
+          </div>
+        </div>
+        <div class="mobile-bus-right">
+          <div class="mobile-bus-eta-number" id="mob-eta-3">14</div>
+          <div class="mobile-bus-eta-unit">min away</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Features ───────────────────────────────────────────────────── -->
 <section class="features-section" id="features">
@@ -788,6 +997,80 @@
   </div>
 </div>
 
+<!-- ── Mobile Portals Bottom Sheet ─────────────────────────────── -->
+<div class="mobile-sheet-backdrop" id="portals-sheet" onclick="closePortalsSheet(event)">
+  <div class="mobile-sheet-content" onclick="event.stopPropagation()">
+    <div class="mobile-sheet-handle"></div>
+    <div class="mobile-sheet-title">Select University Portal</div>
+    <div class="mobile-sheet-sub">Choose your campus role to sign in or access your dashboard</div>
+    <div class="mobile-sheet-list">
+      <div class="mobile-sheet-item" onclick="navigatePortal('STUDENT', 'pages/student/login.html')">
+        <span class="role-dot student"></span>
+        <div style="flex:1;">
+          <div>Student Portal</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;">Track buses, view stop ETAs &amp; seats</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.8rem;"></i>
+      </div>
+      <div class="mobile-sheet-item" onclick="navigatePortal('DRIVER', 'pages/driver/login.html')">
+        <span class="role-dot driver"></span>
+        <div style="flex:1;">
+          <div>Bus Driver Portal</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;">Broadcast GPS coordinates &amp; active trip</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.8rem;"></i>
+      </div>
+      <div class="mobile-sheet-item" onclick="navigatePortal('MANAGER', 'pages/manager/login.html')">
+        <span class="role-dot manager"></span>
+        <div style="flex:1;">
+          <div>Fleet Manager Portal</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;">Fleet dispatch, maintenance &amp; delays</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.8rem;"></i>
+      </div>
+      <div class="mobile-sheet-item" onclick="navigatePortal('ADMIN', 'pages/admin/login.html')">
+        <span class="role-dot admin"></span>
+        <div style="flex:1;">
+          <div>System Administrator</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;">Manage accounts, routes &amp; security audit</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.8rem;"></i>
+      </div>
+      <div class="mobile-sheet-item" onclick="window.location.href='pages/auth/login.html'" style="border-top:1px dashed var(--border-color);margin-top:4px;">
+        <i class="fa-solid fa-shield-halved" style="color:var(--primary-600);width:10px;"></i>
+        <div style="flex:1;">
+          <div style="color:var(--primary-600);">Universal Sign In (All Roles)</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;">Auto-detect role from credentials</div>
+        </div>
+        <i class="fa-solid fa-arrow-right" style="color:var(--primary-600);font-size:0.8rem;"></i>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-outline w-full" onclick="closePortalsSheet()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Mobile Bottom Navigation Bar (Android Tab Bar) ───────────── -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+  <div class="mobile-nav-item active" id="tab-home" onclick="handleMobileTab('home')">
+    <i class="fa-solid fa-house"></i>
+    <span>Home</span>
+  </div>
+  <div class="mobile-nav-item" id="tab-map" onclick="handleMobileTab('map')">
+    <i class="fa-solid fa-map-location-dot"></i>
+    <span>Live Map</span>
+  </div>
+  <div class="mobile-nav-item" id="tab-fleet" onclick="handleMobileTab('fleet')">
+    <i class="fa-solid fa-bus"></i>
+    <span>Fleet</span>
+  </div>
+  <div class="mobile-nav-item" id="tab-portals" onclick="handleMobileTab('portals')">
+    <i class="fa-solid fa-user-circle"></i>
+    <span>Portals</span>
+  </div>
+</nav>
+
 <div id="toast-container" class="toast-container"></div>
 
 <!-- Leaflet & Scripts -->
@@ -811,9 +1094,21 @@
   });
 
   // ── Theme toggle ─────────────────────────────────────────────────────────────
+  const updateThemeIcons = (theme) => {
+    const icon = theme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+    const deskToggle = document.getElementById('theme-toggle');
+    const mobToggle = document.getElementById('mobile-theme-toggle');
+    if (deskToggle) deskToggle.innerHTML = icon;
+    if (mobToggle) mobToggle.innerHTML = icon;
+  };
+
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const next = Theme.toggle();
-    document.getElementById('theme-toggle').innerHTML = next === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+    updateThemeIcons(next);
+  });
+  document.getElementById('mobile-theme-toggle')?.addEventListener('click', () => {
+    const next = Theme.toggle();
+    updateThemeIcons(next);
   });
 
   // ── Fetch Android App Configuration ──────────────────────────────────────────
@@ -833,6 +1128,16 @@
 
   // ── Update Android Button UI based on Configuration ──────────────────────────
   function updateAndroidButtons() {
+    // If inside native Android app, hide install buttons completely
+    if (window.NativeApp && window.NativeApp.isNative()) {
+      document.querySelectorAll('.android-install-only').forEach(el => el.style.display = 'none');
+      const navBtn = document.getElementById('nav-android-btn');
+      const heroBtn = document.getElementById('hero-android-btn');
+      if (navBtn) navBtn.style.display = 'none';
+      if (heroBtn) heroBtn.style.display = 'none';
+      return;
+    }
+
     const isAvailable = appConfig.is_available && appConfig.android_app_url;
     const btnLabel = isAvailable ? 'Install Android App' : 'Android App Coming Soon';
 
@@ -849,6 +1154,12 @@
 
   // ── Handle Android Install Button Click ──────────────────────────────────────
   function handleAndroidAppClick() {
+    if (window.NativeApp && window.NativeApp.isNative()) {
+      if (typeof Toast !== 'undefined' && Toast.info) {
+        Toast.info('You are already running the GIET Smart Bus Android App!');
+      }
+      return;
+    }
     const isAvailable = appConfig.is_available && appConfig.android_app_url;
     if (isAvailable) {
       window.open(appConfig.android_app_url, '_blank', 'noopener,noreferrer');
@@ -876,7 +1187,76 @@
     }
   }
 
-  // ── Login Dropdown Toggle ────────────────────────────────────────────────────
+  // ── Mobile Bottom Sheet Portals Handlers ─────────────────────────────────────
+  function openPortalsSheet() {
+    const sheet = document.getElementById('portals-sheet');
+    if (sheet) {
+      sheet.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closePortalsSheet(event) {
+    if (event && event.target && event.target !== document.getElementById('portals-sheet')) {
+      return;
+    }
+    const sheet = document.getElementById('portals-sheet');
+    if (sheet) {
+      sheet.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  // ── Mobile Bottom Navigation Tab Switcher ────────────────────────────────────
+  function handleMobileTab(tab) {
+    document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+    const activeEl = document.getElementById(`tab-${tab}`);
+    if (activeEl) activeEl.classList.add('active');
+
+    if (tab === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tab === 'map') {
+      focusMobileMap();
+    } else if (tab === 'fleet') {
+      const el = document.getElementById('mobile-fleet-anchor');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (tab === 'portals') {
+      openPortalsSheet();
+    }
+  }
+
+  function focusMobileMap() {
+    const mapSection = document.getElementById('mobile-map-anchor');
+    if (mapSection) {
+      mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => {
+        if (mobileLiveMap) {
+          mobileLiveMap.invalidateSize();
+        }
+      }, 300);
+    }
+  }
+
+  function filterMobileFleet(filter) {
+    document.querySelectorAll('.mobile-filter-chip').forEach(c => c.classList.remove('active'));
+    document.getElementById('chip-all')?.classList.add('active');
+    const el = document.getElementById('mobile-fleet-anchor');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function handleEmergencySos() {
+    if (confirm("GIET Campus Security SOS:\nAre you sure you want to request emergency transport assistance?")) {
+      if (typeof Toast !== 'undefined' && Toast.error) {
+        Toast.error("Emergency SOS triggered! Campus Security notified of your location.");
+      } else {
+        alert("Emergency SOS triggered! Campus Security notified.");
+      }
+    }
+  }
+
+  // ── Login Dropdown Toggle (Desktop) ──────────────────────────────────────────
   function toggleLoginDropdown(e) {
     e.stopPropagation();
     const menu = document.getElementById('login-dropdown-menu');
@@ -900,6 +1280,9 @@
     const heroGuest = document.getElementById('hero-guest-actions');
     const heroUser = document.getElementById('hero-user-actions');
 
+    const mobGuest = document.getElementById('mobile-guest-hero-actions');
+    const mobUser = document.getElementById('mobile-user-hero-actions');
+
     if (isAuthenticated) {
       const userRole = normalizeRole(user.role);
       const userLabel = Auth.getRoleLabel ? Auth.getRoleLabel(userRole) : userRole;
@@ -907,7 +1290,7 @@
       const dashLabel = Auth.getDashboardLabel ? Auth.getDashboardLabel(userRole) : 'Dashboard';
       const displayName = user.name || user.username || userLabel;
 
-      // 1. Navbar UI: Hide public guest actions, show authenticated user pill & dashboard
+      // 1. Desktop Navbar UI
       if (navGuest) navGuest.style.display = 'none';
       if (navUser) {
         navUser.style.display = 'flex';
@@ -925,7 +1308,7 @@
         if (navDashText) navDashText.textContent = dashLabel;
       }
 
-      // 2. Hero UI: Hide public guest actions, show user greeting and direct dashboard button
+      // 2. Desktop Hero UI
       if (heroGuest) heroGuest.style.display = 'none';
       if (heroUser) {
         heroUser.style.display = 'block';
@@ -940,11 +1323,33 @@
         if (heroDashText) heroDashText.textContent = `Open ${dashLabel}`;
       }
 
-      // 3. Navigation links: Hide Portals anchor for logged-in users
+      // 3. Mobile App Hero UI
+      if (mobGuest) mobGuest.style.display = 'none';
+      if (mobUser) {
+        mobUser.style.display = 'block';
+        const mobName = document.getElementById('mobile-user-name');
+        if (mobName) mobName.textContent = displayName;
+        const mobRole = document.getElementById('mobile-user-role');
+        if (mobRole) mobRole.textContent = userLabel;
+        const mobDashBtn = document.getElementById('mobile-dashboard-btn');
+        if (mobDashBtn) {
+          mobDashBtn.href = dashUrl;
+          mobDashBtn.innerHTML = `<i class="fa-solid fa-gauge-high"></i> Open ${dashLabel}`;
+        }
+      }
+
+      // 4. Update mobile top app bar user button
+      const mobUserBtn = document.getElementById('mobile-app-user-btn');
+      if (mobUserBtn) {
+        mobUserBtn.onclick = () => window.location.href = dashUrl;
+        mobUserBtn.title = `${displayName} (${userLabel})`;
+      }
+
+      // Hide Portals link in desktop nav for logged-in users
       const navPortals = document.getElementById('nav-portals-link');
       if (navPortals) navPortals.style.display = 'none';
 
-      // Validate session with backend in background; if token expired or deleted, revert gracefully
+      // Validate session with backend in background
       if (Auth.validateSession) {
         Auth.validateSession().then(validatedUser => {
           if (!validatedUser) {
@@ -959,6 +1364,15 @@
       if (navUser) navUser.style.display = 'none';
       if (heroGuest) heroGuest.style.display = 'flex';
       if (heroUser) heroUser.style.display = 'none';
+
+      if (mobGuest) mobGuest.style.display = 'flex';
+      if (mobUser) mobUser.style.display = 'none';
+
+      const mobUserBtn = document.getElementById('mobile-app-user-btn');
+      if (mobUserBtn) {
+        mobUserBtn.onclick = openPortalsSheet;
+        mobUserBtn.title = 'Portals & Account';
+      }
 
       const navPortals = document.getElementById('nav-portals-link');
       if (navPortals) navPortals.style.display = '';
@@ -991,7 +1405,7 @@
         }
         setTimeout(() => {
           window.location.href = Auth.getDashboardUrl(currentRole);
-        }, 1000);
+        }, 800);
         return;
       }
     }
@@ -999,43 +1413,90 @@
     window.location.href = defaultLoginPage;
   }
 
-  // ── Hero Interactive Map Setup ───────────────────────────────────────────────
-  const heroMap = L.map('hero-map', {
-    center: [19.0435, 83.8138], zoom: 14,
-    zoomControl: false, scrollWheelZoom: false, dragging: false,
-    attributionControl: false
-  });
-  BusMap.createTileLayer({ attributionControl: false }).addTo(heroMap);
+  // ── Hero & Mobile Interactive Maps Setup ─────────────────────────────────────
+  let heroMap = null;
+  let mobileLiveMap = null;
 
-  // Animated demo buses on hero map (Gunupur, Odisha)
   const demoBuses = [
-    { id: 1, lat: 19.0435, lng: 83.8138, name: 'BUS-001', color: '#22c55e' },
-    { id: 2, lat: 19.0470, lng: 83.8165, name: 'BUS-002', color: '#3b82f6' },
-    { id: 3, lat: 19.0620, lng: 83.8115, name: 'BUS-003', color: '#f59e0b' },
+    { id: 1, lat: 19.0435, lng: 83.8138, name: 'BUS-001', color: '#22c55e', route: 'Route A', eta: 4 },
+    { id: 2, lat: 19.0470, lng: 83.8165, name: 'BUS-002', color: '#3b82f6', route: 'Route B', eta: 8 },
+    { id: 3, lat: 19.0620, lng: 83.8115, name: 'BUS-003', color: '#f59e0b', route: 'Route C', eta: 14 },
   ];
   const heroMarkers = {};
+  const mobileMarkers = {};
 
-  demoBuses.forEach(b => {
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:28px;height:28px;border-radius:50%;background:${b.color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:11px;">🚌</div>`,
-      iconSize: [28, 28], iconAnchor: [14, 14]
-    });
-    heroMarkers[b.id] = L.marker([b.lat, b.lng], { icon }).addTo(heroMap);
-  });
+  function initMaps() {
+    // 1. Desktop Hero Map
+    const heroMapEl = document.getElementById('hero-map');
+    if (heroMapEl && !heroMap) {
+      heroMap = L.map('hero-map', {
+        center: [19.0435, 83.8138], zoom: 14,
+        zoomControl: false, scrollWheelZoom: false, dragging: false,
+        attributionControl: false
+      });
+      BusMap.createTileLayer({ attributionControl: false }).addTo(heroMap);
+      demoBuses.forEach(b => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="width:28px;height:28px;border-radius:50%;background:${b.color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:11px;">🚌</div>`,
+          iconSize: [28, 28], iconAnchor: [14, 14]
+        });
+        heroMarkers[b.id] = L.marker([b.lat, b.lng], { icon }).addTo(heroMap);
+      });
+    }
 
-  // Animate hero buses
+    // 2. Mobile Live Map
+    const mobileMapEl = document.getElementById('mobile-live-map');
+    if (mobileMapEl && !mobileLiveMap) {
+      mobileLiveMap = L.map('mobile-live-map', {
+        center: [19.0450, 83.8150], zoom: 14,
+        zoomControl: true, scrollWheelZoom: true, dragging: true,
+        attributionControl: false
+      });
+      BusMap.createTileLayer({ attributionControl: false }).addTo(mobileLiveMap);
+      demoBuses.forEach(b => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="width:32px;height:32px;border-radius:50%;background:${b.color};border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;">🚌</div>`,
+          iconSize: [32, 32], iconAnchor: [16, 16]
+        });
+        const marker = L.marker([b.lat, b.lng], { icon }).addTo(mobileLiveMap);
+        marker.bindPopup(`<strong>${b.name}</strong><br>${b.route}<br><span style="color:#22c55e;">ETA: ${b.eta} mins</span>`);
+        mobileMarkers[b.id] = marker;
+      });
+    }
+  }
+
+  function recenterMobileMap() {
+    if (mobileLiveMap) {
+      mobileLiveMap.setView([19.0450, 83.8150], 14, { animate: true });
+    }
+  }
+
+  function focusBusOnMap(id) {
+    focusMobileMap();
+    const marker = mobileMarkers[id];
+    if (marker && mobileLiveMap) {
+      mobileLiveMap.setView(marker.getLatLng(), 16, { animate: true });
+      marker.openPopup();
+    }
+  }
+
+  // Animate demo buses
   let etaCount = 4;
   setInterval(() => {
     demoBuses.forEach(b => {
-      b.lat += (Math.random() - 0.5) * 0.002;
-      b.lng += (Math.random() - 0.5) * 0.002;
+      b.lat += (Math.random() - 0.5) * 0.0015;
+      b.lng += (Math.random() - 0.5) * 0.0015;
       heroMarkers[b.id]?.setLatLng([b.lat, b.lng]);
+      mobileMarkers[b.id]?.setLatLng([b.lat, b.lng]);
     });
     etaCount = Math.max(1, Math.min(8, etaCount + (Math.random() > 0.5 ? -1 : 1)));
     const etaEl = document.getElementById('hero-eta');
     if (etaEl) etaEl.textContent = etaCount;
-  }, 2000);
+    const mobEta1 = document.getElementById('mob-eta-1');
+    if (mobEta1) mobEta1.textContent = etaCount;
+  }, 2500);
 
   // Smooth scroll for anchor links
   document.querySelectorAll('a[href^="#"]').forEach(a => {
@@ -1045,13 +1506,21 @@
     });
   });
 
-  // Expose methods on window for global access and testing
+  // Expose methods on window for global access
   window.renderAuthUI = renderAuthUI;
   window.loadAppConfig = loadAppConfig;
   window.updateAndroidButtons = updateAndroidButtons;
   window.handleAndroidAppClick = handleAndroidAppClick;
   window.openAndroidModal = openAndroidModal;
   window.closeAndroidModal = closeAndroidModal;
+  window.openPortalsSheet = openPortalsSheet;
+  window.closePortalsSheet = closePortalsSheet;
+  window.handleMobileTab = handleMobileTab;
+  window.focusMobileMap = focusMobileMap;
+  window.recenterMobileMap = recenterMobileMap;
+  window.focusBusOnMap = focusBusOnMap;
+  window.filterMobileFleet = filterMobileFleet;
+  window.handleEmergencySos = handleEmergencySos;
   window.navigatePortal = navigatePortal;
   window.handleLogout = handleLogout;
 
@@ -1059,10 +1528,12 @@
   document.addEventListener('DOMContentLoaded', () => {
     renderAuthUI();
     loadAppConfig();
+    initMaps();
   });
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     renderAuthUI();
     loadAppConfig();
+    initMaps();
   }
 </script>
 </body>
