@@ -33,8 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final String PREFS_NAME = "SmartBusPrefs";
     private static final String KEY_SERVER_URL = "server_url";
-    private static final String DEFAULT_EMULATOR_URL = "http://10.0.2.2:5000";
-    private static final String DEFAULT_LOCAL_URL = "http://localhost:5000";
+    private static final String DEFAULT_EMULATOR_URL = "https://giet-smart-bus-tracker.onrender.com";
+    private static final String DEFAULT_LOCAL_URL = "https://giet-smart-bus-tracker.onrender.com";
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
@@ -56,7 +56,11 @@ public class MainActivity extends AppCompatActivity {
         configureWebView();
         requestRequiredPermissions();
 
-        String serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_LOCAL_URL);
+        String serverUrl = prefs.getString(KEY_SERVER_URL, null);
+        if (serverUrl == null || serverUrl.contains("localhost") || serverUrl.contains("10.0.2.2")) {
+            serverUrl = DEFAULT_LOCAL_URL;
+            prefs.edit().putString(KEY_SERVER_URL, serverUrl).apply();
+        }
         webView.loadUrl(serverUrl);
 
         swipeRefresh.setOnRefreshListener(() -> webView.reload());
