@@ -1,0 +1,50 @@
+{
+  "name": "Smart University Bus Tracking System",
+  "short_name": "SmartBus",
+  "description": "Real-time University Bus Tracking, Live Driver GPS Streaming, and Student Route ETA System",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#1d4ed8",
+  "categories": ["education", "navigation", "transportation"],
+  "icons": [
+    {
+      "src": "/assets/icons/bus-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Student Portal",
+      "short_name": "Student",
+      "description": "Live bus tracking and arrival times",
+      "url": "/pages/student/login.html",
+      "icons": [{ "src": "/assets/icons/bus-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Driver Portal",
+      "short_name": "Driver",
+      "description": "Driver GPS broadcasting & route navigation",
+      "url": "/pages/driver/login.html",
+      "icons": [{ "src": "/assets/icons/bus-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Manager Portal",
+      "short_name": "Manager",
+      "description": "Fleet status and trip controls",
+      "url": "/pages/manager/login.html",
+      "icons": [{ "src": "/assets/icons/bus-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Admin Portal",
+      "short_name": "Admin",
+      "description": "System control and user management",
+      "url": "/pages/admin/login.html",
+      "icons": [{ "src": "/assets/icons/bus-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    }
+  ]
+}
