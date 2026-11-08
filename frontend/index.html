@@ -237,10 +237,13 @@
       .footer-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 768px) {
-      .nav { padding: 14px 20px; }
-      .nav-links { display: none; }
-      .hero, .features-section, .portals-section, .how-section, .footer { padding-left: 20px; padding-right: 20px; }
-      .hero-title { font-size: 2.25rem; }
+      .nav { display: none !important; }
+      .hero { display: none !important; }
+      .mobile-app-bar { display: flex !important; }
+      .mobile-app-view { display: block !important; }
+      .mobile-bottom-nav { display: flex !important; }
+      .features-section, .portals-section, .how-section { padding-left: 16px; padding-right: 16px; padding-top: 48px; padding-bottom: 48px; }
+      .footer { padding-left: 16px; padding-right: 16px; padding-bottom: calc(80px + var(--safe-bottom)); }
       .features-grid { grid-template-columns: 1fr; }
       .steps-grid { grid-template-columns: 1fr; }
       .steps-grid::before { display: none; }
