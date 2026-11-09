@@ -7,6 +7,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="../../assets/css/main.css" />
+  <style>
+    @media (max-width: 600px) {
+      .auth-right .grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+      }
+    }
+  </style>
 </head>
 <body>
 <div class="auth-page">
@@ -20,6 +28,11 @@
     </div>
   </div>
   <div class="auth-right" style="overflow-y:auto;">
+    <div class="auth-top-actions">
+      <a href="login.html" class="auth-back-link"><i class="fa-solid fa-arrow-left"></i> Sign In</a>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+    </div>
+
     <div class="auth-brand">
       <div class="auth-brand-icon">🚌</div>
       <div><div class="auth-brand-name">Smart Bus Tracker</div><div class="auth-brand-sub">Student Registration</div></div>
@@ -114,6 +127,15 @@
 <script src="../../assets/js/api.js"></script>
 <script>
   Theme.init();
+
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next = Theme.toggle();
+    document.getElementById('theme-toggle').innerHTML = next === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+  if (Theme.get() === 'dark') {
+    const tBtn = document.getElementById('theme-toggle');
+    if (tBtn) tBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+  }
   function togglePw(id, toggleId) {
     const inp = document.getElementById(id);
     inp.type = inp.type === 'password' ? 'text' : 'password';

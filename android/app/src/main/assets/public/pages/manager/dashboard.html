@@ -15,6 +15,20 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../../assets/css/main.css"/>
   <style>
+    /* ── Manager Dashboard Android 16 System Styling ── */
+    html, body, .layout {
+      max-width: 100vw;
+      overflow-x: hidden;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .main-content, .page-content {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
     .sidebar { background: #1c1004; }
     .nav-link.active { background: #d97706; box-shadow: 0 4px 14px rgba(217, 119, 6, 0.4); }
     .sidebar-logo { background: linear-gradient(135deg,#f59e0b,#d97706); }
@@ -28,6 +42,20 @@
     .status-btn.delayed.active     { background: var(--warning); }
     .status-btn.maintenance.active { background: var(--danger);  }
     .status-btn.cancelled.active   { background: var(--gray-400); }
+
+    @media (max-width: 768px) {
+      .topbar { padding: 0 14px; height: 60px; }
+      .topbar-left { gap: 10px; min-width: 0; }
+      .topbar-title { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #page-subtitle { display: none !important; }
+      .page-content { padding: 18px 14px; }
+      .grid.grid-2, .grid.grid-3 { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 480px) {
+      .topbar { padding: 0 10px; height: 56px; }
+      .topbar-title { font-size: 0.95rem; }
+      .page-content { padding: 14px 10px; }
+    }
   </style>
 </head>
 <body>
@@ -89,14 +117,14 @@
           <div><h1 class="page-title">Manager Dashboard</h1><div class="page-subtitle">Welcome back, <span id="mgr-name">Manager</span>!</div></div>
           <button class="btn btn-primary" onclick="refreshDashboard()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
         </div>
-        <div class="grid grid-4 mb-24">
+        <div class="stats-grid-responsive mb-24">
           <div class="stat-card blue"><div class="stat-icon blue"><i class="fa-solid fa-bus"></i></div><div class="stat-info"><div class="stat-value" id="stat-total-buses">–</div><div class="stat-label">My Buses</div></div></div>
           <div class="stat-card green"><div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div><div class="stat-info"><div class="stat-value" id="stat-running">–</div><div class="stat-label">Running</div></div></div>
           <div class="stat-card orange"><div class="stat-icon orange"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-info"><div class="stat-value" id="stat-delayed">–</div><div class="stat-label">Delayed</div></div></div>
           <div class="stat-card red"><div class="stat-icon red"><i class="fa-solid fa-wrench"></i></div><div class="stat-info"><div class="stat-value" id="stat-maintenance">–</div><div class="stat-label">Maintenance</div></div></div>
         </div>
 
-        <div class="grid grid-2 mb-24" style="grid-template-columns:2fr 1fr;">
+        <div class="grid-2-1 mb-24">
           <div class="card">
             <div class="card-header"><div class="card-title"><i class="fa-solid fa-location-crosshairs" style="color:var(--primary-500);margin-right:8px;"></i>Live Bus Positions</div></div>
             <div style="height:360px;border-radius:0 0 var(--radius-lg) var(--radius-lg);">

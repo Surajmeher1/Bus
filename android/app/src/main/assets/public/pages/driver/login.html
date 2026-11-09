@@ -35,6 +35,11 @@
     </div>
   </div>
   <div class="auth-right">
+    <div class="auth-top-actions">
+      <a href="../../index.html" class="auth-back-link"><i class="fa-solid fa-arrow-left"></i> Home</a>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+    </div>
+
     <div class="auth-brand">
       <div class="auth-brand-icon">🚌</div>
       <div><div class="auth-brand-name">Driver Portal</div><div class="auth-brand-sub">Smart Bus Tracking System</div></div>
@@ -75,6 +80,15 @@
 <script>
   Theme.init();
   Auth.checkAlreadyLoggedInAndRedirect();
+
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next = Theme.toggle();
+    document.getElementById('theme-toggle').innerHTML = next === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+  if (Theme.get() === 'dark') {
+    const tBtn = document.getElementById('theme-toggle');
+    if (tBtn) tBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+  }
 
   function togglePw() {
     const inp = document.getElementById('password');
