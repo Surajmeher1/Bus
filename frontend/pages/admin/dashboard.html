@@ -16,17 +16,327 @@
   <link rel="stylesheet" href="../../assets/css/main.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
+    /* ── Admin Dashboard Theme & Core Responsive Rules ── */
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .layout {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+
+    .main-content {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+
+    .page-content {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+      box-sizing: border-box;
+      padding: 24px 28px;
+    }
+
     .sidebar { background: #130324; }
     .nav-link.active { background: #7c3aed; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4); }
     .sidebar-logo { background: linear-gradient(135deg,#a855f7,#7c3aed); }
     .table-actions { display: flex; gap: 6px; }
-    .search-filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-    .tab-nav { display: flex; gap: 6px; background: var(--md-sys-color-surface-container); padding: 5px; border-radius: var(--radius-full); margin-bottom: 24px; border: 1px solid var(--border-color); }
-    .tab-nav-btn { padding: 9px 20px; font-size: .875rem; font-weight: 700; color: var(--text-secondary); border-radius: var(--radius-full); cursor: pointer; transition: all .2s var(--ease-spring); }
+    .search-filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; width: 100%; }
+    .search-filter-bar .search-bar { flex: 1 1 220px; min-width: 180px; }
+    
+    .tab-nav {
+      display: flex; gap: 6px; background: var(--md-sys-color-surface-container);
+      padding: 5px; border-radius: var(--radius-full); margin-bottom: 24px;
+      border: 1px solid var(--border-color); overflow-x: auto;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      max-width: 100%;
+    }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-nav-btn {
+      padding: 9px 20px; font-size: .875rem; font-weight: 700;
+      color: var(--text-secondary); border-radius: var(--radius-full);
+      cursor: pointer; transition: all .2s var(--ease-spring);
+      white-space: nowrap; flex-shrink: 0;
+    }
     .tab-nav-btn:hover { color: var(--text-primary); }
     .tab-nav-btn.active { color: white; background: #7c3aed; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35); }
     .tab-pane { display: none; } .tab-pane.active { display: block; }
-    canvas { max-height: 280px !important; }
+
+    /* ── Responsive Statistics Grid ── */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .stat-card {
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 18px 20px;
+      gap: 14px;
+      overflow: hidden;
+    }
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .stat-info {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stat-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* ── Responsive Charts Grid ── */
+    .admin-charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .chart-card {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      min-height: 250px;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .donut-chart-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+    .bar-chart-wrapper {
+      width: 100%;
+    }
+
+    /* ── Responsive Quick Access Grid ── */
+    .admin-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .quick-access-card {
+      min-width: 0;
+      box-sizing: border-box;
+      transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
+    }
+    .quick-access-card:hover {
+      transform: translateY(-3px);
+    }
+
+    /* ── Grid 2:1 Responsive Container ── */
+    .grid-2-1 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* ── Media Queries ── */
+    @media (max-width: 1200px) {
+      .admin-stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .admin-quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .admin-charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .grid-2-1 {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .page-content {
+        padding: 20px 18px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admin-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .stat-card {
+        padding: 14px 14px;
+        gap: 12px;
+      }
+      .stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        font-size: 1.15rem;
+      }
+      .stat-value {
+        font-size: 1.45rem;
+      }
+      .stat-label {
+        font-size: 0.75rem;
+      }
+      .topbar {
+        padding: 0 14px;
+        height: 60px;
+      }
+      .topbar-left {
+        gap: 10px;
+      }
+      .topbar-title {
+        font-size: 1.05rem;
+      }
+      #page-subtitle {
+        display: none !important;
+      }
+      .sidebar-toggle-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 0.95rem;
+      }
+      .theme-toggle {
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+      }
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        font-size: 0.85rem;
+      }
+      .page-content {
+        padding: 16px 14px;
+      }
+      .chart-wrapper {
+        height: 250px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .admin-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .stat-card {
+        padding: 12px 10px;
+        gap: 10px;
+      }
+      .stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        font-size: 1rem;
+      }
+      .stat-value {
+        font-size: 1.3rem;
+      }
+      .stat-label {
+        font-size: 0.72rem;
+      }
+      .admin-quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .admin-quick-grid .card-body {
+        padding: 16px 10px !important;
+      }
+      .topbar {
+        padding: 0 10px;
+        height: 56px;
+      }
+      .topbar-left {
+        gap: 8px;
+      }
+      .topbar-title {
+        font-size: 0.96rem;
+      }
+      .topbar-right {
+        gap: 8px;
+      }
+      .sidebar-toggle-btn, .theme-toggle, .user-avatar {
+        width: 36px;
+        height: 36px;
+      }
+      .page-content {
+        padding: 14px 10px;
+      }
+      .card-header {
+        padding: 14px 16px 12px;
+      }
+      .card-body {
+        padding: 14px 16px;
+      }
+      .chart-wrapper {
+        height: 230px;
+      }
+    }
+
+    @media (max-width: 340px) {
+      .admin-stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .admin-quick-grid {
+        grid-template-columns: 1fr;
+      }
+      .topbar-title {
+        font-size: 0.88rem;
+      }
+      .sidebar-toggle-btn, .theme-toggle, .user-avatar {
+        width: 32px;
+        height: 32px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -96,7 +406,7 @@
           <button class="btn btn-primary" id="btn-refresh-dashboard" onclick="loadDashboard(true)"><i class="fa-solid fa-arrows-rotate" id="icon-refresh-dashboard"></i> Refresh</button>
         </div>
 
-        <div class="grid grid-5 mb-24" style="grid-template-columns:repeat(5,1fr);">
+        <div class="admin-stats-grid mb-24">
           <div class="stat-card blue"><div class="stat-icon blue"><i class="fa-solid fa-graduation-cap"></i></div><div class="stat-info"><div class="stat-value" id="s-students">–</div><div class="stat-label">Students</div></div></div>
           <div class="stat-card cyan"><div class="stat-icon cyan"><i class="fa-solid fa-bus"></i></div><div class="stat-info"><div class="stat-value" id="s-buses">–</div><div class="stat-label">Total Buses</div></div></div>
           <div class="stat-card green"><div class="stat-icon green"><i class="fa-solid fa-circle-play"></i></div><div class="stat-info"><div class="stat-value" id="s-active">–</div><div class="stat-label">Active Trips</div></div></div>
@@ -105,42 +415,50 @@
         </div>
 
         <!-- Charts -->
-        <div class="grid grid-2 mb-24">
+        <div class="admin-charts-grid mb-24">
           <div class="card">
             <div class="card-header"><div class="card-title">Bus Status Distribution</div></div>
-            <div class="card-body"><canvas id="chart-bus-status"></canvas></div>
+            <div class="card-body">
+              <div class="chart-wrapper donut-chart-wrapper">
+                <canvas id="chart-bus-status"></canvas>
+              </div>
+            </div>
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">Students by Department</div></div>
-            <div class="card-body"><canvas id="chart-departments"></canvas></div>
+            <div class="card-body">
+              <div class="chart-wrapper bar-chart-wrapper">
+                <canvas id="chart-departments"></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Quick Access -->
-        <div class="grid grid-4 mb-24">
-          <div class="card" style="cursor:pointer;" onclick="showSection('live-tracking')">
-            <div class="card-body" style="text-align:center;padding:28px;">
+        <div class="admin-quick-grid mb-24">
+          <div class="card quick-access-card" style="cursor:pointer;" onclick="showSection('live-tracking')">
+            <div class="card-body" style="text-align:center;padding:24px 16px;">
               <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#d1fae5;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-location-crosshairs" style="color:#059669;font-size:1.3rem;"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">Live Fleet Map</div>
               <div style="font-size:.8rem;color:var(--text-secondary);">Track all buses in real time</div>
             </div>
           </div>
-          <div class="card" style="cursor:pointer;" onclick="showSection('students')">
-            <div class="card-body" style="text-align:center;padding:28px;">
+          <div class="card quick-access-card" style="cursor:pointer;" onclick="showSection('students')">
+            <div class="card-body" style="text-align:center;padding:24px 16px;">
               <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary-100);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-graduation-cap" style="color:var(--primary-600);font-size:1.3rem;"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">Manage Students</div>
               <div style="font-size:.8rem;color:var(--text-secondary);">Add, edit, delete students</div>
             </div>
           </div>
-          <div class="card" style="cursor:pointer;" onclick="showSection('buses')">
-            <div class="card-body" style="text-align:center;padding:28px;">
+          <div class="card quick-access-card" style="cursor:pointer;" onclick="showSection('buses')">
+            <div class="card-body" style="text-align:center;padding:24px 16px;">
               <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-bus" style="color:#16a34a;font-size:1.3rem;"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">Manage Buses</div>
               <div style="font-size:.8rem;color:var(--text-secondary);">Add, configure buses</div>
             </div>
           </div>
-          <div class="card" style="cursor:pointer;" onclick="showSection('routes')">
-            <div class="card-body" style="text-align:center;padding:28px;">
+          <div class="card quick-access-card" style="cursor:pointer;" onclick="showSection('routes')">
+            <div class="card-body" style="text-align:center;padding:24px 16px;">
               <div style="width:52px;height:52px;border-radius:var(--radius-lg);background:#fef3c7;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="fa-solid fa-route" style="color:#d97706;font-size:1.3rem;"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">Manage Routes</div>
               <div style="font-size:.8rem;color:var(--text-secondary);">Add/edit bus routes</div>
@@ -159,7 +477,7 @@
           <button class="btn btn-primary" onclick="initAdminLiveMap()"><i class="fa-solid fa-arrows-rotate"></i> Refresh Map</button>
         </div>
 
-        <div class="grid" style="grid-template-columns:2fr 1fr;gap:20px;">
+        <div class="grid-2-1 mb-24">
           <div>
             <div class="map-container" style="height:540px;border-radius:var(--radius-lg);overflow:hidden;">
               <div id="admin-live-map" style="height:100%;width:100%;"></div>
@@ -335,7 +653,7 @@
           <button class="btn btn-primary" onclick="openAddGeofenceModal()"><i class="fa-solid fa-draw-polygon"></i> Define Operating Area</button>
         </div>
 
-        <div class="grid mb-24" style="grid-template-columns:2fr 1fr;gap:20px;">
+        <div class="grid-2-1 mb-24">
           <div>
             <div class="card" style="overflow:hidden;">
               <div class="card-header">
@@ -1071,32 +1389,101 @@ async function loadDashboard(isManual = false) {
     document.getElementById('s-routes').textContent   = s.totalRoutes || 0;
     document.getElementById('s-drivers').textContent  = s.totalDrivers || 0;
 
+    // Theme & colors for charts
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
     // Bus status chart
     const busRes = await BusAPI.getAll();
     const buses = busRes.data || [];
     const statusCount = buses.reduce((acc, b) => { acc[b.status] = (acc[b.status]||0)+1; return acc; }, {});
     const ctx1 = document.getElementById('chart-bus-status');
-    if (busChart) busChart.destroy();
+    if (busChart) {
+      try { busChart.destroy(); } catch(err) {}
+    }
+    const hasStatus = Object.keys(statusCount).length > 0;
     busChart = new Chart(ctx1, {
       type: 'doughnut',
       data: {
-        labels: Object.keys(statusCount).map(k=>k.charAt(0).toUpperCase()+k.slice(1)),
-        datasets: [{ data: Object.values(statusCount), backgroundColor: ['#22c55e','#f59e0b','#ef4444','#6b7280','#94a3b8'], borderWidth: 0, hoverOffset: 8 }]
+        labels: hasStatus ? Object.keys(statusCount).map(k=>k.charAt(0).toUpperCase()+k.slice(1)) : ['No Buses'],
+        datasets: [{
+          data: hasStatus ? Object.values(statusCount) : [1],
+          backgroundColor: hasStatus ? ['#22c55e','#f59e0b','#ef4444','#6b7280','#94a3b8'] : [isDark ? '#334155' : '#e2e8f0'],
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
       },
-      options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              padding: 16,
+              color: textColor,
+              font: { family: 'Google Sans, Roboto, sans-serif', size: 12, weight: '500' }
+            }
+          },
+          tooltip: {
+            enabled: hasStatus
+          }
+        },
+        cutout: '68%'
+      }
     });
 
     // Dept chart
     const depts = r.studentsByDept || [];
     const ctx2 = document.getElementById('chart-departments');
-    if (deptChart) deptChart.destroy();
+    if (deptChart) {
+      try { deptChart.destroy(); } catch(err) {}
+    }
+    const hasDepts = depts.length > 0;
     deptChart = new Chart(ctx2, {
       type: 'bar',
       data: {
-        labels: depts.map(d=>d.department||'Unknown'),
-        datasets: [{ label: 'Students', data: depts.map(d=>d.count), backgroundColor: '#3b82f6', borderRadius: 6 }]
+        labels: hasDepts ? depts.map(d=>d.department||'Unknown') : ['No Data'],
+        datasets: [{
+          label: 'Students',
+          data: hasDepts ? depts.map(d=>d.count) : [0],
+          backgroundColor: '#3b82f6',
+          borderRadius: 8,
+          maxBarThickness: 36
+        }]
       },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              color: textColor,
+              font: { family: 'Google Sans, Roboto, sans-serif', size: 11 }
+            },
+            grid: {
+              color: gridColor
+            }
+          },
+          x: {
+            ticks: {
+              color: textColor,
+              font: { family: 'Google Sans, Roboto, sans-serif', size: 11 },
+              maxRotation: 45,
+              minRotation: 0
+            },
+            grid: { display: false }
+          }
+        }
+      }
     });
     if (isManual) Toast.success('Dashboard data refreshed');
   } catch(e) {
@@ -2294,6 +2681,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('theme-toggle').innerHTML = n === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
   });
   if (Theme.get() === 'dark') document.getElementById('theme-toggle').innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+  window.addEventListener('themechange', () => {
+    const secDash = document.getElementById('section-dashboard');
+    if (secDash && secDash.style.display !== 'none') {
+      loadDashboard();
+    }
+  });
 
   const user = Auth.getUser();
   document.getElementById('user-avatar').textContent = (user?.username || 'A').charAt(0).toUpperCase();

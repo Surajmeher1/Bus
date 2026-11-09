@@ -680,6 +680,10 @@ tbody tr:last-child td {
 .layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   background: var(--bg-base);
 }
 
@@ -701,6 +705,21 @@ tbody tr:last-child td {
 }
 .sidebar.collapsed {
   width: var(--sidebar-collapsed);
+}
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
+}
+.sidebar-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
 }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }
@@ -811,6 +830,10 @@ tbody tr:last-child td {
 /* ── Main Content Area ───────────────────────────────────────────────────────── */
 .main-content {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   display: flex;
@@ -999,6 +1022,10 @@ tbody tr:last-child td {
 .page-content {
   padding: 32px;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 .page-header {
   margin-bottom: 32px;
