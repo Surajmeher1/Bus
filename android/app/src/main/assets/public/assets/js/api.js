@@ -409,13 +409,68 @@ const Toast = {
   info:    (msg) => Toast.show(msg, 'info'),
 };
 
-// ── Theme Manager ─────────────────────────────────────────────────────────────
+// ── Theme Manager (Android 16 Dynamic Color & System Theme) ───────────────────
 const Theme = {
-  get: ()    => localStorage.getItem('sbt_theme') || 'light',
-  set: (t)   => { localStorage.setItem('sbt_theme', t); document.documentElement.setAttribute('data-theme', t); },
-  toggle: () => { const next = Theme.get() === 'dark' ? 'light' : 'dark'; Theme.set(next); return next; },
-  init: ()   => { Theme.set(Theme.get()); }
+  get: () => {
+    const saved = localStorage.getItem('sbt_theme');
+    if (saved) return saved;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  },
+  set: (t) => {
+    localStorage.setItem('sbt_theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+    // Update theme-color meta tag for Android status bar
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute('content', t === 'dark' ? '#0a0f1d' : '#1a56db');
+    }
+  },
+  toggle: () => {
+    const next = Theme.get() === 'dark' ? 'light' : 'dark';
+    Theme.set(next);
+    return next;
+  },
+  init: () => {
+    Theme.set(Theme.get());
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('sbt_theme')) {
+          Theme.set(e.matches ? 'dark' : 'light');
+        }
+      });
+    }
+  }
 };
+
+// ── Material Design 3 Ripple Effect ──────────────────────────────────────────
+function attachMaterialRipples() {
+  if (typeof document === 'undefined') return;
+  const targets = document.querySelectorAll('.btn, .mobile-nav-item, .mobile-portal-card, .mobile-bus-item, .mobile-sheet-item, .stat-card, .nav-link, .map-btn, .theme-toggle, .sidebar-toggle-btn');
+  targets.forEach((el) => {
+    if (el.dataset.hasRipple) return;
+    el.dataset.hasRipple = 'true';
+    el.classList.add('ripple-surface');
+    el.addEventListener('pointerdown', (e) => {
+      const rect = el.getBoundingClientRect();
+      const circle = document.createElement('span');
+      const diameter = Math.max(rect.width, rect.height);
+      const radius = diameter / 2;
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${e.clientX - rect.left - radius}px`;
+      circle.style.top = `${e.clientY - rect.top - radius}px`;
+      circle.classList.add('ripple-wave');
+
+      const existingWave = el.querySelector('.ripple-wave');
+      if (existingWave) existingWave.remove();
+
+      el.appendChild(circle);
+      setTimeout(() => circle.remove(), 600);
+    });
+  });
+}
 
 // ── Sidebar Manager ────────────────────────────────────────────────────────────
 const Sidebar = {
@@ -491,6 +546,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Logout
   document.getElementById('logout-btn')?.addEventListener('click', Auth.logout);
+
+  // Attach Android 16 Material Ripple animations
+  attachMaterialRipples();
+  if (typeof MutationObserver !== 'undefined') {
+    const rippleObserver = new MutationObserver(() => attachMaterialRipples());
+    rippleObserver.observe(document.body, { childList: true, subtree: true });
+  }
 
   // Check if first-login temporary password change is required
   promptPasswordChangeOnFirstLogin();

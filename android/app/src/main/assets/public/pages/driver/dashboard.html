@@ -11,33 +11,35 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/assets/icons/bus-icon.svg" />
   <link rel="apple-touch-icon" href="/assets/icons/bus-icon.svg" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../../assets/css/main.css"/>
   <style>
-    /* ── Mobile-first Driver Dashboard ────────────────────────────────────── */
-    body { background: #f0fdf4; }
+    /* ── Mobile-first Driver Dashboard — Android 16 System Styling ──────── */
+    body { background: var(--bg-base); }
 
     .driver-header {
-      background: linear-gradient(135deg,#064e3b,#047857);
-      color: white; padding: 16px 20px;
+      background: linear-gradient(135deg,#042f2e,#047857);
+      color: white; padding: calc(14px + var(--safe-top)) 20px 14px;
       display: flex; align-items: center; justify-content: space-between;
       position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
     .driver-header-left { display: flex; align-items: center; gap: 12px; }
     .driver-logo { font-size: 1.5rem; }
-    .driver-name { font-size: .875rem; font-weight: 700; }
-    .driver-role { font-size: .7rem; opacity: .8; }
+    .driver-name { font-size: .92rem; font-weight: 800; }
+    .driver-role { font-size: .72rem; opacity: .85; }
 
-    .driver-content { padding: 16px; max-width: 600px; margin: 0 auto; }
+    .driver-content { padding: 18px 16px calc(24px + var(--safe-bottom)); max-width: 640px; margin: 0 auto; }
 
     /* Status Banner */
     .status-banner {
-      border-radius: 16px; padding: 20px; margin-bottom: 16px;
+      border-radius: var(--radius-xl); padding: 22px; margin-bottom: 16px;
       display: flex; align-items: center; justify-content: space-between;
-      transition: all .3s;
+      transition: all .3s var(--ease-spring);
+      box-shadow: var(--shadow-sm);
     }
     .status-banner.waiting  { background: linear-gradient(135deg,#fef3c7,#fde68a); color: #92400e; }
     .status-banner.live     { background: linear-gradient(135deg,#d1fae5,#a7f3d0); color: #065f46; animation: pulse-banner 2s infinite; }
@@ -45,22 +47,23 @@
     .status-banner.offline  { background: linear-gradient(135deg,#fee2e2,#fca5a5); color: #991b1b; }
 
     @keyframes pulse-banner {
-      0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.3); }
-      50%      { box-shadow: 0 0 0 12px rgba(16,185,129,.0); }
+      0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.35); }
+      50%      { box-shadow: 0 0 0 14px rgba(16,185,129,.0); }
     }
 
-    .status-emoji { font-size: 2rem; }
-    .status-text { font-size: 1.25rem; font-weight: 800; }
-    .status-sub  { font-size: .8rem; opacity: .8; }
+    .status-emoji { font-size: 2.2rem; }
+    .status-text { font-size: 1.3rem; font-weight: 900; }
+    .status-sub  { font-size: .82rem; opacity: .85; }
 
     /* Bus Info Card */
     .bus-info-card {
-      background: white; border-radius: 16px; padding: 20px;
-      margin-bottom: 16px; border: 1px solid #d1fae5;
-      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      background: var(--bg-surface); border-radius: var(--radius-xl); padding: 22px;
+      margin-bottom: 16px; border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
     }
-    .bus-info-card h2 { font-size: 1.5rem; font-weight: 900; color: #064e3b; margin-bottom: 4px; }
-    .bus-detail { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: #6b7280; margin-top: 8px; }
+    .bus-info-card h2 { font-size: 1.6rem; font-weight: 900; color: #064e3b; margin-bottom: 4px; }
+    [data-theme="dark"] .bus-info-card h2 { color: #86efac; }
+    .bus-detail { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--text-secondary); margin-top: 8px; }
     .bus-detail i { color: #10b981; width: 16px; }
 
     /* Trip Controls */
@@ -68,9 +71,9 @@
     .btn-start {
       flex: 1; padding: 18px; font-size: 1.125rem; font-weight: 800;
       background: linear-gradient(135deg,#10b981,#059669); color: white;
-      border-radius: 16px; border: none; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(16,185,129,.4);
-      transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+      border-radius: var(--radius-full); border: none; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(16,185,129,.4);
+      transition: all .2s var(--ease-spring); display: flex; align-items: center; justify-content: center; gap: 10px;
     }
     .btn-start:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 8px 30px rgba(16,185,129,.5); }
     .btn-start:disabled { opacity: .6; cursor: not-allowed; transform: none; }
@@ -78,9 +81,9 @@
     .btn-stop {
       flex: 1; padding: 18px; font-size: 1.125rem; font-weight: 800;
       background: linear-gradient(135deg,#ef4444,#dc2626); color: white;
-      border-radius: 16px; border: none; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(239,68,68,.4);
-      transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+      border-radius: var(--radius-full); border: none; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(239,68,68,.4);
+      transition: all .2s var(--ease-spring); display: flex; align-items: center; justify-content: center; gap: 10px;
       display: none;
     }
     .btn-stop.visible { display: flex; }
@@ -88,16 +91,16 @@
 
     /* GPS Status Card */
     .gps-card {
-      background: white; border-radius: 16px; padding: 16px;
-      margin-bottom: 16px; border: 1px solid #e5e7eb;
-      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      background: var(--bg-surface); border-radius: var(--radius-xl); padding: 20px;
+      margin-bottom: 16px; border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
     }
-    .gps-card-title { font-size: .8125rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .06em; color: #6b7280; margin-bottom: 12px; }
-    .gps-stat { display: flex; justify-content: space-between; padding: 6px 0;
-      border-bottom: 1px solid #f3f4f6; font-size: .8125rem; }
+    .gps-card-title { font-size: .8125rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-secondary); margin-bottom: 12px; }
+    .gps-stat { display: flex; justify-content: space-between; padding: 8px 0;
+      border-bottom: 1px solid var(--border-color); font-size: .85rem; }
     .gps-stat:last-child { border-bottom: none; }
-    .gps-stat-label { color: #9ca3af; }
+    .gps-stat-label { color: var(--text-muted); }
     .gps-stat-value { font-weight: 600; color: #1f2937; font-family: monospace; }
     .gps-dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db;
       display: inline-block; margin-right: 6px; transition: background .3s; }

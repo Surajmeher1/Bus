@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/assets/icons/bus-icon.svg" />
   <link rel="apple-touch-icon" href="/assets/icons/bus-icon.svg" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../../assets/css/main.css"/>
@@ -427,6 +427,10 @@ function showSection(name) {
   document.getElementById(`section-${name}`).style.display = 'block';
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
+
+  // Update mobile bottom nav active indicator
+  document.querySelectorAll('.mobile-bottom-nav .mobile-nav-item').forEach(item => item.classList.remove('active'));
+  document.querySelector(`.mobile-bottom-nav .mobile-nav-item[onclick*="${name}"]`)?.classList.add('active');
 
   const titles = {
     dashboard: ['Dashboard', 'Overview of all buses'],
