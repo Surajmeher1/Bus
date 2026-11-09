@@ -102,6 +102,8 @@ test-admin-buttons.js
 android/.gradle/
 android/app/build/
 android/build/
+android/local.properties
+local.properties
 captures/
 *.apk
 *.aab
