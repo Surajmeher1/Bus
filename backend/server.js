@@ -21,6 +21,7 @@ const server = http.createServer(app);
 app.use(compression());
 app.use(
   helmet({
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -35,6 +36,9 @@ app.use(
           "https://*.tile.openstreetmap.org",
           "https://*.tile.openstreetmap.fr",
           "https://*.openstreetmap.fr",
+          "https://tile.openstreetmap.de",
+          "https://*.tile.openstreetmap.de",
+          "https://*.tile.opentopomap.org",
           "https://server.arcgisonline.com",
           "https://*.basemaps.cartocdn.com",
           "https://*.cartocdn.com",

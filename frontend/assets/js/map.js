@@ -67,19 +67,29 @@ const BusMap = {
   tileLayers: [],
 
   // ── Configurable Tile Provider Settings ─────────────────────────────────
-  // Primary: Standard OpenStreetMap (100% free, community-driven, zero API key required, zero watermarks)
+  // Primary: OpenStreetMap France CDN (100% free, zero API key, works cleanly on Desktop, Render & Mobile WebView)
   tileConfig: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+    attribution: '&copy; OSM France &amp; <a href="https://www.openstreetmap.org/copyright">OSM contributors</a>',
     subdomains: 'abc',
-    maxZoom: 19
+    maxZoom: 19,
+    maxNativeZoom: 19
   },
-  // Resilient High-Availability Backup: Esri World Street Map (ArcGIS Online, fast global CDN, zero API key required)
+  // Tier-1 Backup: OpenStreetMap Germany CDN (zero referer block, rich detail up to z18)
   backupTileConfig: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom',
+    url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     subdomains: '',
-    maxZoom: 19
+    maxZoom: 19,
+    maxNativeZoom: 18
+  },
+  // Tier-2 Backup: Esri World Street Map (ArcGIS global CDN)
+  esriTileConfig: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN',
+    subdomains: '',
+    maxZoom: 19,
+    maxNativeZoom: 17
   },
 
   async loadConfig() {
@@ -88,7 +98,7 @@ const BusMap = {
       if (typeof ConfigAPI !== 'undefined' && ConfigAPI.getAppConfig) {
         configData = await ConfigAPI.getAppConfig();
       } else if (typeof fetch === 'function') {
-        const base = (typeof API_URL !== 'undefined') ? API_URL : '';
+        const base = (typeof API_BASE !== 'undefined') ? API_BASE.replace(/\/api\/v1$/, '') : '';
         const res = await fetch(`${base}/api/v1/config/app`);
         if (res.ok) {
           configData = await res.json();
@@ -96,12 +106,16 @@ const BusMap = {
       }
       if (configData && configData.map && configData.map.tile_url) {
         const newUrl = configData.map.tile_url;
+        // Guard: ignore tile.openstreetmap.org (403 blocked placeholder tiles) and /hot/ (frequent z15-19 regional timeouts)
+        if (newUrl.includes('tile.openstreetmap.org') || newUrl.includes('openstreetmap.fr/hot')) return;
+
         const oldUrl = this.tileConfig.url;
         this.tileConfig = {
           url: newUrl,
           attribution: configData.map.attribution || this.tileConfig.attribution,
-          subdomains: configData.map.subdomains || 'abc',
-          maxZoom: configData.map.max_zoom || 19
+          subdomains: configData.map.subdomains !== undefined ? configData.map.subdomains : '',
+          maxZoom: configData.map.max_zoom || 19,
+          maxNativeZoom: configData.map.max_native_zoom || 19
         };
         if (newUrl !== oldUrl && this.tileLayers && this.tileLayers.length > 0) {
           this.tileLayers.forEach(layer => {
@@ -167,14 +181,16 @@ const BusMap = {
   // Factory to create configured Leaflet tile layer with error monitoring & auto-recovery
   createTileLayer(options = {}) {
     const cfg = this.tileConfig || {};
-    const url = options.url || cfg.url || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const subdomains = options.subdomains || cfg.subdomains || 'abc';
-    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
+    const url = options.url || cfg.url || 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
+    const subdomains = options.subdomains !== undefined ? options.subdomains : (cfg.subdomains !== undefined ? cfg.subdomains : 'abc');
+    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; OSM France &amp; <a href="https://www.openstreetmap.org/copyright">OSM contributors</a>');
     const maxZoom = options.maxZoom || cfg.maxZoom || 19;
+    const maxNativeZoom = options.maxNativeZoom || cfg.maxNativeZoom || 19;
 
     const layerOptions = {
       subdomains,
       maxZoom,
+      maxNativeZoom,
       attribution,
       ...options
     };
@@ -183,21 +199,31 @@ const BusMap = {
     this.tileLayers.push(layer);
 
     let consecutiveErrors = 0;
-    let switchedToBackup = false;
+    let fallbackStage = 0; // 0 = primary, 1 = backupTileConfig (OSM DE), 2 = esriTileConfig
 
     layer.on('tileerror', () => {
       consecutiveErrors++;
-      // Auto-fallback: if 4 consecutive tile errors occur, silently switch to backup tile server (Esri)
-      if (consecutiveErrors >= 4 && !switchedToBackup) {
-        switchedToBackup = true;
+      // Stage 1 Fallback: OSM Germany
+      if (consecutiveErrors >= 4 && fallbackStage === 0) {
+        fallbackStage = 1;
         consecutiveErrors = 0;
         const backup = this.backupTileConfig || {};
-        const fallbackUrl = backup.url || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-        layer.setUrl(fallbackUrl);
+        layer.options.maxNativeZoom = backup.maxNativeZoom || 18;
+        layer.setUrl(backup.url || 'https://tile.openstreetmap.de/{z}/{x}/{y}.png');
         return;
       }
 
-      // If backup also fails repeatedly (8+ consecutive errors), show user-facing banner
+      // Stage 2 Fallback: Esri World Street Map
+      if (consecutiveErrors >= 4 && fallbackStage === 1) {
+        fallbackStage = 2;
+        consecutiveErrors = 0;
+        const esri = this.esriTileConfig || {};
+        layer.options.maxNativeZoom = esri.maxNativeZoom || 17;
+        layer.setUrl(esri.url || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+        return;
+      }
+
+      // If final backup also fails repeatedly, show user-facing banner
       if (consecutiveErrors >= 8 && layer._map) {
         this.showFallback(layer._map, 'Map temporarily unavailable');
       }
@@ -338,25 +364,34 @@ const BusMap = {
   },
 
   drawRoute(map, stops, routeId) {
-    if (this.routes[routeId]) {
-      this.routes[routeId].remove();
+    if (!map || !stops || !stops.length) return null;
+    const mapId = (map._container && map._container.id) ? map._container.id : (Object.keys(this.maps).find(k => this.maps[k] === map) || 'default');
+    const routeKey = `${mapId}_${routeId}`;
+
+    if (this.routes[routeKey]) {
+      const prev = this.routes[routeKey];
+      if (prev.polyline && typeof prev.polyline.remove === 'function') prev.polyline.remove();
+      if (Array.isArray(prev.stopMarkers)) {
+        prev.stopMarkers.forEach(m => m && typeof m.remove === 'function' && m.remove());
+      }
     }
+
     const latlngs = stops.map(s => [s.latitude, s.longitude]);
     const polyline = L.polyline(latlngs, {
       color: '#3b82f6',
       weight: 4,
-      opacity: 0.7,
+      opacity: 0.75,
       dashArray: '8, 6',
     }).addTo(map);
-    this.routes[routeId] = polyline;
 
     // Add stop markers
-    stops.forEach((stop, idx) => {
-      L.marker([stop.latitude, stop.longitude], { icon: this.createStopIcon() })
+    const stopMarkers = stops.map((stop, idx) => {
+      return L.marker([stop.latitude, stop.longitude], { icon: this.createStopIcon() })
         .bindTooltip(`<b>${idx + 1}. ${stop.stop_name}</b>`, { permanent: false, direction: 'top' })
         .addTo(map);
     });
 
+    this.routes[routeKey] = { polyline, stopMarkers };
     return polyline;
   },
 

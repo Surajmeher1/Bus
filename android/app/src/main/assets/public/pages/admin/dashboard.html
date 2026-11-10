@@ -1296,7 +1296,7 @@ function showSection(name) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
   document.getElementById('page-title').textContent = {
-    dashboard:'Admin Dashboard', 'user-management':'User Management', geofence:'Bus Operating Area',
+    dashboard:'Admin Dashboard', 'live-tracking':'Live Fleet Tracking', 'user-management':'User Management', geofence:'Bus Operating Area',
     students:'Students', buses:'Buses', drivers:'Drivers',
     managers:'Managers', routes:'Routes', schedule:'Schedule', reports:'Reports',
     notifications:'Notifications', logs:'Activity Logs', settings:'Settings'
@@ -2727,35 +2727,52 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       vContainer.prepend(item);
     }
-    // Resilient location polling fallback for Admin Map & Stats
-    setInterval(async () => {
-      try {
-        const busRes = await BusAPI.getAll();
-        const buses = busRes.data || [];
-        buses.forEach(b => {
-          const lat = b.current_latitude ?? b.latitude;
-          const lng = b.current_longitude ?? b.longitude;
-          if (lat && lng && (lat !== 0 || lng !== 0) && typeof BusMap !== 'undefined') {
-            BusMap.updateMarker({
-              bus_id: b.bus_id,
-              bus_number: b.bus_number,
-              latitude: lat,
-              longitude: lng,
-              status: b.status,
-              speed: b.current_speed || b.speed,
-              driver_name: b.driver_name,
-              route_name: b.route_name
-            });
-            const speedEl = document.getElementById(`bus-speed-${b.bus_id}`);
-            if (speedEl) speedEl.textContent = `${Math.round(b.current_speed || b.speed || 0)} km/h`;
-          }
-        });
-      } catch (_) {}
-    }, 4000);
   });
+
+  // Resilient location polling fallback for Admin Map & Fleet Status
+  setInterval(async () => {
+    try {
+      const busRes = await BusAPI.getAll();
+      const buses = busRes.data || [];
+      buses.forEach(b => {
+        const lat = b.current_latitude ?? b.latitude;
+        const lng = b.current_longitude ?? b.longitude;
+        if (lat && lng && (lat !== 0 || lng !== 0) && typeof BusMap !== 'undefined') {
+          BusMap.updateMarker({
+            bus_id: b.bus_id,
+            bus_number: b.bus_number,
+            latitude: lat,
+            longitude: lng,
+            status: b.status,
+            speed: b.current_speed || b.speed,
+            driver_name: b.driver_name,
+            route_name: b.route_name
+          });
+          const speedEl = document.getElementById(`bus-speed-${b.bus_id}`);
+          if (speedEl) speedEl.textContent = `${Math.round(b.current_speed || b.speed || 0)} km/h`;
+        }
+      });
+      renderAdminFleetList(buses);
+    } catch (_) {}
+  }, 4000);
 });
 // ── Admin Live Tracking Map ───────────────────────────────────────────────────
 let adminLiveMap = null;
+let adminPickupMarkers = [];
+
+function focusAdminBus(busId, lat, lng) {
+  if (!adminLiveMap) return;
+  if (lat && lng && lat !== 0 && lng !== 0) {
+    adminLiveMap.setView([lat, lng], 16, { animate: true });
+    const mapMarkers = BusMap.markers?.['admin-live-map'];
+    const marker = mapMarkers?.[busId];
+    if (marker && typeof marker.openPopup === 'function') {
+      marker.openPopup();
+    }
+  } else {
+    Toast.info('No live GPS fix recorded for this bus yet.');
+  }
+}
 
 async function initAdminLiveMap() {
   const mapEl = document.getElementById('admin-live-map');
@@ -2778,6 +2795,8 @@ async function initAdminLiveMap() {
     const pickups = pickupRes.data || [];
 
     BusMap.clearMarkers(adminLiveMap);
+    adminPickupMarkers.forEach(m => m && typeof m.remove === 'function' && m.remove());
+    adminPickupMarkers = [];
 
     // Plot all bus markers (use current GPS or fallback to campus terminal position)
     buses.forEach(bus => {
@@ -2797,9 +2816,10 @@ async function initAdminLiveMap() {
         html: `<div style="background:#f59e0b;color:white;padding:3px 7px;border-radius:12px;font-size:10px;font-weight:700;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);white-space:nowrap;">📍 ${p.name}</div>`,
         iconAnchor: [0, 14], className: ''
       });
-      L.marker([p.latitude, p.longitude], { icon })
+      const pm = L.marker([p.latitude, p.longitude], { icon })
         .bindPopup(`<b>📍 Pickup Point: ${p.name}</b><br>${p.description || ''}`)
         .addTo(adminLiveMap);
+      adminPickupMarkers.push(pm);
     });
 
     setTimeout(() => {
@@ -2823,16 +2843,20 @@ function renderAdminFleetList(buses) {
     return;
   }
   container.innerHTML = buses.map(b => {
-    const badge = b.mode === 'LIVE'
+    const isLive = b.tracking_status === 'LIVE' || b.trip_state === 'LIVE' || b.mode === 'LIVE';
+    const badge = isLive
       ? '<span class="badge" style="background:#d1fae5;color:#065f46;font-weight:700;">🟢 LIVE GPS</span>'
       : b.status === 'running'
-        ? '<span class="badge badge-warning">🟡 DEMO</span>'
+        ? '<span class="badge badge-warning">🟡 EN ROUTE</span>'
         : b.status === 'inactive'
           ? '<span class="badge badge-secondary">⚫ TRIP DONE</span>'
           : '<span class="badge badge-danger">🔴 OFFLINE</span>';
 
+    const lat = b.current_latitude || 0;
+    const lng = b.current_longitude || 0;
+
     return `
-      <div style="padding:12px;border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:10px;background:var(--bg-surface);">
+      <div onclick="focusAdminBus(${b.bus_id}, ${lat}, ${lng})" style="padding:12px;border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:10px;background:var(--bg-surface);cursor:pointer;transition:border-color .15s ease;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div style="font-weight:800;font-size:1rem;">${b.bus_number}</div>
           ${badge}
@@ -2842,7 +2866,7 @@ function renderAdminFleetList(buses) {
         </div>
         <div style="font-size:.78rem;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
           <span><i class="fa-solid fa-user" style="margin-right:4px;"></i>${b.driver_name || 'No driver'}</span>
-          ${b.status === 'running' ? `<button class="btn btn-sm" onclick="adminEndTrip(${b.bus_id})" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:3px 8px;font-size:.72rem;font-weight:700;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-stop"></i> End Trip</button>` : ''}
+          ${b.status === 'running' ? `<button class="btn btn-sm" onclick="event.stopPropagation(); adminEndTrip(${b.bus_id})" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:3px 8px;font-size:.72rem;font-weight:700;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-stop"></i> End Trip</button>` : ''}
         </div>
       </div>
     `;
@@ -2860,7 +2884,7 @@ async function adminEndTrip(busId) {
       await BusAPI.stop(busId);
     }
     Toast.success('Trip ended successfully. Bus is now offline.');
-    loadLiveTracking();
+    initAdminLiveMap();
     loadDashboard();
   } catch(e) {
     Toast.error(e.message || 'Failed to end trip.');

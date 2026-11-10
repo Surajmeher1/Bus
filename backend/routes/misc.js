@@ -34,9 +34,9 @@ function getMapConfig() {
   const apiKey = process.env.MAP_TILE_API_KEY ? process.env.MAP_TILE_API_KEY.trim() : '';
 
   if (!tileUrl) {
-    // Standard OpenStreetMap (100% free, zero API key required, zero watermarks)
-    tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    attribution = attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    // OpenStreetMap France CDN (100% free, zero API key required, supports Desktop, WebView & Render without referer blocks)
+    tileUrl = 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
+    attribution = attribution || '&copy; OSM France &amp; <a href="https://www.openstreetmap.org/copyright">OSM contributors</a>';
   } else {
     // If an API key is specified and placeholder exists, inject safely
     if (apiKey && tileUrl.includes('{apiKey}')) {
