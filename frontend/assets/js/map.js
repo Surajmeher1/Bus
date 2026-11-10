@@ -223,8 +223,19 @@ const BusMap = {
   },
 
   updateMarker(data) {
-    const marker = this.markers[data.bus_id];
-    if (!marker) return;
+    if (!data || !data.latitude || !data.longitude) return;
+    let marker = this.markers[data.bus_id];
+    if (!marker) {
+      // Add marker to all initialized maps
+      const mapList = Object.values(this.maps);
+      if (mapList.length > 0) {
+        marker = this.addBusMarker(mapList[0], data);
+        for (let i = 1; i < mapList.length; i++) {
+          this.addBusMarker(mapList[i], data);
+        }
+      }
+      if (!marker) return;
+    }
 
     // Smooth animation to new position
     const currentLatLng = marker.getLatLng();

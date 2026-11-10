@@ -60,7 +60,7 @@ function scheduleOfflineCheck(io, busId, driverId) {
 
     const bus = db.prepare('SELECT bus_number FROM buses WHERE bus_id = ?').get(busId);
 
-    io.emit('bus:status-update', {
+    const statusPayload = {
       bus_id: busId,
       bus_number: bus?.bus_number || `BUS-${busId}`,
       status: 'offline',
@@ -69,7 +69,9 @@ function scheduleOfflineCheck(io, busId, driverId) {
       trip_state: 'GPS_LOST',
       mode: 'OFFLINE',
       timestamp: new Date().toISOString()
-    });
+    };
+    io.emit('bus:status-update', statusPayload);
+    io.emit('bus-status-change', statusPayload);
 
     console.log(`⚠️  Bus ${busId} (${bus?.bus_number}) marked GPS_LOST/OFFLINE — GPS timeout`);
   }, OFFLINE_TIMEOUT_MS);
@@ -153,7 +155,7 @@ module.exports = function setupTrackingSocket(io) {
         `).run(busId);
       } catch (_) {}
 
-      io.emit('bus:status-update', {
+      const startPayload = {
         bus_id: parseInt(busId),
         bus_number: bus.bus_number,
         status: 'running',
@@ -162,7 +164,9 @@ module.exports = function setupTrackingSocket(io) {
         trip_state: 'STARTING',
         mode: 'LIVE',
         timestamp: new Date().toISOString()
-      });
+      };
+      io.emit('bus:status-update', startPayload);
+      io.emit('bus-status-change', startPayload);
 
       socket.emit('driver:trip-started', { bus_id: parseInt(busId), bus_number: bus.bus_number });
 
@@ -194,17 +198,21 @@ module.exports = function setupTrackingSocket(io) {
         return;
       }
 
-      const session = activeDriverSessions.get(user.id);
-      if (!session || session.busId !== parsedBusId) {
-        socket.emit('driver:error', { message: 'No active authorized trip session for this bus.' });
-        return;
-      }
-
       // Verify active trip record in DB is assigned to this driver
       const activeTrip = db.prepare("SELECT * FROM trips WHERE bus_id = ? AND driver_id = ? AND status = 'running'").get(parsedBusId, user.id);
       if (!activeTrip) {
         socket.emit('driver:error', { message: 'Trip has already ended or is not assigned to this driver.' });
         return;
+      }
+
+      let session = activeDriverSessions.get(user.id);
+      if (!session || session.busId !== parsedBusId) {
+        // Auto-recover session from active database trip (e.g. after socket reconnect or server reboot)
+        session = { busId: parsedBusId, socketId: socket.id, lastUpdate: Date.now() };
+        activeDriverSessions.set(user.id, session);
+        socket.join(`driver-${user.id}`);
+        scheduleOfflineCheck(io, parsedBusId, user.id);
+        console.log(`🔄 Auto-recovered live driver session for driver ${user.id} on bus #${parsedBusId}`);
       }
 
 
@@ -354,7 +362,9 @@ module.exports = function setupTrackingSocket(io) {
         next_stop: etaPayload.next_stop,
         college_stop: etaPayload.college_stop,
         eta_next_stop_minutes: etaPayload.eta_next_stop_minutes,
+        next_stop_eta_minutes: etaPayload.eta_next_stop_minutes,
         eta_college_minutes: etaPayload.eta_college_minutes,
+        college_eta_minutes: etaPayload.eta_college_minutes,
         route_progress_percent: etaPayload.route_progress_percent,
         stops_timeline: etaPayload.stops_timeline,
         current_stop_nearby: etaPayload.current_stop_nearby,
@@ -364,8 +374,9 @@ module.exports = function setupTrackingSocket(io) {
         timestamp: timestamp || new Date().toISOString()
       };
 
-      // Broadcast real-time location to all connected sockets
+      // Broadcast real-time location to all connected sockets (both event naming conventions supported)
       io.emit('bus:location-update', payload);
+      io.emit('bus-location-update', payload);
 
       // Reset watchdog timer
       scheduleOfflineCheck(io, parsedBusId, user.id);
@@ -408,7 +419,7 @@ module.exports = function setupTrackingSocket(io) {
 
         const bus = db.prepare('SELECT bus_number FROM buses WHERE bus_id = ?').get(effectiveBusId);
 
-        io.emit('bus:status-update', {
+        const endPayload = {
           bus_id: effectiveBusId,
           bus_number: bus?.bus_number,
           status: 'inactive',
@@ -417,7 +428,9 @@ module.exports = function setupTrackingSocket(io) {
           trip_state: 'COMPLETED',
           mode: 'OFFLINE',
           timestamp: new Date().toISOString()
-        });
+        };
+        io.emit('bus:status-update', endPayload);
+        io.emit('bus-status-change', endPayload);
 
         socket.emit('driver:trip-ended', { bus_id: effectiveBusId });
         console.log(`✅ Driver ${user.id} ended trip for bus ${effectiveBusId}`);

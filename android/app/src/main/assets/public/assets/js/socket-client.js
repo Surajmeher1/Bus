@@ -47,14 +47,29 @@ const SocketClient = {
       document.dispatchEvent(new CustomEvent('socket:disconnected'));
     });
 
-    socket.on('bus-location-update', (data) => {
+    const handleLocationUpdate = (data) => {
+      if (!data) return;
       document.dispatchEvent(new CustomEvent('bus:location', { detail: data }));
       busPositions[data.bus_id] = { lat: data.latitude, lng: data.longitude };
       if (typeof BusMap !== 'undefined') BusMap.updateMarker(data);
-    });
+    };
 
-    socket.on('bus-status-change', (data) => {
+    socket.on('bus:location-update', handleLocationUpdate);
+    socket.on('bus-location-update', handleLocationUpdate);
+
+    const handleStatusUpdate = (data) => {
+      if (!data) return;
       document.dispatchEvent(new CustomEvent('bus:status', { detail: data }));
+      document.dispatchEvent(new CustomEvent('bus:status-update', { detail: data }));
+    };
+
+    socket.on('bus:status-update', handleStatusUpdate);
+    socket.on('bus-status-change', handleStatusUpdate);
+    socket.on('driver:trip-started', (data) => {
+      document.dispatchEvent(new CustomEvent('bus:trip-started', { detail: data }));
+    });
+    socket.on('driver:trip-ended', (data) => {
+      document.dispatchEvent(new CustomEvent('bus:trip-ended', { detail: data }));
     });
 
     socket.on('seat-update', (data) => {

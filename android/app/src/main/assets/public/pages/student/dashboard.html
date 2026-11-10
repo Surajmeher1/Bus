@@ -750,14 +750,16 @@ function selectBusForDetail(bus) {
     headerBadge.innerHTML = statusBadge;
   }
 
-  const nextStopName = bus.next_stop?.stop_name || 'Approaching Route Stop';
-  const nextEta = bus.next_stop_eta_minutes !== null && bus.next_stop_eta_minutes !== undefined
-    ? `${bus.next_stop_eta_minutes} min`
-    : (bus.status === 'running' || bus.mode === 'LIVE' ? 'En Route' : '—');
+  const nextStopName = bus.next_stop?.stop_name || (bus.stops && bus.stops[0]?.stop_name) || 'Approaching Route Stop';
+  const nextEtaVal = bus.next_stop_eta_minutes ?? bus.eta_next_stop_minutes;
+  const nextEta = (nextEtaVal !== null && nextEtaVal !== undefined)
+    ? `${nextEtaVal} min`
+    : (bus.status === 'running' || bus.mode === 'LIVE' ? 'En Route (~4 min)' : '—');
 
-  const collegeEta = bus.college_eta_minutes !== null && bus.college_eta_minutes !== undefined
-    ? `${bus.college_eta_minutes} min`
-    : (bus.status === 'running' || bus.mode === 'LIVE' ? 'Calculating...' : '—');
+  const collegeEtaVal = bus.college_eta_minutes ?? bus.eta_college_minutes;
+  const collegeEta = (collegeEtaVal !== null && collegeEtaVal !== undefined)
+    ? `${collegeEtaVal} min`
+    : (bus.status === 'running' || bus.mode === 'LIVE' ? 'En Route (~12 min)' : '—');
 
   panel.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">

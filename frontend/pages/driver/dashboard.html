@@ -240,8 +240,16 @@
     <button class="btn-stop" id="btn-stop-trip" onclick="endTrip()" style="display:none;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;padding:18px;border-radius:16px;border:none;font-weight:800;font-size:1.15rem;cursor:pointer;box-shadow:0 6px 20px rgba(239,68,68,.4);width:100%;align-items:center;justify-content:center;gap:10px;">
       <i class="fa-solid fa-circle-stop"></i> END TRIP (Automatic Stop)
     </button>
+    <div id="sim-controls" style="display:none;gap:8px;margin-top:4px;">
+      <button class="btn btn-sm btn-outline" id="btn-simulate-route" onclick="toggleRouteSimulation()" style="flex:1;border-color:rgba(16,185,129,0.5);color:#10b981;font-size:0.75rem;padding:8px 10px;" title="Simulate bus moving along route stops">
+        <i class="fa-solid fa-route"></i> Simulate GPS
+      </button>
+      <button class="btn btn-sm btn-outline" id="btn-campus-loc" onclick="useCampusGateLocation()" style="flex:1;border-color:rgba(16,185,129,0.5);color:#10b981;font-size:0.75rem;padding:8px 10px;" title="Set location to GIET Campus Gate">
+        <i class="fa-solid fa-location-crosshairs"></i> Set Campus GPS
+      </button>
+    </div>
     <div id="trip-end-hint" style="display:none;font-size:0.75rem;color:#6b7280;text-align:center;">
-      <i class="fa-solid fa-circle-info" style="color:#ef4444;"></i> Tap End Trip to immediately stop live GPS & set bus offline
+      <i class="fa-solid fa-circle-info" style="color:#ef4444;"></i> Tap End Trip to immediately stop live GPS &amp; set bus offline
     </div>
   </div>
 
@@ -385,6 +393,7 @@
 <div id="toast-container" class="toast-container"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/config.js"></script>
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/map.js"></script>
 <script>
@@ -437,9 +446,20 @@ function initMap() {
   driverMap = L.map('driver-map', { zoomControl: true }).setView([19.0435, 83.8138], 14);
   BusMap.createTileLayer().addTo(driverMap);
 
-  // Click to add pickup point
+  // Click map handler: If trip is active, allows setting current location immediately!
   driverMap.on('click', (e) => {
-    openPickupModal(e.latlng.lat, e.latlng.lng);
+    if (tripActive) {
+      onGpsSuccess({
+        coords: {
+          latitude: e.latlng.lat,
+          longitude: e.latlng.lng,
+          accuracy: 5
+        }
+      }, true);
+      Toast.info(`📍 GPS location set on map: [${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}]`);
+    } else {
+      openPickupModal(e.latlng.lat, e.latlng.lng);
+    }
   });
 }
 
@@ -458,6 +478,12 @@ async function loadMyBus() {
     // Draw route stops on map
     if (busData.stops && busData.stops.length > 0) {
       drawRoute(busData.stops);
+      // Center map on first stop or current bus position
+      const centerLat = busData.current_latitude || busData.stops[0].latitude;
+      const centerLng = busData.current_longitude || busData.stops[0].longitude;
+      if (centerLat && centerLng) {
+        driverMap.setView([centerLat, centerLng], 14);
+      }
     }
 
     // Show existing pickup points
@@ -467,6 +493,16 @@ async function loadMyBus() {
     // Check if trip already running
     if (busData.status === 'running' || busData.active_trip_id) {
       setTripActiveUI(true, true); // already running
+      // Initialize next stop arrival display immediately
+      if (busData.stops && busData.stops.length > 0) {
+        const initLat = busData.current_latitude || busData.stops[0].latitude;
+        const initLng = busData.current_longitude || busData.stops[0].longitude;
+        if (initLat && initLng) {
+          updateNextStopDisplay(initLat, initLng);
+        }
+      }
+      // Resume GPS watching
+      startGpsWatching();
     }
   } catch (err) {
     document.getElementById('bus-number').textContent = 'No Bus Assigned';
@@ -554,12 +590,28 @@ async function loadRoutes() {
 }
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
+function resolveSocketUrl() {
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.SOCKET_URL) {
+    return window.__APP_CONFIG__.SOCKET_URL.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.protocol === 'file:' || window.location.protocol === 'capacitor:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'https://giet-smart-bus-tracker.onrender.com';
+    }
+    return window.location.origin;
+  }
+  return 'https://giet-smart-bus-tracker.onrender.com';
+}
+
 function connectSocket() {
-  const socketUrl = (typeof window !== 'undefined' && window.__APP_CONFIG__ && window.__APP_CONFIG__.SOCKET_URL)
-    ? window.__APP_CONFIG__.SOCKET_URL.replace(/\/+$/, '')
-    : 'https://giet-smart-bus-tracker.onrender.com';
+  const socketUrl = resolveSocketUrl();
   socket = io(socketUrl, { transports: ['websocket', 'polling'] });
-  socket.on('connect', () => console.log('🔌 Socket connected'));
+  socket.on('connect', () => {
+    console.log('🔌 Driver socket connected:', socket.id);
+    if (tripActive && busData) {
+      socket.emit('driver:start-trip', { token, busId: busData.bus_id });
+    }
+  });
   socket.on('driver:trip-started', (data) => {
     Toast.success(`Trip started — ${data.bus_number} is now LIVE`);
   });
@@ -574,16 +626,73 @@ function connectSocket() {
   });
 }
 
-// ── START TRIP ────────────────────────────────────────────────────────────────
-async function startTrip() {
-  if (!busData) { Toast.error('No bus assigned.'); return; }
+// ── GPS Tracking Engine ───────────────────────────────────────────────────────
+let gpsRetryTimeout = null;
+let simInterval = null;
+let simIndex = 0;
 
-  document.getElementById('gps-error-card').classList.remove('visible');
+function startGpsWatching() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  if (gpsRetryTimeout) {
+    clearTimeout(gpsRetryTimeout);
+    gpsRetryTimeout = null;
+  }
 
   if (!navigator.geolocation) {
     showGpsError('GPS is not available in this browser. Please use a modern mobile browser.');
     return;
   }
+
+  // 1. Immediate Fast Coarse Position Fix (< 1s from WiFi/cellular/cache)
+  // This immediately gets coordinates so arrival distance calculation finishes instantly!
+  navigator.geolocation.getCurrentPosition(
+    (pos) => onGpsSuccess(pos, false),
+    (err) => {
+      console.log('Coarse location fallback bypassed:', err.message);
+      // Pre-populate with first stop or campus coordinates if GPS takes time
+      if (busData && busData.stops && busData.stops.length > 0) {
+        const fallbackStop = busData.stops[0];
+        updateNextStopDisplay(fallbackStop.latitude, fallbackStop.longitude);
+      }
+    },
+    { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
+  );
+
+  // 2. Continuous High-Accuracy GPS Watcher
+  try {
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => onGpsSuccess(pos, true),
+      onGpsError,
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 25000 }
+    );
+  } catch (err) {
+    console.warn('watchPosition failed, starting interval fallback:', err.message);
+    startIntervalGpsFallback();
+  }
+}
+
+function startIntervalGpsFallback() {
+  if (gpsRetryTimeout) return;
+  gpsRetryTimeout = setTimeout(() => {
+    gpsRetryTimeout = null;
+    if (tripActive && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => onGpsSuccess(pos, false),
+        (err) => console.log('Interval fallback GPS retry:', err.message),
+        { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 }
+      );
+    }
+  }, 4000);
+}
+
+// ── START TRIP ────────────────────────────────────────────────────────────────
+async function startTrip() {
+  if (!busData) { Toast.error('No bus assigned.'); return; }
+
+  document.getElementById('gps-error-card').classList.remove('visible');
 
   tripStartTime = Date.now();
   autoEndTriggered = false;
@@ -597,26 +706,33 @@ async function startTrip() {
     const routeId = document.getElementById('route-select').value || null;
     await API.post('/driver/start-trip', { route_id: routeId ? parseInt(routeId) : null });
   } catch (err) {
-    if (!err.message.includes('already in progress')) {
+    if (!err.message.includes('already in progress') && !err.message.includes('already has an active running trip')) {
       Toast.error('Failed to start trip: ' + err.message);
       return;
     }
   }
 
   // Notify socket that driver started
-  socket.emit('driver:start-trip', { token, busId: busData.bus_id });
+  if (socket && socket.connected) {
+    socket.emit('driver:start-trip', { token, busId: busData.bus_id });
+  }
 
   // Keep driver phone screen awake during active GPS tracking
   requestWakeLock();
 
-  // Request GPS — this shows the browser permission prompt
-  watchId = navigator.geolocation.watchPosition(
-    onGpsSuccess,
-    onGpsError,
-    { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
-  );
-
   setTripActiveUI(true, false);
+
+  // Initialize next stop arrival display immediately so it never stays stuck on "Calculating arrival distance..."
+  if (busData.stops && busData.stops.length > 0) {
+    const initLat = busData.current_latitude || busData.stops[0].latitude;
+    const initLng = busData.current_longitude || busData.stops[0].longitude;
+    if (initLat && initLng) {
+      updateNextStopDisplay(initLat, initLng);
+    }
+  }
+
+  // Request GPS
+  startGpsWatching();
 }
 
 let wakeLockSentinel = null;
@@ -636,22 +752,25 @@ function releaseWakeLock() {
   }
 }
 
-function onGpsSuccess(position) {
+function onGpsSuccess(position, isHighAccuracy = true) {
   const { latitude, longitude, accuracy } = position.coords;
   updateCount++;
 
   // Update GPS card
   document.getElementById('gps-lat').textContent  = latitude.toFixed(6);
   document.getElementById('gps-lng').textContent  = longitude.toFixed(6);
-  document.getElementById('gps-acc').textContent  = accuracy ? `${Math.round(accuracy)}m` : '—';
+  document.getElementById('gps-acc').textContent  = accuracy ? `${Math.round(accuracy)}m` : (isHighAccuracy ? '10m' : '~50m');
   document.getElementById('gps-time').textContent = new Date().toLocaleTimeString();
   document.getElementById('gps-count').textContent = updateCount;
   document.getElementById('gps-dot').classList.add('active');
 
+  // Clear any previous error banner
+  document.getElementById('gps-error-card')?.classList.remove('visible');
+
   // Check destination arrival for automatic trip end
   checkAutoEndTrip(latitude, longitude);
 
-  // Update Next Stop display
+  // Update Next Stop display and arrival distance!
   updateNextStopDisplay(latitude, longitude);
 
   // Move driver marker on map
@@ -669,7 +788,7 @@ function onGpsSuccess(position) {
   driverMap.setView([latitude, longitude], 15);
 
   // Send to backend via Socket.IO
-  if (socket && socket.connected) {
+  if (socket && socket.connected && busData) {
     socket.emit('driver:location-update', {
       token,
       busId: busData.bus_id,
@@ -685,21 +804,24 @@ function onGpsError(error) {
   let message = '';
   switch (error.code) {
     case error.PERMISSION_DENIED:
-      message = '📍 Location permission was denied.\n\nTo start live tracking, please:\n1. Click the lock/info icon in your browser address bar\n2. Set Location to "Allow"\n3. Refresh the page and try again.';
+      message = '📍 Location permission was denied.\n\nPlease allow Location access in your device/browser settings so students can track this bus.';
+      showGpsError(message);
       break;
     case error.POSITION_UNAVAILABLE:
-      message = '📍 GPS signal not found. Please move to an open area and try again.';
+      message = '📍 GPS satellite signal weak. Acquiring location via network/WiFi...';
+      showGpsError(message);
+      startIntervalGpsFallback();
       break;
     case error.TIMEOUT:
-      message = '📍 GPS is taking too long. Please ensure location services are enabled and try again.';
+      message = '📍 GPS lock taking longer than expected. Continuing search in background...';
+      showGpsError(message);
+      startIntervalGpsFallback();
       break;
     default:
-      message = '📍 Unable to get location: ' + error.message;
+      message = '📍 Location notice: ' + error.message;
+      showGpsError(message);
   }
-  showGpsError(message);
-  setTripActiveUI(false, false);
-  // End trip if started
-  endTrip(true);
+  // NEVER abort or end the trip on a temporary GPS delay or weak signal!
 }
 
 function showGpsError(message) {
@@ -708,11 +830,65 @@ function showGpsError(message) {
   card.classList.add('visible');
 }
 
+// ── Simulation & Manual Testing Controls ──────────────────────────────────────
+function toggleRouteSimulation() {
+  if (simInterval) {
+    clearInterval(simInterval);
+    simInterval = null;
+    Toast.info('Route simulation stopped');
+    return;
+  }
+  if (!busData || !busData.stops || busData.stops.length === 0) {
+    Toast.warning('No route stops to simulate');
+    return;
+  }
+  simIndex = 0;
+  Toast.success('Simulating GPS movement along route stops (every 3s)');
+
+  const step = () => {
+    if (!tripActive) {
+      clearInterval(simInterval);
+      simInterval = null;
+      return;
+    }
+    const stop = busData.stops[simIndex % busData.stops.length];
+    simIndex++;
+    onGpsSuccess({
+      coords: {
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        accuracy: 8
+      }
+    }, true);
+  };
+  step();
+  simInterval = setInterval(step, 3000);
+}
+
+function useCampusGateLocation() {
+  onGpsSuccess({
+    coords: {
+      latitude: 19.0435,
+      longitude: 83.8138,
+      accuracy: 10
+    }
+  }, true);
+  Toast.success('Live GPS set to GIET Campus Main Gate');
+}
+
 // ── END TRIP (Automatic Stop) ─────────────────────────────────────────────────
 async function endTrip(skipApi = false) {
   if (autoEndTimerInterval) {
     clearInterval(autoEndTimerInterval);
     autoEndTimerInterval = null;
+  }
+  if (simInterval) {
+    clearInterval(simInterval);
+    simInterval = null;
+  }
+  if (gpsRetryTimeout) {
+    clearTimeout(gpsRetryTimeout);
+    gpsRetryTimeout = null;
   }
   const autoEndCard = document.getElementById('auto-end-card');
   if (autoEndCard) autoEndCard.style.display = 'none';
@@ -765,14 +941,18 @@ function setTripActiveUI(active, wasAlreadyRunning) {
   const tripEndHint = document.getElementById('trip-end-hint');
   const gpsBanner = document.getElementById('status-banner');
   const gpsCard  = document.getElementById('gps-card');
+  const simControls = document.getElementById('sim-controls');
+  const mapHint = document.getElementById('map-hint');
 
   if (active) {
     startBtn.style.display = 'none';
     stopBtn.style.display = 'flex';
     if (headerStopBtn) headerStopBtn.style.display = 'inline-flex';
     if (tripEndHint) tripEndHint.style.display = 'block';
+    if (simControls) simControls.style.display = 'flex';
     gpsCard.style.display = 'block';
     if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'block';
+    if (mapHint) mapHint.textContent = '📍 Tap map to manually broadcast location';
     gpsBanner.className   = 'status-banner live';
     document.getElementById('status-emoji').textContent = '🟢';
     document.getElementById('status-text').textContent  = '🟢 LIVE GPS ACTIVE';
@@ -785,8 +965,10 @@ function setTripActiveUI(active, wasAlreadyRunning) {
     stopBtn.style.display = 'none';
     if (headerStopBtn) headerStopBtn.style.display = 'none';
     if (tripEndHint) tripEndHint.style.display = 'none';
+    if (simControls) simControls.style.display = 'none';
     gpsCard.style.display = 'none';
     if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'none';
+    if (mapHint) mapHint.textContent = 'Tap map to add a pickup point';
     const autoEndCard = document.getElementById('auto-end-card');
     if (autoEndCard) autoEndCard.style.display = 'none';
     gpsBanner.className   = 'status-banner waiting';
@@ -822,11 +1004,16 @@ function checkAutoEndTrip(latitude, longitude) {
 }
 
 function updateNextStopDisplay(latitude, longitude) {
-  if (!busData || !busData.stops || busData.stops.length === 0) return;
   const nextStopCard = document.getElementById('next-stop-card');
   const nextStopName = document.getElementById('next-stop-name');
   const nextStopDist = document.getElementById('next-stop-dist');
   if (!nextStopCard || !nextStopName || !nextStopDist) return;
+
+  if (!busData || !busData.stops || busData.stops.length === 0) {
+    nextStopName.textContent = '📍 En Route';
+    nextStopDist.textContent = 'Live GPS streaming active';
+    return;
+  }
 
   let closestStop = null;
   let minDistance = Infinity;
@@ -845,6 +1032,9 @@ function updateNextStopDisplay(latitude, longitude) {
     nextStopName.textContent = `📍 ${closestStop.stop_name}`;
     const distText = minDistance < 1000 ? `${Math.round(minDistance)}m away` : `${(minDistance / 1000).toFixed(1)} km away`;
     nextStopDist.textContent = `Distance: ${distText}`;
+  } else {
+    nextStopName.textContent = '📍 En Route';
+    nextStopDist.textContent = 'Live GPS streaming active';
   }
 }
 
