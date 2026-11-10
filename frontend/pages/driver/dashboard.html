@@ -403,6 +403,7 @@ let routePolyline = null;
 let pickupMarkers = {};
 let pendingPickupLatLng = null;
 let tripActive = false;
+let lastHttpLocationTime = 0;
 let busData = null;
 let updateCount = 0;
 let tripStartTime = null;
@@ -780,6 +781,18 @@ function onGpsSuccess(position, isHighAccuracy = true) {
       accuracy,
       timestamp: new Date().toISOString()
     });
+  }
+
+  // Dual pipeline: Fallback over HTTP API to ensure backend always receives GPS even if socket drops
+  const now = Date.now();
+  if (busData && (!socket || !socket.connected || (now - lastHttpLocationTime > 4000))) {
+    lastHttpLocationTime = now;
+    API.post('/driver/location', {
+      latitude,
+      longitude,
+      accuracy: accuracy || 10,
+      speed: currentSpeed || 0
+    }).catch(() => {});
   }
 }
 

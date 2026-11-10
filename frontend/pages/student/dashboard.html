@@ -444,6 +444,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/config.js"></script>
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/socket-client.js"></script>
 <script src="../../assets/js/map.js"></script>
@@ -632,9 +633,12 @@ function updateNotifBadge(count) {
 async function initDashMap() {
   dashMap = BusMap.init('dash-map', { zoom: 13 });
   try {
-    const res = await BusAPI.getLocations();
-    (res.data || []).forEach(bus => {
-      if (bus.current_latitude && bus.current_longitude) {
+    const res = await BusAPI.getAll();
+    const buses = res.data || [];
+    buses.forEach(bus => {
+      const lat = bus.current_latitude ?? bus.latitude;
+      const lng = bus.current_longitude ?? bus.longitude;
+      if (lat && lng && (lat !== 0 || lng !== 0)) {
         BusMap.addBusMarker(dashMap, bus);
       }
     });
@@ -663,9 +667,14 @@ async function initLiveMap() {
     const buses = busRes.data || [];
     const routes = routeRes.data || [];
     const pickups = pickupRes.data || [];
+    allBuses = buses;
 
     buses.forEach(bus => {
-      if (bus.current_latitude) BusMap.addBusMarker(liveMap, bus);
+      const lat = bus.current_latitude ?? bus.latitude;
+      const lng = bus.current_longitude ?? bus.longitude;
+      if (lat && lng && (lat !== 0 || lng !== 0)) {
+        BusMap.addBusMarker(liveMap, bus);
+      }
     });
 
     routes.forEach(r => {
@@ -675,8 +684,20 @@ async function initLiveMap() {
     renderStudentPickups(pickups);
     drawStudentPickupMarkers(pickups);
 
-    BusMap.fitToBuses(liveMap);
-    if (buses.length > 0) selectBusForDetail(buses[0]);
+    // Prioritize running bus with valid live location
+    const activeBus = buses.find(b => b.status === 'running' && (b.current_latitude || b.latitude)) || buses[0];
+    if (activeBus) {
+      selectBusForDetail(activeBus);
+      const bLat = activeBus.current_latitude ?? activeBus.latitude;
+      const bLng = activeBus.current_longitude ?? activeBus.longitude;
+      if (bLat && bLng && (bLat !== 0 || bLng !== 0)) {
+        liveMap.setView([bLat, bLng], 15);
+      } else {
+        BusMap.fitToBuses(liveMap);
+      }
+    } else {
+      BusMap.fitToBuses(liveMap);
+    }
   } catch(e) {}
 }
 
@@ -919,6 +940,25 @@ function renderStopTimeline(timeline) {
       </div>
     `;
   }).join('');
+}
+
+function filterBus() {
+  const selVal = document.getElementById('bus-filter')?.value;
+  if (!selVal) {
+    const activeBus = allBuses.find(b => b.status === 'running') || allBuses[0];
+    if (activeBus) selectBusForDetail(activeBus);
+    if (liveMap) BusMap.fitToBuses(liveMap);
+    return;
+  }
+  const bus = allBuses.find(b => String(b.bus_id) === String(selVal));
+  if (bus) {
+    selectBusForDetail(bus);
+    const lat = bus.current_latitude ?? bus.latitude;
+    const lng = bus.current_longitude ?? bus.longitude;
+    if (lat && lng && liveMap && (lat !== 0 || lng !== 0)) {
+      liveMap.setView([lat, lng], 16);
+    }
+  }
 }
 
 function centerOnSelectedBus() {
@@ -1232,6 +1272,46 @@ document.addEventListener('notification:new', (e) => {
   }
 });
 
+async function pollBusLocations() {
+  try {
+    const res = await BusAPI.getAll();
+    const buses = res.data || [];
+    if (!buses.length) return;
+    allBuses = buses;
+
+    buses.forEach(bus => {
+      const lat = bus.current_latitude ?? bus.latitude;
+      const lng = bus.current_longitude ?? bus.longitude;
+      if (lat && lng && (lat !== 0 || lng !== 0)) {
+        BusMap.updateMarker({
+          bus_id: bus.bus_id,
+          bus_number: bus.bus_number,
+          latitude: lat,
+          longitude: lng,
+          status: bus.status,
+          route_name: bus.route_name,
+          driver_name: bus.driver_name,
+          available_seats: bus.available_seats,
+          capacity: bus.capacity,
+          speed: bus.current_speed || bus.speed,
+          heading: bus.heading,
+          mode: bus.mode,
+          tracking_status: bus.tracking_status,
+          trip_state: bus.trip_state,
+          timestamp: bus.last_gps_timestamp || new Date().toISOString()
+        });
+      }
+    });
+
+    if (currentSelectedBus) {
+      const updated = buses.find(b => b.bus_id === currentSelectedBus.bus_id);
+      if (updated) {
+        selectBusForDetail({ ...currentSelectedBus, ...updated });
+      }
+    }
+  } catch (_) {}
+}
+
 // ── Boot ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   Theme.init();
@@ -1260,6 +1340,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initDashMap();
 
   SocketClient.connect();
+
+  // Periodic polling fallback ensuring live coordinates sync across all networks
+  setInterval(pollBusLocations, 4000);
 });
 </script>
 </body>

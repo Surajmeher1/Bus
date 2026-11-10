@@ -1279,6 +1279,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>if (typeof io === 'undefined') { document.write('<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"><\\/script>'); }</script>
+<script src="../../assets/js/config.js"></script>
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/socket-client.js"></script>
 <script src="../../assets/js/map.js"></script>
@@ -2726,6 +2727,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       vContainer.prepend(item);
     }
+    // Resilient location polling fallback for Admin Map & Stats
+    setInterval(async () => {
+      try {
+        const busRes = await BusAPI.getAll();
+        const buses = busRes.data || [];
+        buses.forEach(b => {
+          const lat = b.current_latitude ?? b.latitude;
+          const lng = b.current_longitude ?? b.longitude;
+          if (lat && lng && (lat !== 0 || lng !== 0) && typeof BusMap !== 'undefined') {
+            BusMap.updateMarker({
+              bus_id: b.bus_id,
+              bus_number: b.bus_number,
+              latitude: lat,
+              longitude: lng,
+              status: b.status,
+              speed: b.current_speed || b.speed,
+              driver_name: b.driver_name,
+              route_name: b.route_name
+            });
+            const speedEl = document.getElementById(`bus-speed-${b.bus_id}`);
+            if (speedEl) speedEl.textContent = `${Math.round(b.current_speed || b.speed || 0)} km/h`;
+          }
+        });
+      } catch (_) {}
+    }, 4000);
   });
 });
 // ── Admin Live Tracking Map ───────────────────────────────────────────────────
@@ -2751,7 +2777,7 @@ async function initAdminLiveMap() {
     const routes = routeRes.data || [];
     const pickups = pickupRes.data || [];
 
-    BusMap.clearMarkers();
+    BusMap.clearMarkers(adminLiveMap);
 
     // Plot all bus markers (use current GPS or fallback to campus terminal position)
     buses.forEach(bus => {

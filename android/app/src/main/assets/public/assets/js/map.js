@@ -242,12 +242,21 @@ const BusMap = {
     if (!map) return null;
     const lat = bus.current_latitude ?? bus.latitude;
     const lng = bus.current_longitude ?? bus.longitude;
-    if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return null;
+    if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return null;
 
     const busId = bus.bus_id;
+    const mapId = (map._container && map._container.id) ? map._container.id : (Object.keys(this.maps).find(k => this.maps[k] === map) || 'default');
+    if (!this.markers[mapId]) this.markers[mapId] = {};
+
+    // If marker already exists on this map, update position & return
+    if (this.markers[mapId][busId]) {
+      this.markers[mapId][busId].setLatLng([lat, lng]);
+      return this.markers[mapId][busId];
+    }
+
     const icon = this.createBusIcon(bus.status || 'running');
     const occupancyPct = bus.capacity ? Math.round(((bus.capacity - (bus.available_seats ?? bus.capacity)) / bus.capacity) * 100) : 0;
-    const marker = L.marker([lat, lng], { icon })
+    const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
       .bindPopup(`
         <div style="min-width:180px; font-family: Inter, sans-serif;">
           <div style="font-weight:800; font-size:1rem; color:#1e3a8a; margin-bottom:8px;">🚌 ${bus.bus_number || bus.bus_id}</div>
@@ -273,63 +282,43 @@ const BusMap = {
       `)
       .addTo(map);
 
-    if (!this.markers[busId]) {
-      this.markers[busId] = [];
-    } else if (!Array.isArray(this.markers[busId])) {
-      this.markers[busId] = [this.markers[busId]];
-    }
-    this.markers[busId].push(marker);
+    this.markers[mapId][busId] = marker;
     return marker;
   },
 
   updateMarker(data) {
     if (!data || data.latitude == null || data.longitude == null) return;
+    const lat = parseFloat(data.latitude);
+    const lng = parseFloat(data.longitude);
+    if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
+
     const busId = data.bus_id;
-    let markerList = this.markers[busId];
-    if (markerList && !Array.isArray(markerList)) {
-      markerList = [markerList];
-      this.markers[busId] = markerList;
-    }
+    const newLatLng = L.latLng(lat, lng);
 
-    const mapList = Object.values(this.maps);
-    // If no markers exist yet on any active maps, add to all
-    if (!markerList || markerList.length === 0) {
-      this.markers[busId] = [];
-      mapList.forEach(m => {
-        if (m) this.addBusMarker(m, data);
-      });
-      markerList = this.markers[busId];
-    } else {
-      // Ensure any newly initialized map gets this bus marker
-      mapList.forEach(m => {
-        if (m && !markerList.some(mk => mk && mk._map === m)) {
-          this.addBusMarker(m, data);
-        }
-      });
-      markerList = this.markers[busId];
-    }
+    Object.entries(this.maps).forEach(([mapId, map]) => {
+      if (!map) return;
+      if (!this.markers[mapId]) this.markers[mapId] = {};
 
-    if (!markerList || markerList.length === 0) return;
+      let marker = this.markers[mapId][busId];
+      if (!marker) {
+        marker = this.addBusMarker(map, { ...data, current_latitude: lat, current_longitude: lng });
+      }
 
-    // Smoothly animate each marker on its respective map
-    const newLatLng = L.latLng(data.latitude, data.longitude);
-    const occupancyPct = data.capacity ? Math.round(((data.capacity - (data.available_seats ?? data.capacity)) / data.capacity) * 100) : 0;
+      if (marker && marker._map) {
+        const currentLatLng = marker.getLatLng();
+        this._animateMarker(marker, currentLatLng, newLatLng, 1200);
 
-    markerList.forEach(marker => {
-      if (!marker || !marker._map) return;
-      const currentLatLng = marker.getLatLng();
-      this._animateMarker(marker, currentLatLng, newLatLng, 1200);
-
-      marker.setPopupContent(`
-        <div style="min-width:180px; font-family:Inter,sans-serif;">
-          <div style="font-weight:800; font-size:1rem; color:#1e3a8a; margin-bottom:6px;">🚌 ${data.bus_number || 'BUS'}</div>
-          <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Speed: ${Math.round(data.speed || 0)} km/h</div>
-          <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Driver: ${data.driver_name || 'Assigned Driver'}</div>
-          <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Seats: ${data.available_seats ?? 50} / ${data.capacity ?? 50}</div>
-          ${data.next_stop ? `<div style="font-size:0.8rem; color:#16a34a; font-weight:600;">Next Stop: ${data.next_stop.stop_name || data.next_stop}</div>` : ''}
-          <div style="font-size:0.7rem; color:#94a3b8; margin-top:6px;">Live GPS &bull; ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</div>
-        </div>
-      `);
+        marker.setPopupContent(`
+          <div style="min-width:180px; font-family:Inter,sans-serif;">
+            <div style="font-weight:800; font-size:1rem; color:#1e3a8a; margin-bottom:6px;">🚌 ${data.bus_number || 'BUS'}</div>
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Speed: ${Math.round(data.speed || 0)} km/h</div>
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Driver: ${data.driver_name || 'Assigned Driver'}</div>
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Seats: ${data.available_seats ?? 50} / ${data.capacity ?? 50}</div>
+            ${data.next_stop ? `<div style="font-size:0.8rem; color:#16a34a; font-weight:600;">Next Stop: ${data.next_stop.stop_name || data.next_stop}</div>` : ''}
+            <div style="font-size:0.7rem; color:#94a3b8; margin-top:6px;">Live GPS &bull; ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</div>
+          </div>
+        `);
+      }
     });
   },
 
@@ -372,25 +361,41 @@ const BusMap = {
   },
 
   fitToBuses(map) {
-    const markerList = Object.values(this.markers);
-    if (markerList.length > 0) {
+    if (!map) return;
+    const mapId = (map._container && map._container.id) ? map._container.id : (Object.keys(this.maps).find(k => this.maps[k] === map) || 'default');
+    const mapMarkers = (this.markers[mapId] && typeof this.markers[mapId] === 'object')
+      ? Object.values(this.markers[mapId])
+      : [];
+    if (mapMarkers.length > 0) {
       try {
-        const group = L.featureGroup(markerList);
+        const group = L.featureGroup(mapMarkers);
         const bounds = group.getBounds();
         if (bounds && bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.15));
+          map.fitBounds(bounds.pad(0.2));
           return;
         }
       } catch (_) {}
     }
-    if (map && typeof map.setView === 'function') {
-      map.setView([19.0494, 83.8242], 13);
+    if (typeof map.setView === 'function') {
+      map.setView([19.0494, 83.8242], 14);
     }
   },
 
-  clearMarkers() {
-    Object.values(this.markers).forEach(m => m.remove());
-    this.markers = {};
+  clearMarkers(map) {
+    if (map) {
+      const mapId = (map._container && map._container.id) ? map._container.id : Object.keys(this.maps).find(k => this.maps[k] === map);
+      if (this.markers[mapId]) {
+        Object.values(this.markers[mapId]).forEach(m => m && typeof m.remove === 'function' && m.remove());
+        delete this.markers[mapId];
+      }
+    } else {
+      Object.values(this.markers).forEach(mapGroup => {
+        if (mapGroup && typeof mapGroup === 'object') {
+          Object.values(mapGroup).forEach(m => m && typeof m.remove === 'function' && m.remove());
+        }
+      });
+      this.markers = {};
+    }
   },
 };
 

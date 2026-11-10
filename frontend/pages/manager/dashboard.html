@@ -331,6 +331,7 @@
 <div id="toast-container" class="toast-container"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="../../assets/js/config.js"></script>
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/socket-client.js"></script>
 <script src="../../assets/js/map.js"></script>
@@ -436,18 +437,25 @@ function renderTodayTrips(trips) {
 
 async function initMgrDashMap() {
   if (!mgrDashMap) mgrDashMap = BusMap.init('mgr-dash-map', { zoom: 13 });
-  BusMap.clearMarkers();
+  BusMap.clearMarkers(mgrDashMap);
   myBuses.forEach(bus => {
-    if (bus.current_latitude) BusMap.addBusMarker(mgrDashMap, bus);
+    const lat = bus.current_latitude ?? bus.latitude;
+    const lng = bus.current_longitude ?? bus.longitude;
+    if (lat && lng && (lat !== 0 || lng !== 0)) BusMap.addBusMarker(mgrDashMap, bus);
   });
   BusMap.fitToBuses(mgrDashMap);
 }
 
 async function initMgrLiveMap() {
-  mgrLiveMap = BusMap.init('mgr-live-map', { zoom: 13 });
+  if (!mgrLiveMap) mgrLiveMap = BusMap.init('mgr-live-map', { zoom: 13 });
+  BusMap.clearMarkers(mgrLiveMap);
   try {
     const busRes = await BusAPI.getAll();
-    (busRes.data || []).forEach(bus => { if (bus.current_latitude) BusMap.addBusMarker(mgrLiveMap, bus); });
+    (busRes.data || []).forEach(bus => {
+      const lat = bus.current_latitude ?? bus.latitude;
+      const lng = bus.current_longitude ?? bus.longitude;
+      if (lat && lng && (lat !== 0 || lng !== 0)) BusMap.addBusMarker(mgrLiveMap, bus);
+    });
     const routeRes = await RouteAPI.getAll();
     (routeRes.data || []).forEach(r => { if (r.stops?.length) BusMap.drawRoute(mgrLiveMap, r.stops, r.route_id); });
     BusMap.fitToBuses(mgrLiveMap);
@@ -671,6 +679,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('bus:status', (e) => {
     refreshDashboard();
   });
+
+  // Resilient location polling fallback
+  setInterval(async () => {
+    try {
+      const busRes = await BusAPI.getAll();
+      const buses = busRes.data || [];
+      buses.forEach(b => {
+        const lat = b.current_latitude ?? b.latitude;
+        const lng = b.current_longitude ?? b.longitude;
+        if (lat && lng && (lat !== 0 || lng !== 0) && typeof BusMap !== 'undefined') {
+          BusMap.updateMarker({
+            bus_id: b.bus_id,
+            bus_number: b.bus_number,
+            latitude: lat,
+            longitude: lng,
+            status: b.status,
+            speed: b.current_speed || b.speed,
+            driver_name: b.driver_name,
+            route_name: b.route_name
+          });
+        }
+      });
+    } catch (_) {}
+  }, 4000);
 });
 </script>
 </body>

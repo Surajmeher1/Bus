@@ -421,8 +421,65 @@ const deletePickupPoint = (req, res) => {
   }
 };
 
+// ── UPDATE LOCATION (Driver HTTP Fallback) ─────────────────────────────
+const updateDriverLocation = (req, res) => {
+  try {
+    const { latitude, longitude, speed, accuracy } = req.body;
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
+      return res.status(400).json({ success: false, message: 'Invalid GPS coordinates.' });
+    }
+
+    const bus = db.prepare('SELECT * FROM buses WHERE driver_id = ?').get(req.user.id);
+    if (!bus) {
+      return res.status(404).json({ success: false, message: 'No bus assigned.' });
+    }
+
+    const speedNum = parseFloat(speed) || 0;
+
+    // Update database
+    db.prepare(`
+      UPDATE buses SET
+        current_latitude = ?,
+        current_longitude = ?,
+        current_speed = ?,
+        last_valid_latitude = ?,
+        last_valid_longitude = ?,
+        last_gps_timestamp = datetime('now'),
+        status = 'running',
+        tracking_status = 'LIVE',
+        trip_state = 'LIVE'
+      WHERE bus_id = ?
+    `).run(lat, lng, speedNum, lat, lng, bus.bus_id);
+
+    const payload = {
+      bus_id: bus.bus_id,
+      bus_number: bus.bus_number,
+      latitude: lat,
+      longitude: lng,
+      speed: speedNum,
+      accuracy: accuracy || 10,
+      status: 'running',
+      tracking_status: 'LIVE',
+      trip_state: 'LIVE',
+      mode: 'LIVE',
+      timestamp: new Date().toISOString()
+    };
+
+    if (req.io) {
+      req.io.emit('bus:location-update', payload);
+      req.io.emit('bus-location-update', payload);
+    }
+
+    res.json({ success: true, message: 'Location updated', data: payload });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   getAllDrivers, getDriver, createDriver, updateDriver, deleteDriver, toggleDriverActive,
-  getMyBus, startTrip, endTrip,
+  getMyBus, startTrip, endTrip, updateDriverLocation,
   getPickupPoints, addPickupPoint, deletePickupPoint
 };

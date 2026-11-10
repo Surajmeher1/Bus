@@ -7,7 +7,7 @@ const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const { ROLES } = require('../utils/roles');
 const {
-  getMyBus, startTrip, endTrip,
+  getMyBus, startTrip, endTrip, updateDriverLocation,
   getPickupPoints, addPickupPoint, deletePickupPoint
 } = require('../controllers/driverController');
 
@@ -15,6 +15,7 @@ const {
 router.get('/my-bus',            authenticate, authorize(ROLES.DRIVER), getMyBus);
 router.post('/start-trip',       authenticate, authorize(ROLES.DRIVER), startTrip);
 router.post('/end-trip',         authenticate, authorize(ROLES.DRIVER), endTrip);
+router.post('/location',         authenticate, authorize(ROLES.DRIVER), updateDriverLocation);
 
 // ── Pickup points: read accessible to all roles, write to DRIVER/ADMIN only ───
 router.get('/pickup-points',     authenticate, getPickupPoints);
