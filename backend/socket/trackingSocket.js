@@ -178,7 +178,7 @@ module.exports = function setupTrackingSocket(io) {
     });
 
     // ── DRIVER: Location Update ──────────────────────────────────────────────
-    socket.on('driver:location-update', ({ token, busId, latitude, longitude, accuracy, timestamp }) => {
+    socket.on('driver:location-update', ({ token, busId, latitude, longitude, accuracy, speed, timestamp }) => {
       const user = verifyToken(token);
       if (!user || normalizeRole(user.role) !== ROLES.DRIVER) {
         socket.emit('driver:error', { message: 'Unauthorized driver token. Only drivers can submit GPS.' });
@@ -228,22 +228,17 @@ module.exports = function setupTrackingSocket(io) {
         timestamp
       });
 
-      if (!gpsCheck.valid) {
-        if (gpsCheck.isSuspicious) {
-          console.warn(`🚨 Suspicious GPS from driver ${user.id} for bus ${parsedBusId}: ${gpsCheck.suspicionReason}`);
-          db.prepare(`
-            INSERT INTO activity_logs (user_type, user_id, action, details)
-            VALUES ('driver', ?, 'suspicious_gps', ?)
-          `).run(user.id, `Suspicious GPS update on bus #${parsedBusId}: ${gpsCheck.suspicionReason} (${latitude}, ${longitude})`);
-
-          // Mark trip suspicious count
-          db.prepare('UPDATE trips SET suspicious_count = COALESCE(suspicious_count, 0) + 1 WHERE trip_id = ?')
-            .run(activeTrip.trip_id);
-
-          socket.emit('driver:warning', { message: 'Suspicious GPS jump detected. Maintaining previous verified location.' });
-        }
-        // Do not update location with corrupted reading
+      // Reject only invalid/out-of-bounds/zero/stale readings; never hide authentic driver coordinates
+      if (!gpsCheck.isCoordinateValid) {
         return;
+      }
+
+      if (gpsCheck.isJumpAnomaly) {
+        console.warn(`⚠️ GPS jump logged from driver ${user.id} for bus ${parsedBusId}: ${gpsCheck.suspicionReason} — updating to latest authentic position`);
+        db.prepare(`
+          INSERT INTO activity_logs (user_type, user_id, action, details)
+          VALUES ('driver', ?, 'gps_jump_notice', ?)
+        `).run(user.id, `GPS relocation on bus #${parsedBusId}: ${gpsCheck.suspicionReason} (${latitude}, ${longitude})`);
       }
 
       session.lastUpdate = Date.now();
@@ -251,7 +246,9 @@ module.exports = function setupTrackingSocket(io) {
 
       const latNum = parseFloat(latitude);
       const lngNum = parseFloat(longitude);
-      const speedNum = gpsCheck.calculatedSpeedKmh || 0;
+      const speedNum = (speed != null && !isNaN(parseFloat(speed)))
+        ? Math.min(130, Math.max(0, Math.round(parseFloat(speed))))
+        : (gpsCheck.isJumpAnomaly ? 0 : (gpsCheck.calculatedSpeedKmh || 0));
 
       // Fetch bus details & driver name
       const bus = db.prepare(`

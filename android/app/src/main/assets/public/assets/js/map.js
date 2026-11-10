@@ -309,6 +309,7 @@ const BusMap = {
       .addTo(map);
 
     this.markers[mapId][busId] = marker;
+    marker._busStatus = bus.status || 'running';
     return marker;
   },
 
@@ -316,10 +317,11 @@ const BusMap = {
     if (!data || data.latitude == null || data.longitude == null) return;
     const lat = parseFloat(data.latitude);
     const lng = parseFloat(data.longitude);
-    if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
+    if (isNaN(lat) || isNaN(lng) || (Math.abs(lat) < 0.0001 && Math.abs(lng) < 0.0001)) return;
 
     const busId = data.bus_id;
     const newLatLng = L.latLng(lat, lng);
+    const newStatus = data.status || 'running';
 
     Object.entries(this.maps).forEach(([mapId, map]) => {
       if (!map) return;
@@ -327,21 +329,40 @@ const BusMap = {
 
       let marker = this.markers[mapId][busId];
       if (!marker) {
-        marker = this.addBusMarker(map, { ...data, current_latitude: lat, current_longitude: lng });
+        marker = this.addBusMarker(map, { ...data, current_latitude: lat, current_longitude: lng, status: newStatus });
+      } else {
+        if (marker._busStatus !== newStatus) {
+          marker.setIcon(this.createBusIcon(newStatus));
+          marker._busStatus = newStatus;
+        }
       }
 
       if (marker && marker._map) {
         const currentLatLng = marker.getLatLng();
-        this._animateMarker(marker, currentLatLng, newLatLng, 1200);
+        if (currentLatLng.distanceTo(newLatLng) > 5000) {
+          if (marker._animFrame) cancelAnimationFrame(marker._animFrame);
+          marker.setLatLng(newLatLng);
+        } else {
+          this._animateMarker(marker, currentLatLng, newLatLng, 1000);
+        }
+
+        const isOutside = data.tracking_status === 'OUTSIDE_AREA' || data.geofence_status === 'OUTSIDE_OPERATION_AREA';
+        const statusPill = isOutside
+          ? `<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px;font-size:0.7rem;font-weight:700;">OUTSIDE ROUTE</span>`
+          : `<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:99px;font-size:0.7rem;font-weight:700;">LIVE GPS</span>`;
 
         marker.setPopupContent(`
-          <div style="min-width:180px; font-family:Inter,sans-serif;">
-            <div style="font-weight:800; font-size:1rem; color:#1e3a8a; margin-bottom:6px;">🚌 ${data.bus_number || 'BUS'}</div>
+          <div style="min-width:190px; font-family:Inter,sans-serif;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+              <div style="font-weight:800; font-size:1rem; color:#1e3a8a;">🚌 ${data.bus_number || 'BUS'}</div>
+              ${statusPill}
+            </div>
+            ${data.route_name ? `<div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Route: ${data.route_name}</div>` : ''}
             <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Speed: ${Math.round(data.speed || 0)} km/h</div>
             <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Driver: ${data.driver_name || 'Assigned Driver'}</div>
             <div style="font-size:0.8rem; color:#64748b; margin-bottom:4px;">Seats: ${data.available_seats ?? 50} / ${data.capacity ?? 50}</div>
             ${data.next_stop ? `<div style="font-size:0.8rem; color:#16a34a; font-weight:600;">Next Stop: ${data.next_stop.stop_name || data.next_stop}</div>` : ''}
-            <div style="font-size:0.7rem; color:#94a3b8; margin-top:6px;">Live GPS &bull; ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</div>
+            <div style="font-size:0.7rem; color:#94a3b8; margin-top:6px;">${lat.toFixed(5)}, ${lng.toFixed(5)} &bull; ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</div>
           </div>
         `);
       }
@@ -349,6 +370,7 @@ const BusMap = {
   },
 
   _animateMarker(marker, from, to, duration) {
+    if (marker._animFrame) cancelAnimationFrame(marker._animFrame);
     const start = Date.now();
     const animate = () => {
       const elapsed = Date.now() - start;
@@ -358,9 +380,13 @@ const BusMap = {
         from.lat + (to.lat - from.lat) * eased,
         from.lng + (to.lng - from.lng) * eased,
       ]);
-      if (t < 1) requestAnimationFrame(animate);
+      if (t < 1) {
+        marker._animFrame = requestAnimationFrame(animate);
+      } else {
+        marker._animFrame = null;
+      }
     };
-    requestAnimationFrame(animate);
+    marker._animFrame = requestAnimationFrame(animate);
   },
 
   drawRoute(map, stops, routeId) {
@@ -395,18 +421,25 @@ const BusMap = {
     return polyline;
   },
 
-  fitToBuses(map) {
+  fitToBuses(map, preferRunning = true) {
     if (!map) return;
     const mapId = (map._container && map._container.id) ? map._container.id : (Object.keys(this.maps).find(k => this.maps[k] === map) || 'default');
-    const mapMarkers = (this.markers[mapId] && typeof this.markers[mapId] === 'object')
+    const allMapMarkers = (this.markers[mapId] && typeof this.markers[mapId] === 'object')
       ? Object.values(this.markers[mapId])
       : [];
-    if (mapMarkers.length > 0) {
+    const runningMarkers = allMapMarkers.filter(m => m && m._busStatus === 'running');
+    const targetMarkers = (preferRunning && runningMarkers.length > 0) ? runningMarkers : allMapMarkers;
+
+    if (targetMarkers.length > 0) {
       try {
-        const group = L.featureGroup(mapMarkers);
+        if (targetMarkers.length === 1) {
+          map.setView(targetMarkers[0].getLatLng(), 15, { animate: true });
+          return;
+        }
+        const group = L.featureGroup(targetMarkers);
         const bounds = group.getBounds();
         if (bounds && bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.2));
+          map.fitBounds(bounds.pad(0.25), { maxZoom: 15 });
           return;
         }
       } catch (_) {}

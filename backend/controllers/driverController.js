@@ -6,7 +6,10 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const DriverModel = require('../models/driverModel');
+const RouteModel = require('../models/routeModel');
 const gpsValidationService = require('../services/gpsValidationService');
+const geofenceService = require('../services/geofenceService');
+const etaService = require('../services/etaService');
 const { ROLES, normalizeRole } = require('../utils/roles');
 const { isValidGietEmail, generateSystemUserId } = require('../utils/validation');
 
@@ -240,14 +243,17 @@ const startTrip = (req, res) => {
 
     const tripId = result.lastInsertRowid;
 
-    // Update bus: state is STARTING until first valid GPS fix
+    // Update bus: state is STARTING until first valid GPS fix; reset previous trip coords cleanly
     db.prepare(`
       UPDATE buses SET
         status = 'running',
         active_trip_id = ?,
         route_id = ?,
         tracking_status = 'STARTING',
-        trip_state = 'STARTING'
+        trip_state = 'STARTING',
+        last_valid_latitude = NULL,
+        last_valid_longitude = NULL,
+        last_gps_timestamp = NULL
       WHERE bus_id = ?
     `).run(tripId, effectiveRouteId, bus.bus_id);
 
@@ -421,24 +427,64 @@ const deletePickupPoint = (req, res) => {
   }
 };
 
-// ── UPDATE LOCATION (Driver HTTP Fallback) ─────────────────────────────
+// ── UPDATE LOCATION (Driver HTTP Fallback & Sync) ─────────────────────────────
 const updateDriverLocation = (req, res) => {
   try {
-    const { latitude, longitude, speed, accuracy } = req.body;
+    const { latitude, longitude, speed, accuracy, passive } = req.body;
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
-    if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
+    if (
+      isNaN(lat) || isNaN(lng) ||
+      lat < -90 || lat > 90 || lng < -180 || lng > 180 ||
+      (Math.abs(lat) < 0.0001 && Math.abs(lng) < 0.0001)
+    ) {
       return res.status(400).json({ success: false, message: 'Invalid GPS coordinates.' });
     }
 
-    const bus = db.prepare('SELECT * FROM buses WHERE driver_id = ?').get(req.user.id);
+    const bus = db.prepare(`
+      SELECT b.*, r.route_name, r.source, r.destination, d.name as driver_name, d.phone as driver_phone
+      FROM buses b
+      LEFT JOIN routes r ON b.route_id = r.route_id
+      LEFT JOIN drivers d ON b.driver_id = d.driver_id
+      WHERE b.driver_id = ?
+    `).get(req.user.id);
     if (!bus) {
       return res.status(404).json({ success: false, message: 'No bus assigned.' });
     }
 
-    const speedNum = parseFloat(speed) || 0;
+    const activeTrip = db.prepare("SELECT * FROM trips WHERE bus_id = ? AND driver_id = ? AND status = 'running'").get(bus.bus_id, req.user.id);
+    const isRunning = Boolean(activeTrip || bus.status === 'running' || !passive);
+    const speedNum = (speed != null && !isNaN(parseFloat(speed))) ? Math.min(130, Math.max(0, Math.round(parseFloat(speed)))) : 0;
 
-    // Update database
+    // Geofence check (audits outside-area alerts without hiding or modifying driver location)
+    let trackingStatus = (accuracy && accuracy > 200) ? 'GPS_WEAK' : 'LIVE';
+    let tripStatusText = trackingStatus === 'GPS_WEAK' ? 'GPS SIGNAL WEAK' : 'LIVE';
+    let isInsideGeofence = true;
+
+    if (activeTrip || isRunning) {
+      const gf = geofenceService.checkBusLocation({
+        busId: bus.bus_id,
+        driverId: req.user.id,
+        tripId: activeTrip?.trip_id || bus.active_trip_id,
+        latitude: lat,
+        longitude: lng,
+        busNumber: bus.bus_number,
+        driverName: bus.driver_name,
+        io: req.io
+      });
+      isInsideGeofence = gf.isInside;
+      if (!gf.isInside) {
+        trackingStatus = 'OUTSIDE_AREA';
+        tripStatusText = 'OUTSIDE OPERATING AREA';
+      }
+    } else {
+      trackingStatus = bus.tracking_status || 'OFFLINE';
+      tripStatusText = bus.status || 'inactive';
+    }
+
+    const effectiveStatus = activeTrip ? 'running' : (passive ? bus.status : 'running');
+
+    // Always persist exact driver GPS position regardless of route/geofence state
     db.prepare(`
       UPDATE buses SET
         current_latitude = ?,
@@ -447,23 +493,62 @@ const updateDriverLocation = (req, res) => {
         last_valid_latitude = ?,
         last_valid_longitude = ?,
         last_gps_timestamp = datetime('now'),
-        status = 'running',
-        tracking_status = 'LIVE',
-        trip_state = 'LIVE'
+        status = ?,
+        tracking_status = ?,
+        trip_state = ?
       WHERE bus_id = ?
-    `).run(lat, lng, speedNum, lat, lng, bus.bus_id);
+    `).run(lat, lng, speedNum, lat, lng, effectiveStatus, trackingStatus, trackingStatus, bus.bus_id);
+
+    if (activeTrip) {
+      db.prepare('UPDATE trips SET trip_state = ? WHERE trip_id = ?').run(trackingStatus, activeTrip.trip_id);
+    }
+
+    // Calculate route ETAs if route stops are available
+    let etaPayload = {
+      next_stop: null, college_stop: null,
+      eta_next_stop_minutes: null, eta_college_minutes: null,
+      route_progress_percent: 0, stops_timeline: [],
+      current_stop_nearby: null, has_arrived: false
+    };
+    if (bus.route_id) {
+      const stops = RouteModel.getStops(bus.route_id);
+      if (stops && stops.length > 0) {
+        etaPayload = etaService.calculateRouteETAs(lat, lng, stops, speedNum);
+      }
+    }
 
     const payload = {
       bus_id: bus.bus_id,
       bus_number: bus.bus_number,
+      registration_number: bus.registration_number,
       latitude: lat,
       longitude: lng,
       speed: speedNum,
-      accuracy: accuracy || 10,
-      status: 'running',
-      tracking_status: 'LIVE',
-      trip_state: 'LIVE',
+      accuracy: accuracy ? Math.round(accuracy) : 10,
+      status: effectiveStatus,
+      tracking_status: trackingStatus,
+      trip_status: tripStatusText,
+      trip_state: trackingStatus,
       mode: 'LIVE',
+      driver_name: bus.driver_name,
+      driver_phone: bus.driver_phone,
+      available_seats: bus.available_seats,
+      capacity: bus.capacity,
+      route_id: bus.route_id,
+      route_name: bus.route_name,
+      route_source: bus.source,
+      route_destination: bus.destination,
+      next_stop: etaPayload.next_stop,
+      college_stop: etaPayload.college_stop,
+      eta_next_stop_minutes: etaPayload.eta_next_stop_minutes,
+      next_stop_eta_minutes: etaPayload.eta_next_stop_minutes,
+      eta_college_minutes: etaPayload.eta_college_minutes,
+      college_eta_minutes: etaPayload.eta_college_minutes,
+      route_progress_percent: etaPayload.route_progress_percent,
+      stops_timeline: etaPayload.stops_timeline,
+      current_stop_nearby: etaPayload.current_stop_nearby,
+      has_arrived: etaPayload.has_arrived,
+      geofence_status: isInsideGeofence ? 'INSIDE' : 'OUTSIDE_OPERATION_AREA',
       timestamp: new Date().toISOString()
     };
 

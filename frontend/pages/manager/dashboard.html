@@ -350,10 +350,10 @@ function showSection(name) {
   document.getElementById('page-title').textContent = titles[name] || name;
   if (name === 'live-map') {
     if (!mgrLiveMap) initMgrLiveMap();
-    else setTimeout(() => { if (mgrLiveMap) mgrLiveMap.invalidateSize(); }, 100);
+    else setTimeout(() => { if (mgrLiveMap) { mgrLiveMap.invalidateSize(); BusMap.fitToBuses(mgrLiveMap); } }, 100);
   }
   if (name === 'dashboard' && mgrDashMap) {
-    setTimeout(() => { if (mgrDashMap) mgrDashMap.invalidateSize(); }, 100);
+    setTimeout(() => { if (mgrDashMap) { mgrDashMap.invalidateSize(); BusMap.fitToBuses(mgrDashMap); } }, 100);
   }
   if (name === 'trips') loadTrips();
   if (name === 'feedback') populateFeedbackBus();
@@ -695,9 +695,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             latitude: lat,
             longitude: lng,
             status: b.status,
+            tracking_status: b.tracking_status,
+            trip_state: b.trip_state,
+            available_seats: b.available_seats,
+            capacity: b.capacity,
             speed: b.current_speed || b.speed,
             driver_name: b.driver_name,
-            route_name: b.route_name
+            route_name: b.route_name,
+            timestamp: b.last_gps_timestamp || new Date().toISOString()
           });
         }
       });

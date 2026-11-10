@@ -737,7 +737,8 @@ function releaseWakeLock() {
 }
 
 function onGpsSuccess(position, isHighAccuracy = true) {
-  const { latitude, longitude, accuracy } = position.coords;
+  const { latitude, longitude, accuracy, speed } = position.coords;
+  const gpsSpeedKmh = (speed != null && !isNaN(speed)) ? Math.round(speed * 3.6) : 0;
   updateCount++;
 
   // Update GPS card
@@ -751,8 +752,10 @@ function onGpsSuccess(position, isHighAccuracy = true) {
   // Clear any previous error banner
   document.getElementById('gps-error-card')?.classList.remove('visible');
 
-  // Check destination arrival for automatic trip end
-  checkAutoEndTrip(latitude, longitude);
+  // Check destination arrival for automatic trip end (skip within first 60s of starting trip)
+  if (!tripStartTime || (Date.now() - tripStartTime > 60000)) {
+    checkAutoEndTrip(latitude, longitude);
+  }
 
   // Update Next Stop display and arrival distance!
   updateNextStopDisplay(latitude, longitude);
@@ -779,19 +782,20 @@ function onGpsSuccess(position, isHighAccuracy = true) {
       latitude,
       longitude,
       accuracy,
+      speed: gpsSpeedKmh,
       timestamp: new Date().toISOString()
     });
   }
 
-  // Dual pipeline: Fallback over HTTP API to ensure backend always receives GPS even if socket drops
+  // Dual pipeline: HTTP API fallback guarantees live coordinates persist immediately even across WebSocket drops
   const now = Date.now();
-  if (busData && (!socket || !socket.connected || (now - lastHttpLocationTime > 4000))) {
+  if (busData && (lastHttpLocationTime === 0 || !socket || !socket.connected || (now - lastHttpLocationTime > 3500))) {
     lastHttpLocationTime = now;
     API.post('/driver/location', {
       latitude,
       longitude,
       accuracy: accuracy || 10,
-      speed: currentSpeed || 0
+      speed: gpsSpeedKmh
     }).catch(() => {});
   }
 }

@@ -73,12 +73,9 @@ class GpsValidationService {
       };
     }
 
-    // 4. Route assignment to bus check
-    const effectiveRouteId = routeId || bus.route_id;
-    if (!effectiveRouteId) {
-      return { valid: false, message: 'No route is assigned to this bus.' };
-    }
-    if (bus.route_id && effectiveRouteId !== bus.route_id) {
+    // 4. Route assignment to bus check (allow route-less tracking when bus has no route assigned)
+    const effectiveRouteId = routeId || bus.route_id || null;
+    if (bus.route_id && effectiveRouteId && effectiveRouteId !== bus.route_id) {
       return {
         valid: false,
         message: `Route mismatch. Bus ${bus.bus_number} is assigned to route ID ${bus.route_id}, not ${effectiveRouteId}.`
@@ -176,14 +173,16 @@ class GpsValidationService {
     if (bus && bus.last_valid_latitude && bus.last_valid_longitude && bus.last_gps_timestamp) {
       const lastLat = bus.last_valid_latitude;
       const lastLng = bus.last_valid_longitude;
-      const lastTime = new Date(bus.last_gps_timestamp).getTime();
+      const rawTs = String(bus.last_gps_timestamp);
+      const isoTs = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(rawTs) ? rawTs.replace(' ', 'T') + 'Z' : rawTs;
+      const lastTime = new Date(isoTs).getTime();
       const dtSeconds = Math.max(0.5, (gpsTime - lastTime) / 1000);
 
       const distanceMeters = this.haversineDistance(lastLat, lastLng, lat, lng);
       const speedMs = distanceMeters / dtSeconds;
       calculatedSpeedKmh = (speedMs * 3.6);
 
-      // Check for impossible teleportation: > 1000m in less than 3 seconds or speed > 130 km/h for a university bus
+      // Detect sudden coordinate jumps (e.g., coarse cell lock refining to GPS or large relocation)
       if (distanceMeters > 1000 && dtSeconds < 3) {
         isSuspicious = true;
         suspicionReason = `Teleportation detected: ${Math.round(distanceMeters)}m in ${dtSeconds.toFixed(1)}s`;
@@ -198,6 +197,8 @@ class GpsValidationService {
 
     return {
       valid: !isSuspicious,
+      isCoordinateValid: true,
+      isJumpAnomaly: isSuspicious,
       isSuspicious,
       isWeakGps,
       calculatedSpeedKmh: Math.round(calculatedSpeedKmh),

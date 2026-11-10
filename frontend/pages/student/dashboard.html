@@ -629,9 +629,34 @@ function updateNotifBadge(count) {
   });
 }
 
-// ── Dashboard Map ──────────────────────────────────────────────────────────────
+// ── Live Tracking Map & Pickup Points ──────────────────────────────────────────
+let studentPickupMarkers = {};
+let currentSelectedBus = null;
+let userDraggedLiveMap = false;
+let userDraggedDashMap = false;
+let _cachedRouteStops = {};
+let _cachedPickupsByBus = {};
+let _lastPickupFetchAt = {};
+
+function ensureBusInView(map, lat, lng, isLiveMap = true) {
+  if (!map || !lat || !lng || (lat === 0 && lng === 0)) return;
+  if (isLiveMap && userDraggedLiveMap) return;
+  if (!isLiveMap && userDraggedDashMap) return;
+  try {
+    const bounds = map.getBounds();
+    const target = L.latLng(lat, lng);
+    if (!bounds || !bounds.pad(-0.08).contains(target)) {
+      const z = map.getZoom();
+      map.setView(target, (!z || z < 13) ? 15 : z, { animate: true });
+    }
+  } catch (_) {}
+}
+
 async function initDashMap() {
   dashMap = BusMap.init('dash-map', { zoom: 13 });
+  if (dashMap) {
+    dashMap.on('dragstart', () => { userDraggedDashMap = true; });
+  }
   try {
     const res = await BusAPI.getAll();
     const buses = res.data || [];
@@ -646,14 +671,14 @@ async function initDashMap() {
   } catch (e) {}
 }
 
-// ── Live Tracking Map & Pickup Points ──────────────────────────────────────────
-let studentPickupMarkers = {};
-let currentSelectedBus = null;
-
 async function initLiveMap() {
   const container = document.getElementById('live-map');
   if (!container) return;
+  userDraggedLiveMap = false;
   liveMap = BusMap.init('live-map', { zoom: 13 });
+  if (liveMap) {
+    liveMap.on('dragstart', () => { userDraggedLiveMap = true; });
+  }
   setTimeout(() => {
     if (liveMap) {
       liveMap.invalidateSize();
@@ -684,8 +709,10 @@ async function initLiveMap() {
     renderStudentPickups(pickups);
     drawStudentPickupMarkers(pickups);
 
-    // Prioritize running bus with valid live location
-    const activeBus = buses.find(b => b.status === 'running' && (b.current_latitude || b.latitude)) || buses[0];
+    // Prioritize running bus with valid live location (anywhere, in route or off route)
+    const activeBus = buses.find(b => b.status === 'running' && (b.current_latitude || b.latitude))
+      || buses.find(b => (b.current_latitude && b.current_latitude !== 0))
+      || buses[0];
     if (activeBus) {
       selectBusForDetail(activeBus);
       const bLat = activeBus.current_latitude ?? activeBus.latitude;
@@ -809,17 +836,26 @@ function selectBusForDetail(bus) {
     ? `${collegeEtaVal} min`
     : (bus.status === 'running' || bus.mode === 'LIVE' ? 'En Route (~12 min)' : '—');
 
+  const bLat = bus.current_latitude ?? bus.latitude;
+  const bLng = bus.current_longitude ?? bus.longitude;
+  const hasFix = bLat && bLng && (Math.abs(bLat) > 0.0001 || Math.abs(bLng) > 0.0001);
+  const speedDisplay = Math.round(bus.current_speed ?? bus.speed ?? 0);
+
   panel.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <h3 style="font-size:1.25rem;font-weight:800;margin:0;">${bus.bus_number}</h3>
       ${statusBadge}
     </div>
-    <div style="font-size:.85rem;color:var(--text-secondary);margin-bottom:10px;">
-      <i class="fa-solid fa-route" style="color:var(--primary-500);margin-right:4px;"></i>${bus.route_name || 'No route assigned'}
+    <div style="font-size:.85rem;color:var(--text-secondary);margin-bottom:8px;">
+      <i class="fa-solid fa-route" style="color:var(--primary-500);margin-right:4px;"></i>${bus.route_name || 'Off-Route / Custom Location'}
+    </div>
+    <div style="font-size:.78rem;color:var(--text-muted);background:var(--bg-base);padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <span><i class="fa-solid fa-location-crosshairs" style="color:var(--primary-500);margin-right:4px;"></i>${hasFix ? `${Number(bLat).toFixed(5)}, ${Number(bLng).toFixed(5)}` : 'Awaiting GPS fix'}</span>
+      <span style="font-weight:700;color:var(--text-primary);">${speedDisplay} km/h</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:10px;">
       <div><i class="fa-solid fa-user" style="margin-right:4px;"></i>${bus.driver_name || 'Driver'}</div>
-      <div><i class="fa-solid fa-chair" style="margin-right:4px;"></i>${bus.available_seats || 0}/${bus.capacity || 50} seats</div>
+      <div><i class="fa-solid fa-chair" style="margin-right:4px;"></i>${bus.available_seats ?? 0}/${bus.capacity || 50} seats</div>
     </div>
     <div class="progress-bar mb-16">
       <div class="progress-fill ${getOccClass(bus)}" style="width:${Math.round(((bus.capacity-(bus.available_seats||bus.capacity))/bus.capacity)*100)}%"></div>
@@ -855,28 +891,41 @@ function selectBusForDetail(bus) {
   // Render Next Available Bus card
   renderNextBusCard(bus.next_bus);
 
-  // Render Stop Timeline if timeline data is available, else fetch from route
-  if (bus.timeline && bus.timeline.length) {
-    renderStopTimeline(bus.timeline);
+  // Render Stop Timeline if timeline data is available, else use cached route stops
+  const activeTimeline = bus.stops_timeline || bus.timeline;
+  if (activeTimeline && activeTimeline.length) {
+    renderStopTimeline(activeTimeline);
   } else if (bus.route_id) {
-    RouteAPI.getOne(bus.route_id).then(rRes => {
-      const stops = rRes.data?.stops || [];
-      const dummyTimeline = stops.map((s, idx) => ({
-        stop_id: s.stop_id,
-        stop_name: s.stop_name,
-        stop_order: s.stop_order,
-        is_college: s.is_college,
-        status: idx === 0 ? 'passed' : (idx === 1 ? 'next' : 'upcoming'),
-        eta_minutes: s.expected_offset_minutes || ((idx + 1) * 7)
-      }));
-      renderStopTimeline(dummyTimeline);
-    }).catch(() => {});
+    const buildFallbackTimeline = (stops) => stops.map((s, idx) => ({
+      stop_id: s.stop_id,
+      stop_name: s.stop_name,
+      stop_order: s.stop_order,
+      is_college: s.is_college,
+      status: idx === 0 ? 'passed' : (idx === 1 ? 'next' : 'upcoming'),
+      eta_minutes: s.expected_offset_minutes || ((idx + 1) * 7)
+    }));
+    if (_cachedRouteStops[bus.route_id]) {
+      renderStopTimeline(buildFallbackTimeline(_cachedRouteStops[bus.route_id]));
+    } else {
+      RouteAPI.getOne(bus.route_id).then(rRes => {
+        const stops = rRes.data?.stops || [];
+        _cachedRouteStops[bus.route_id] = stops;
+        renderStopTimeline(buildFallbackTimeline(stops));
+      }).catch(() => {});
+    }
   }
 
-  // Fetch pickups for this bus
-  PickupAPI.getAll({ bus_id: bus.bus_id }).then(res => {
-    renderStudentPickups(res.data || [], { lat: bus.current_latitude, lng: bus.current_longitude });
-  }).catch(() => {});
+  // Update pickups (cached for 20s to prevent flicker on 4s polling)
+  const now = Date.now();
+  if (_cachedPickupsByBus[bus.bus_id] && (now - (_lastPickupFetchAt[bus.bus_id] || 0) < 20000)) {
+    renderStudentPickups(_cachedPickupsByBus[bus.bus_id], { lat: bLat, lng: bLng });
+  } else {
+    PickupAPI.getAll({ bus_id: bus.bus_id }).then(res => {
+      _cachedPickupsByBus[bus.bus_id] = res.data || [];
+      _lastPickupFetchAt[bus.bus_id] = Date.now();
+      renderStudentPickups(_cachedPickupsByBus[bus.bus_id], { lat: bLat, lng: bLng });
+    }).catch(() => {});
+  }
 }
 
 function renderNextBusCard(nextBus) {
@@ -943,6 +992,7 @@ function renderStopTimeline(timeline) {
 }
 
 function filterBus() {
+  userDraggedLiveMap = false;
   const selVal = document.getElementById('bus-filter')?.value;
   if (!selVal) {
     const activeBus = allBuses.find(b => b.status === 'running') || allBuses[0];
@@ -962,8 +1012,11 @@ function filterBus() {
 }
 
 function centerOnSelectedBus() {
-  if (currentSelectedBus && currentSelectedBus.current_latitude && liveMap) {
-    liveMap.setView([currentSelectedBus.current_latitude, currentSelectedBus.current_longitude], 16);
+  userDraggedLiveMap = false;
+  const lat = currentSelectedBus ? (currentSelectedBus.current_latitude ?? currentSelectedBus.latitude) : null;
+  const lng = currentSelectedBus ? (currentSelectedBus.current_longitude ?? currentSelectedBus.longitude) : null;
+  if (currentSelectedBus && lat && lng && liveMap && (lat !== 0 || lng !== 0)) {
+    liveMap.setView([lat, lng], 16, { animate: true });
     Toast.info(`Centered on ${currentSelectedBus.bus_number}`);
   } else if (liveMap) {
     BusMap.fitToBuses(liveMap);
@@ -1195,12 +1248,23 @@ document.addEventListener('bus:location', (e) => {
   const data = e.detail;
   if (!data) return;
 
+  const lat = parseFloat(data.latitude);
+  const lng = parseFloat(data.longitude);
+  const hasValidCoord = !isNaN(lat) && !isNaN(lng) && (Math.abs(lat) > 0.0001 || Math.abs(lng) > 0.0001);
+
   // Update in-memory allBuses state
   const busIdx = allBuses.findIndex(b => b.bus_id === data.bus_id || b.bus_number === data.bus_number);
   if (busIdx !== -1) {
-    allBuses[busIdx] = { ...allBuses[busIdx], ...data, current_latitude: data.latitude, current_longitude: data.longitude, status: 'running' };
+    allBuses[busIdx] = {
+      ...allBuses[busIdx],
+      ...data,
+      current_latitude: hasValidCoord ? lat : allBuses[busIdx].current_latitude,
+      current_longitude: hasValidCoord ? lng : allBuses[busIdx].current_longitude,
+      current_speed: data.speed ?? allBuses[busIdx].current_speed,
+      status: data.status || 'running'
+    };
   } else {
-    allBuses.push({ ...data, current_latitude: data.latitude, current_longitude: data.longitude, status: 'running' });
+    allBuses.push({ ...data, current_latitude: lat, current_longitude: lng, status: data.status || 'running' });
   }
 
   // Update markers across all maps immediately
@@ -1208,9 +1272,19 @@ document.addEventListener('bus:location', (e) => {
     BusMap.updateMarker(data);
   }
 
-  // If this is the currently selected bus, refresh detail panel with live calculations
-  if (currentSelectedBus && (currentSelectedBus.bus_id === data.bus_id || currentSelectedBus.bus_number === data.bus_number)) {
-    selectBusForDetail({ ...currentSelectedBus, ...data });
+  // If no running bus is selected yet, switch to this active bus automatically
+  const isSelected = currentSelectedBus && (currentSelectedBus.bus_id === data.bus_id || currentSelectedBus.bus_number === data.bus_number);
+  const shouldAutoSelect = !currentSelectedBus || (currentSelectedBus.status !== 'running' && (data.status || 'running') === 'running');
+
+  if (isSelected || shouldAutoSelect) {
+    const merged = { ...(isSelected ? currentSelectedBus : {}), ...data, current_latitude: lat, current_longitude: lng, status: data.status || 'running' };
+    selectBusForDetail(merged);
+    if (liveMap && hasValidCoord) {
+      ensureBusInView(liveMap, lat, lng, true);
+    }
+  }
+  if (dashMap && hasValidCoord) {
+    ensureBusInView(dashMap, lat, lng, false);
   }
 
   // Update bus card info if visible on dashboard
@@ -1222,7 +1296,7 @@ document.addEventListener('bus:location', (e) => {
       if (seatsEl.length) seatsEl[0].textContent = `${data.available_seats ?? 50}/${data.capacity ?? 50}`;
       const badgeEl = card.querySelector('.badge');
       if (badgeEl) {
-        badgeEl.outerHTML = formatBusStatusBadge(data.status, data.tracking_status, data.trip_state, data.mode);
+        badgeEl.outerHTML = formatBusStatusBadge(data.status || 'running', data.tracking_status, data.trip_state, data.mode);
       }
     }
   });
@@ -1242,9 +1316,11 @@ document.addEventListener('bus:status', (e) => {
   const activeCount = allBuses.filter(b => b.status === 'running').length;
   const statActiveEl = document.getElementById('stat-active-buses');
   if (statActiveEl) statActiveEl.textContent = activeCount;
+  const statOnTimeEl = document.getElementById('stat-on-time');
+  if (statOnTimeEl) statOnTimeEl.textContent = activeCount;
 
-  // Re-render cards
-  renderBusCards(allBuses);
+  // Re-render dashboard bus cards safely
+  renderDashBuses(allBuses);
 
   // Fit maps if buses exist
   if (liveMap) BusMap.fitToBuses(liveMap);
@@ -1303,11 +1379,36 @@ async function pollBusLocations() {
       }
     });
 
+    // Update live stats & dashboard cards smoothly
+    const activeCount = buses.filter(b => b.status === 'running').length;
+    const delayedCount = buses.filter(b => b.status === 'delayed').length;
+    const statActiveEl = document.getElementById('stat-active-buses');
+    if (statActiveEl) statActiveEl.textContent = activeCount;
+    const statOnTimeEl = document.getElementById('stat-on-time');
+    if (statOnTimeEl) statOnTimeEl.textContent = activeCount;
+    const statDelayedEl = document.getElementById('stat-delayed');
+    if (statDelayedEl) statDelayedEl.textContent = delayedCount;
+    renderDashBuses(buses);
+
+    // Ensure running bus stays visible in map viewport (whether in route or off-route)
+    const activeBus = buses.find(b => b.status === 'running' && b.current_latitude && b.current_latitude !== 0);
     if (currentSelectedBus) {
       const updated = buses.find(b => b.bus_id === currentSelectedBus.bus_id);
       if (updated) {
         selectBusForDetail({ ...currentSelectedBus, ...updated });
+        const uLat = updated.current_latitude ?? updated.latitude;
+        const uLng = updated.current_longitude ?? updated.longitude;
+        if (liveMap && uLat && uLng && updated.status === 'running') {
+          ensureBusInView(liveMap, uLat, uLng, true);
+        }
       }
+    } else if (activeBus && liveMap) {
+      selectBusForDetail(activeBus);
+      ensureBusInView(liveMap, activeBus.current_latitude, activeBus.current_longitude, true);
+    }
+
+    if (dashMap && activeBus) {
+      ensureBusInView(dashMap, activeBus.current_latitude, activeBus.current_longitude, false);
     }
   } catch (_) {}
 }
