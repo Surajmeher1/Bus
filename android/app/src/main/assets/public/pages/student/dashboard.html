@@ -480,7 +480,26 @@ function showSection(name) {
   document.getElementById('page-title').textContent = title;
   document.getElementById('page-subtitle').textContent = sub;
 
-  if (name === 'live-tracking' && !liveMap) initLiveMap();
+  if (name === 'live-tracking') {
+    if (!liveMap) {
+      setTimeout(() => initLiveMap(), 50);
+    } else {
+      setTimeout(() => {
+        if (liveMap) {
+          liveMap.invalidateSize();
+          BusMap.fitToBuses(liveMap);
+        }
+      }, 100);
+    }
+  }
+  if (name === 'dashboard' && dashMap) {
+    setTimeout(() => {
+      if (dashMap) {
+        dashMap.invalidateSize();
+        BusMap.fitToBuses(dashMap);
+      }
+    }, 100);
+  }
   if (name === 'routes') loadRoutes();
   if (name === 'schedule') loadFullSchedule();
   if (name === 'favorite') loadFavoriteSection();
@@ -628,7 +647,15 @@ let studentPickupMarkers = {};
 let currentSelectedBus = null;
 
 async function initLiveMap() {
+  const container = document.getElementById('live-map');
+  if (!container) return;
   liveMap = BusMap.init('live-map', { zoom: 13 });
+  setTimeout(() => {
+    if (liveMap) {
+      liveMap.invalidateSize();
+      BusMap.fitToBuses(liveMap);
+    }
+  }, 150);
   try {
     const [busRes, routeRes, pickupRes] = await Promise.all([
       BusAPI.getAll(), RouteAPI.getAll(), PickupAPI.getAll()

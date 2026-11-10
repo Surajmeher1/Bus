@@ -80,42 +80,37 @@ async function run() {
     const res = await fetchJson('http://localhost:5000/api/v1/config/app');
     assert('API returns success: true', res.data.success === true);
     assert('API includes map object', typeof res.data.map === 'object');
-    assert('tile_url is set to OSM HOT', res.data.map.tile_url.includes('openstreetmap.fr/hot'));
-    assert('attribution includes OpenStreetMap and Humanitarian Team', res.data.map.attribution.includes('OpenStreetMap') && res.data.map.attribution.includes('Humanitarian'));
-    assert('subdomains is abc', res.data.map.subdomains === 'abc');
-    assert('max_zoom is 19', res.data.map.max_zoom === 19);
+    assert('tile_url is set to CARTO Voyager', res.data.map.tile_url.includes('cartocdn.com'));
+    assert('attribution includes CARTO and OpenStreetMap', res.data.map.attribution.includes('CARTO') && res.data.map.attribution.includes('OpenStreetMap'));
+    assert('subdomains is abcd', res.data.map.subdomains === 'abcd');
+    assert('max_zoom is 20', res.data.map.max_zoom === 20);
   } catch (err) {
     assert(`API request failed: ${err.message}`, false);
   }
 
-  // 2. OpenStreetMap vs OSM HOT Tile Safety Probing (with Render Referer)
+  // 2. Map Tile Safety Probing (with Render Referer)
   console.log('\n👉 2. Verifying Tile HTTP Status with Render Production Referer...');
   const renderReferer = 'https://bus-0j3z.onrender.com/';
   const testZ = 14, testX = 12918, testY = 7615; // Coordinates for Gunupur, Odisha
 
-  console.log('   Probing OpenStreetMap with Referer: ' + renderReferer);
-  const osmUrl = `https://a.tile.openstreetmap.org/${testZ}/${testX}/${testY}.png`;
-  const osmResult = await probeTile(osmUrl, renderReferer);
-  console.log(`   OSM Response: HTTP ${osmResult.statusCode} (${osmResult.contentType || 'unknown'})`);
-  assert('OSM probe executed', true);
-
-  console.log('   Probing OSM HOT with Referer: ' + renderReferer);
-  const hotUrl = `https://a.tile.openstreetmap.fr/hot/${testZ}/${testX}/${testY}.png`;
-  const hotResult = await probeTile(hotUrl, renderReferer);
-  console.log(`   OSM HOT Response: HTTP ${hotResult.statusCode} (${hotResult.contentType || 'unknown'}, ${hotResult.contentLength} bytes)`);
-  assert('OSM HOT returns HTTP 200 to Render domain', hotResult.statusCode === 200);
-  assert('OSM HOT returns image/png content type', hotResult.contentType && hotResult.contentType.includes('image/png'));
-  assert('OSM HOT returns valid image data size (>1000 bytes)', hotResult.contentLength > 1000);
+  console.log('   Probing CARTO Voyager with Referer: ' + renderReferer);
+  const cartoUrl = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${testZ}/${testX}/${testY}.png`;
+  const cartoResult = await probeTile(cartoUrl, renderReferer);
+  console.log(`   CARTO Response: HTTP ${cartoResult.statusCode} (${cartoResult.contentType || 'unknown'}, ${cartoResult.contentLength} bytes)`);
+  assert('CARTO returns HTTP 200 to Render domain', cartoResult.statusCode === 200);
+  assert('CARTO returns image/png content type', cartoResult.contentType && cartoResult.contentType.includes('image/png'));
+  assert('CARTO returns valid image data size (>1000 bytes)', cartoResult.contentLength > 1000);
 
   // 3. Source File Tile Provider Verification
   console.log('\n👉 3. Verifying Source Code Implementations Across All Pages...');
   const frontendDir = path.join(__dirname, '..', 'frontend');
 
   const mapJs = fs.readFileSync(path.join(frontendDir, 'assets', 'js', 'map.js'), 'utf8');
-  assert('map.js default tileConfig points to openstreetmap.fr/hot', mapJs.includes('openstreetmap.fr/hot'));
+  assert('map.js default tileConfig points to cartocdn.com', mapJs.includes('cartocdn.com'));
   assert('map.js has showFallback() method', mapJs.includes('showFallback(map'));
   assert('map.js showFallback() uses "Map temporarily unavailable"', mapJs.includes('Map temporarily unavailable'));
   assert('map.js createTileLayer() binds tileerror listener', mapJs.includes("layer.on('tileerror'"));
+  assert('map.js contains backupTileConfig fallback', mapJs.includes('backupTileConfig'));
   assert('map.js contains BusMap.loadConfig() automatic caller', mapJs.includes('BusMap.loadConfig()'));
   assert('map.js maintains BusMap.addBusMarker', mapJs.includes('addBusMarker(map, bus)'));
   assert('map.js maintains BusMap.updateMarker', mapJs.includes('updateMarker(data)'));

@@ -67,10 +67,17 @@ const BusMap = {
   tileLayers: [],
 
   // ── Configurable Tile Provider Settings ─────────────────────────────────
-  // Default: OSM HOT (Humanitarian OpenStreetMap Team: free, clean OSM tiles, no watermark, no 403)
+  // Primary: Ultra-fast CARTO Voyager (Fastly CDN backed, zero 403 blocks, global coverage)
   tileConfig: {
-    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+  },
+  // Resilient Backup Provider
+  backupTileConfig: {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     subdomains: 'abc',
     maxZoom: 19
   },
@@ -93,8 +100,8 @@ const BusMap = {
         this.tileConfig = {
           url: newUrl,
           attribution: configData.map.attribution || this.tileConfig.attribution,
-          subdomains: configData.map.subdomains || 'abc',
-          maxZoom: configData.map.max_zoom || 19
+          subdomains: configData.map.subdomains || 'abcd',
+          maxZoom: configData.map.max_zoom || 20
         };
         if (newUrl !== oldUrl && this.tileLayers && this.tileLayers.length > 0) {
           this.tileLayers.forEach(layer => {
@@ -135,19 +142,35 @@ const BusMap = {
       gap: 8px;
       box-shadow: 0 4px 14px rgba(0,0,0,0.3);
       border: 1px solid rgba(239, 68, 68, 0.45);
-      pointer-events: none;
+      cursor: pointer;
     `;
-    banner.innerHTML = `<span style="color:#ef4444;font-size:0.875rem;">⚠️</span> <span>${message}</span>`;
+    banner.innerHTML = `<span style="color:#ef4444;font-size:0.875rem;">⚠️</span> <span>${message} (click to retry)</span>`;
+    banner.onclick = () => {
+      banner.remove();
+      if (typeof map.invalidateSize === 'function') map.invalidateSize();
+      const layers = this.tileLayers || [];
+      layers.forEach(l => {
+        if (l && typeof l.redraw === 'function') l.redraw();
+      });
+    };
     container.appendChild(banner);
   },
 
-  // Factory to create configured Leaflet tile layer with error monitoring
+  hideFallback(map) {
+    if (!map) return;
+    const container = typeof map.getContainer === 'function' ? map.getContainer() : null;
+    if (!container) return;
+    const banner = container.querySelector('.map-fallback-banner');
+    if (banner) banner.remove();
+  },
+
+  // Factory to create configured Leaflet tile layer with error monitoring & auto-recovery
   createTileLayer(options = {}) {
     const cfg = this.tileConfig || {};
-    const url = options.url || cfg.url || 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
-    const subdomains = options.subdomains || cfg.subdomains || 'abc';
-    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>');
-    const maxZoom = options.maxZoom || cfg.maxZoom || 19;
+    const url = options.url || cfg.url || 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    const subdomains = options.subdomains || cfg.subdomains || 'abcd';
+    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>');
+    const maxZoom = options.maxZoom || cfg.maxZoom || 20;
 
     const layerOptions = {
       subdomains,
@@ -160,15 +183,31 @@ const BusMap = {
     this.tileLayers.push(layer);
 
     let consecutiveErrors = 0;
+    let switchedToBackup = false;
+
     layer.on('tileerror', () => {
       consecutiveErrors++;
-      if (consecutiveErrors >= 3 && layer._map) {
+      // Auto-fallback: if 4 consecutive tile errors occur, silently switch to backup tile server
+      if (consecutiveErrors >= 4 && !switchedToBackup) {
+        switchedToBackup = true;
+        consecutiveErrors = 0;
+        const backup = this.backupTileConfig || {};
+        const fallbackUrl = backup.url || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+        layer.setUrl(fallbackUrl);
+        return;
+      }
+
+      // If backup also fails repeatedly (8+ consecutive errors), show user-facing banner
+      if (consecutiveErrors >= 8 && layer._map) {
         this.showFallback(layer._map, 'Map temporarily unavailable');
       }
     });
 
     layer.on('tileload', () => {
-      if (consecutiveErrors > 0) consecutiveErrors--;
+      consecutiveErrors = 0;
+      if (layer._map) {
+        this.hideFallback(layer._map);
+      }
     });
 
     return layer;
@@ -186,6 +225,16 @@ const BusMap = {
     tileLayer.addTo(map);
 
     this.maps[containerId] = map;
+
+    // Auto-calibrate dimensions once container has stabilized
+    setTimeout(() => {
+      try {
+        if (map && typeof map.invalidateSize === 'function') {
+          map.invalidateSize();
+        }
+      } catch (_) {}
+    }, 200);
+
     return map;
   },
 

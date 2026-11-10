@@ -34,9 +34,9 @@ function getMapConfig() {
   const apiKey = process.env.MAP_TILE_API_KEY ? process.env.MAP_TILE_API_KEY.trim() : '';
 
   if (!tileUrl) {
-    // Production-safe high-availability hosted OSM tiles via Humanitarian OpenStreetMap Team (no watermark, no 403)
-    tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
-    attribution = attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>';
+    // Ultra-fast high-availability CARTO Voyager tiles (Fastly CDN backed, zero 403 blocks, reliable worldwide)
+    tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    attribution = attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
   } else {
     // If an API key is specified and placeholder exists, inject safely
     if (apiKey && tileUrl.includes('{apiKey}')) {

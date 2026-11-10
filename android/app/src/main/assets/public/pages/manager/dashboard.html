@@ -347,7 +347,13 @@ function showSection(name) {
   document.querySelector(`.nav-link[data-section="${name}"]`)?.classList.add('active');
   const titles = { dashboard:'Dashboard', 'my-buses':'My Buses', 'live-map':'Live Map', trips:'Trip Management', location:'Update Location', fuel:'Fuel Records', maintenance:'Maintenance', feedback:'Student Feedback', notify:'Broadcast' };
   document.getElementById('page-title').textContent = titles[name] || name;
-  if (name === 'live-map' && !mgrLiveMap) initMgrLiveMap();
+  if (name === 'live-map') {
+    if (!mgrLiveMap) initMgrLiveMap();
+    else setTimeout(() => { if (mgrLiveMap) mgrLiveMap.invalidateSize(); }, 100);
+  }
+  if (name === 'dashboard' && mgrDashMap) {
+    setTimeout(() => { if (mgrDashMap) mgrDashMap.invalidateSize(); }, 100);
+  }
   if (name === 'trips') loadTrips();
   if (name === 'feedback') populateFeedbackBus();
 }
