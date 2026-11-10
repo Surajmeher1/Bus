@@ -67,18 +67,18 @@ const BusMap = {
   tileLayers: [],
 
   // ── Configurable Tile Provider Settings ─────────────────────────────────
-  // Primary: Ultra-fast CARTO Voyager (Fastly CDN backed, zero 403 blocks, global coverage)
+  // Primary: Standard OpenStreetMap (100% free, community-driven, zero API key required, zero watermarks)
   tileConfig: {
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
-  },
-  // Resilient Backup Provider
-  backupTileConfig: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     subdomains: 'abc',
+    maxZoom: 19
+  },
+  // Resilient High-Availability Backup: Esri World Street Map (ArcGIS Online, fast global CDN, zero API key required)
+  backupTileConfig: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom',
+    subdomains: '',
     maxZoom: 19
   },
 
@@ -100,8 +100,8 @@ const BusMap = {
         this.tileConfig = {
           url: newUrl,
           attribution: configData.map.attribution || this.tileConfig.attribution,
-          subdomains: configData.map.subdomains || 'abcd',
-          maxZoom: configData.map.max_zoom || 20
+          subdomains: configData.map.subdomains || 'abc',
+          maxZoom: configData.map.max_zoom || 19
         };
         if (newUrl !== oldUrl && this.tileLayers && this.tileLayers.length > 0) {
           this.tileLayers.forEach(layer => {
@@ -167,10 +167,10 @@ const BusMap = {
   // Factory to create configured Leaflet tile layer with error monitoring & auto-recovery
   createTileLayer(options = {}) {
     const cfg = this.tileConfig || {};
-    const url = options.url || cfg.url || 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-    const subdomains = options.subdomains || cfg.subdomains || 'abcd';
-    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>');
-    const maxZoom = options.maxZoom || cfg.maxZoom || 20;
+    const url = options.url || cfg.url || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const subdomains = options.subdomains || cfg.subdomains || 'abc';
+    const attribution = options.attributionControl === false ? '' : (options.attribution || cfg.attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
+    const maxZoom = options.maxZoom || cfg.maxZoom || 19;
 
     const layerOptions = {
       subdomains,
@@ -187,12 +187,12 @@ const BusMap = {
 
     layer.on('tileerror', () => {
       consecutiveErrors++;
-      // Auto-fallback: if 4 consecutive tile errors occur, silently switch to backup tile server
+      // Auto-fallback: if 4 consecutive tile errors occur, silently switch to backup tile server (Esri)
       if (consecutiveErrors >= 4 && !switchedToBackup) {
         switchedToBackup = true;
         consecutiveErrors = 0;
         const backup = this.backupTileConfig || {};
-        const fallbackUrl = backup.url || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const fallbackUrl = backup.url || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
         layer.setUrl(fallbackUrl);
         return;
       }

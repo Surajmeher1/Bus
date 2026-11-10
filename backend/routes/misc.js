@@ -29,14 +29,14 @@ function getMapConfig() {
   const isProduction = process.env.NODE_ENV === 'production';
   let tileUrl = process.env.MAP_TILE_URL ? process.env.MAP_TILE_URL.trim() : '';
   let attribution = process.env.MAP_TILE_ATTRIBUTION ? process.env.MAP_TILE_ATTRIBUTION.trim() : '';
-  const subdomains = process.env.MAP_TILE_SUBDOMAINS ? process.env.MAP_TILE_SUBDOMAINS.trim() : 'abcd';
+  let subdomains = process.env.MAP_TILE_SUBDOMAINS ? process.env.MAP_TILE_SUBDOMAINS.trim() : 'abc';
   const maxZoom = parseInt(process.env.MAP_TILE_MAX_ZOOM, 10) || 19;
   const apiKey = process.env.MAP_TILE_API_KEY ? process.env.MAP_TILE_API_KEY.trim() : '';
 
   if (!tileUrl) {
-    // Ultra-fast high-availability CARTO Voyager tiles (Fastly CDN backed, zero 403 blocks, reliable worldwide)
-    tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-    attribution = attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+    // Standard OpenStreetMap (100% free, zero API key required, zero watermarks)
+    tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    attribution = attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   } else {
     // If an API key is specified and placeholder exists, inject safely
     if (apiKey && tileUrl.includes('{apiKey}')) {

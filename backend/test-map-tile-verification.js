@@ -80,10 +80,10 @@ async function run() {
     const res = await fetchJson('http://localhost:5000/api/v1/config/app');
     assert('API returns success: true', res.data.success === true);
     assert('API includes map object', typeof res.data.map === 'object');
-    assert('tile_url is set to CARTO Voyager', res.data.map.tile_url.includes('cartocdn.com'));
-    assert('attribution includes CARTO and OpenStreetMap', res.data.map.attribution.includes('CARTO') && res.data.map.attribution.includes('OpenStreetMap'));
-    assert('subdomains is abcd', res.data.map.subdomains === 'abcd');
-    assert('max_zoom is 20', res.data.map.max_zoom === 20);
+    assert('tile_url is set to OpenStreetMap', res.data.map.tile_url.includes('openstreetmap.org'));
+    assert('attribution includes OpenStreetMap', res.data.map.attribution.includes('OpenStreetMap'));
+    assert('subdomains is abc', res.data.map.subdomains === 'abc');
+    assert('max_zoom is 19', res.data.map.max_zoom === 19);
   } catch (err) {
     assert(`API request failed: ${err.message}`, false);
   }
@@ -93,20 +93,20 @@ async function run() {
   const renderReferer = 'https://bus-0j3z.onrender.com/';
   const testZ = 14, testX = 12918, testY = 7615; // Coordinates for Gunupur, Odisha
 
-  console.log('   Probing CARTO Voyager with Referer: ' + renderReferer);
-  const cartoUrl = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${testZ}/${testX}/${testY}.png`;
-  const cartoResult = await probeTile(cartoUrl, renderReferer);
-  console.log(`   CARTO Response: HTTP ${cartoResult.statusCode} (${cartoResult.contentType || 'unknown'}, ${cartoResult.contentLength} bytes)`);
-  assert('CARTO returns HTTP 200 to Render domain', cartoResult.statusCode === 200);
-  assert('CARTO returns image/png content type', cartoResult.contentType && cartoResult.contentType.includes('image/png'));
-  assert('CARTO returns valid image data size (>1000 bytes)', cartoResult.contentLength > 1000);
+  console.log('   Probing OpenStreetMap with Referer: ' + renderReferer);
+  const osmUrl = `https://a.tile.openstreetmap.org/${testZ}/${testX}/${testY}.png`;
+  const osmResult = await probeTile(osmUrl, renderReferer);
+  console.log(`   OSM Response: HTTP ${osmResult.statusCode} (${osmResult.contentType || 'unknown'}, ${osmResult.contentLength} bytes)`);
+  assert('OSM returns HTTP 200 to Render domain', osmResult.statusCode === 200);
+  assert('OSM returns image/png content type', osmResult.contentType && osmResult.contentType.includes('image/png'));
+  assert('OSM returns valid image data size (>1000 bytes)', osmResult.contentLength > 1000);
 
   // 3. Source File Tile Provider Verification
   console.log('\n👉 3. Verifying Source Code Implementations Across All Pages...');
   const frontendDir = path.join(__dirname, '..', 'frontend');
 
   const mapJs = fs.readFileSync(path.join(frontendDir, 'assets', 'js', 'map.js'), 'utf8');
-  assert('map.js default tileConfig points to cartocdn.com', mapJs.includes('cartocdn.com'));
+  assert('map.js default tileConfig points to openstreetmap.org', mapJs.includes('tile.openstreetmap.org'));
   assert('map.js has showFallback() method', mapJs.includes('showFallback(map'));
   assert('map.js showFallback() uses "Map temporarily unavailable"', mapJs.includes('Map temporarily unavailable'));
   assert('map.js createTileLayer() binds tileerror listener', mapJs.includes("layer.on('tileerror'"));
