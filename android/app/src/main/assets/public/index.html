@@ -21,28 +21,37 @@
     /* ── Landing Specific ── */
     body { overflow-x: hidden; }
 
-    /* ── Android 16 Desktop Top App Bar ── */
+    /* ── Android 16 Desktop Top App Bar Theming ── */
     .nav {
       position: fixed; top: 12px; left: 24px; right: 24px; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 24px;
       border-radius: var(--radius-full);
-      background: rgba(10, 22, 40, 0.75);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
       transition: all 0.3s var(--ease-spring);
+    }
+    [data-theme="light"] .nav {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+    [data-theme="dark"] .nav {
+      background: rgba(10, 22, 40, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     }
     .nav.scrolled {
       top: 8px;
-      background: rgba(255, 255, 255, 0.88);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+    [data-theme="light"] .nav.scrolled {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(0, 0, 0, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
     [data-theme="dark"] .nav.scrolled {
-      background: rgba(12, 19, 34, 0.88);
-      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(12, 19, 34, 0.95);
+      border-color: rgba(255, 255, 255, 0.12);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
     .nav-logo { display: flex; align-items: center; gap: 12px; }
@@ -52,27 +61,66 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 1.35rem; box-shadow: 0 4px 14px rgba(26, 86, 219, 0.4);
     }
-    .nav-logo-text { font-size: 1.05rem; font-weight: 800; color: white; line-height: 1.2; letter-spacing: -0.01em; }
-    .nav.scrolled .nav-logo-text { color: var(--text-primary); }
+    .nav-logo-text { font-size: 1.05rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; }
+    [data-theme="light"] .nav-logo-text { color: #0f172a; }
+    [data-theme="dark"] .nav-logo-text { color: #ffffff; }
+
     .nav-links { display: flex; align-items: center; gap: 8px; }
     .nav-link-item {
-      font-size: 0.875rem; font-weight: 600; color: rgba(255, 255, 255, 0.85);
+      font-size: 0.875rem; font-weight: 600;
       padding: 8px 16px; border-radius: var(--radius-full);
       transition: all 0.2s; cursor: pointer;
     }
-    .nav.scrolled .nav-link-item { color: var(--text-secondary); }
-    .nav-link-item:hover { color: white; background: rgba(255, 255, 255, 0.12); }
-    .nav.scrolled .nav-link-item:hover { color: var(--md-sys-color-primary); background: var(--md-sys-color-primary-container); }
+    [data-theme="light"] .nav-link-item { color: #475569; }
+    [data-theme="light"] .nav-link-item:hover { color: #1a56db; background: rgba(26, 86, 219, 0.08); }
+    [data-theme="dark"] .nav-link-item { color: rgba(255, 255, 255, 0.85); }
+    [data-theme="dark"] .nav-link-item:hover { color: #ffffff; background: rgba(255, 255, 255, 0.12); }
     .nav-actions { display: flex; align-items: center; gap: 10px; }
 
-    /* ── Android 16 Desktop Hero ── */
+    .nav .theme-toggle {
+      width: 40px; height: 40px; border-radius: var(--radius-full);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s var(--ease-spring);
+      font-size: 1rem;
+    }
+    [data-theme="light"] .nav .theme-toggle {
+      background: #f1f5f9; border: 1px solid #cbd5e1; color: #1e293b;
+    }
+    [data-theme="light"] .nav .theme-toggle:hover {
+      background: #e2e8f0; color: #0f172a;
+    }
+    [data-theme="dark"] .nav .theme-toggle {
+      background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff;
+    }
+    [data-theme="dark"] .nav .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.2); color: #93c5fd;
+    }
+
+    [data-theme="light"] #nav-login-btn {
+      background: #1a56db !important; color: #ffffff !important; border-color: #1a56db !important;
+      box-shadow: 0 4px 12px rgba(26, 86, 219, 0.25);
+    }
+    [data-theme="light"] #nav-login-btn:hover {
+      background: #1e40af !important;
+    }
+    [data-theme="dark"] #nav-login-btn {
+      background: #ffffff !important; color: #0f172a !important;
+    }
+
+    /* ── Android 16 Desktop Hero Theming ── */
     .hero {
       min-height: 100vh;
       min-height: 100dvh;
-      background: linear-gradient(135deg, #091224 0%, #0d1e3d 35%, #17326b 70%, #1a56db 100%);
       display: flex; align-items: center;
       padding: 120px 48px 60px;
       position: relative; overflow: hidden;
+      transition: background 0.3s ease;
+    }
+    [data-theme="light"] .hero {
+      background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 35%, #dbeafe 70%, #eff6ff 100%);
+    }
+    [data-theme="dark"] .hero {
+      background: linear-gradient(135deg, #091224 0%, #0d1e3d 35%, #17326b 70%, #1a56db 100%);
     }
     .hero::before {
       content: ''; position: absolute; inset: 0;
@@ -81,10 +129,17 @@
     }
     .hero-grid {
       position: absolute; inset: 0;
+      background-size: 60px 60px;
+    }
+    [data-theme="light"] .hero-grid {
+      background-image:
+        linear-gradient(rgba(26, 86, 219, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26, 86, 219, 0.06) 1px, transparent 1px);
+    }
+    [data-theme="dark"] .hero-grid {
       background-image:
         linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: 60px 60px;
     }
     .hero-content {
       position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; width: 100%;
@@ -92,43 +147,110 @@
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
-      color: rgba(255,255,255,0.95); border-radius: var(--radius-full);
+      border-radius: var(--radius-full);
       padding: 6px 16px; font-size: 0.8125rem; font-weight: 700;
       margin-bottom: 24px; backdrop-filter: blur(10px);
     }
+    [data-theme="light"] .hero-badge {
+      background: rgba(26, 86, 219, 0.1); border: 1px solid rgba(26, 86, 219, 0.22);
+      color: #1e40af;
+    }
+    [data-theme="dark"] .hero-badge {
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+      color: rgba(255,255,255,0.95);
+    }
     .hero-title {
-      font-size: 3.6rem; font-weight: 900; color: white;
+      font-size: 3.6rem; font-weight: 900;
       line-height: 1.1; margin-bottom: 20px; letter-spacing: -0.025em;
+    }
+    [data-theme="light"] .hero-title {
+      color: #0f172a;
+    }
+    [data-theme="dark"] .hero-title {
+      color: #ffffff;
     }
     .hero-title .gradient-text {
       background: linear-gradient(90deg, #93c5fd, #60a5fa, #38bdf8);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .hero-subtitle { font-size: 1.15rem; color: rgba(255,255,255,0.8); line-height: 1.65; margin-bottom: 36px; max-width: 580px; }
+    [data-theme="light"] .hero-title .gradient-text {
+      background: linear-gradient(90deg, #1d4ed8, #2563eb, #0284c7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle { font-size: 1.15rem; line-height: 1.65; margin-bottom: 36px; max-width: 580px; }
+    [data-theme="light"] .hero-subtitle { color: #334155; }
+    [data-theme="dark"] .hero-subtitle { color: rgba(255,255,255,0.8); }
+
     .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-    
+    [data-theme="light"] #hero-main-login-btn {
+      background: #1a56db !important; color: #ffffff !important;
+      box-shadow: 0 8px 24px rgba(26, 86, 219, 0.35);
+    }
+    [data-theme="light"] #hero-main-login-btn:hover {
+      background: #1e40af !important;
+    }
+
     .hero-stats {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-      margin-top: 48px; background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-xl);
+      margin-top: 48px; border-radius: var(--radius-xl);
       padding: 18px 24px; backdrop-filter: blur(12px);
     }
-    .hero-stat-val { font-size: 1.85rem; font-weight: 900; color: white; line-height: 1.1; }
-    .hero-stat-lab { font-size: 0.78rem; color: rgba(255,255,255,0.7); margin-top: 4px; font-weight: 600; }
+    [data-theme="light"] .hero-stats {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(26, 86, 219, 0.15);
+      box-shadow: 0 10px 30px rgba(26, 86, 219, 0.08);
+    }
+    [data-theme="dark"] .hero-stats {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .hero-stat-val { font-size: 1.85rem; font-weight: 900; line-height: 1.1; }
+    [data-theme="light"] .hero-stat-val { color: #0f172a; }
+    [data-theme="dark"] .hero-stat-val { color: #ffffff; }
+    .hero-stat-lab { font-size: 0.78rem; margin-top: 4px; font-weight: 600; }
+    [data-theme="light"] .hero-stat-lab { color: #64748b; }
+    [data-theme="dark"] .hero-stat-lab { color: rgba(255,255,255,0.7); }
 
     /* Hero Visual Leaflet Card */
     .hero-visual { position: relative; }
     .hero-map-card {
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
       border-radius: var(--radius-2xl); padding: 20px; backdrop-filter: blur(16px);
       box-shadow: 0 24px 60px rgba(0,0,0,0.35);
     }
+    [data-theme="light"] .hero-map-card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(26, 86, 219, 0.15);
+      box-shadow: 0 24px 60px rgba(26, 86, 219, 0.12);
+    }
+    [data-theme="dark"] .hero-map-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
     .hero-map-title {
-      color: rgba(255,255,255,0.95); font-size: 0.95rem; font-weight: 700;
+      font-size: 0.95rem; font-weight: 700;
       margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;
     }
+    [data-theme="light"] .hero-map-title { color: #0f172a; }
+    [data-theme="dark"] .hero-map-title { color: rgba(255,255,255,0.95); }
+
+    [data-theme="light"] .hero-user-panel {
+      background: rgba(255, 255, 255, 0.9); border-color: rgba(26, 86, 219, 0.15);
+      box-shadow: 0 10px 30px rgba(26, 86, 219, 0.08);
+    }
+    [data-theme="light"] .hero-user-heading { color: #0f172a; }
+    [data-theme="light"] .hero-user-sub { color: #475569; }
+    [data-theme="light"] #hero-dashboard-btn {
+      background: #1a56db !important; color: #ffffff !important;
+    }
+    [data-theme="light"] #nav-dashboard-btn {
+      background: #1a56db !important; color: #ffffff !important;
+    }
+    [data-theme="light"] .user-greeting-pill {
+      background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.1);
+    }
+    [data-theme="light"] .user-name-text { color: #0f172a; }
     .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; animation: pulse-dot 1.5s infinite; }
     #hero-map { height: 320px; border-radius: var(--radius-lg); overflow: hidden; }
 
@@ -453,7 +575,7 @@
     <a href="#how" class="nav-link-item">How It Works</a>
   </div>
   <div class="nav-actions" id="nav-actions">
-    <button id="theme-toggle" class="theme-toggle" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;" title="Toggle Theme">
+    <button id="theme-toggle" class="theme-toggle" title="Toggle Theme">
       <i class="fa-solid fa-moon"></i>
     </button>
 
@@ -464,29 +586,10 @@
         <i class="fa-brands fa-android"></i> <span id="nav-android-btn-text">Install Android App</span>
       </button>
 
-      <!-- Login Portals Dropdown Menu -->
-      <div class="login-dropdown" id="login-dropdown">
-        <button class="btn btn-white btn-sm" id="login-dropdown-btn" onclick="toggleLoginDropdown(event)">
-          <i class="fa-solid fa-right-to-bracket"></i> <span>Login</span> <i class="fa-solid fa-chevron-down" style="font-size:0.65rem;margin-left:4px;"></i>
-        </button>
-        <div class="login-dropdown-menu" id="login-dropdown-menu">
-          <a href="pages/auth/login.html" class="dropdown-item" style="font-weight:700; border-bottom:1px solid var(--border-color); color:var(--primary);">
-            <i class="fa-solid fa-shield-halved" style="color:#3b82f6;"></i> Sign In (All Roles)
-          </a>
-          <a href="pages/student/login.html" class="dropdown-item">
-            <span class="role-dot student"></span> Student Login
-          </a>
-          <a href="pages/driver/login.html" class="dropdown-item">
-            <span class="role-dot driver"></span> Driver Login
-          </a>
-          <a href="pages/manager/login.html" class="dropdown-item">
-            <span class="role-dot manager"></span> Manager Login
-          </a>
-          <a href="pages/admin/login.html" class="dropdown-item">
-            <span class="role-dot admin"></span> Admin Login
-          </a>
-        </div>
-      </div>
+      <!-- Universal Sign In Button (All Roles) -->
+      <a href="pages/auth/login.html" class="btn btn-white btn-sm" id="nav-login-btn">
+        <i class="fa-solid fa-right-to-bracket"></i> <span>Sign In</span>
+      </a>
     </div>
 
     <!-- Authenticated / Logged-In Actions (Visible ONLY when logged in) -->
@@ -964,12 +1067,10 @@
         <div class="footer-brand-desc">A modern, real-time university bus tracking system built for students, drivers, managers, and administrators.</div>
       </div>
       <div>
-        <div class="footer-title">Portals</div>
-        <a href="pages/auth/login.html"     class="footer-link" style="font-weight:700; color:#3b82f6;">Universal Sign In</a>
-        <a href="pages/student/login.html"  class="footer-link">Student Portal</a>
-        <a href="pages/driver/login.html"   class="footer-link">Driver Portal</a>
-        <a href="pages/manager/login.html"  class="footer-link">Manager Portal</a>
-        <a href="pages/admin/login.html"    class="footer-link">Admin Portal</a>
+        <div class="footer-title">Access</div>
+        <a href="pages/auth/login.html" class="footer-link" style="font-weight:700; color:#3b82f6;"><i class="fa-solid fa-right-to-bracket"></i> Sign In (All Roles)</a>
+        <a href="pages/student/register.html" class="footer-link">Student Registration</a>
+        <a href="https://betadrop.app/i/zYdkDL" target="_blank" rel="noopener noreferrer" class="footer-link"><i class="fa-brands fa-android"></i> Install Android App</a>
       </div>
       <div>
         <div class="footer-title">Features</div>
@@ -1003,11 +1104,11 @@
       <i class="fa-brands fa-android"></i>
     </div>
     <h3 class="android-modal-title">GIET Smart Bus Android App</h3>
-    <div class="android-modal-badge" id="android-modal-badge">
-      <span class="live-dot" style="background:#f59e0b;"></span> Google Play Release in Progress
+    <div class="android-modal-badge" id="android-modal-badge" style="background:#dcfce7;color:#15803d;">
+      <span class="live-dot" style="background:#22c55e;"></span> Android Build Ready to Install
     </div>
     <p class="android-modal-desc" id="android-modal-desc">
-      The native Capacitor Android application featuring background driver GPS transmission and instant student arrival notifications will soon be available on the Google Play Store!
+      Download and install the official GIET Smart Bus Android APK directly to your Android device via Betadrop.
     </p>
     <div class="android-modal-box">
       <div class="android-box-item">
@@ -1027,12 +1128,12 @@
     </div>
     <div class="android-pwa-tip">
       <i class="fa-solid fa-lightbulb" style="color:#f59e0b;font-size:1.1rem;flex-shrink:0;"></i>
-      <span>Tip: You can also install this system as a <strong>PWA Web App</strong> right now by opening your browser menu &rarr; <em>"Add to Home Screen"</em> / <em>"Install App"</em>.</span>
+      <span>Direct Betadrop download link: <strong>https://betadrop.app/i/zYdkDL</strong></span>
     </div>
     <div style="margin-top:20px;">
-      <button class="btn btn-primary w-full" id="android-modal-action-btn" onclick="closeAndroidModal()">
-        Got It
-      </button>
+      <a href="https://betadrop.app/i/zYdkDL" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full" id="android-modal-action-btn">
+        <i class="fa-brands fa-android"></i> Download / Install Now
+      </a>
     </div>
   </div>
 </div>
@@ -1123,8 +1224,8 @@
 <script>
   // ── Global State ─────────────────────────────────────────────────────────────
   let appConfig = {
-    android_app_url: null,
-    is_available: false,
+    android_app_url: 'https://betadrop.app/i/zYdkDL',
+    is_available: true,
     app_name: 'GIET Smart Bus Tracker'
   };
 
@@ -1133,22 +1234,15 @@
     document.getElementById('main-nav')?.classList.toggle('scrolled', window.scrollY > 60);
   });
 
-  // ── Theme toggle ─────────────────────────────────────────────────────────────
+  // ── Theme toggle synchronization ─────────────────────────────────────────────
   const updateThemeIcons = (theme) => {
-    const icon = theme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-    const deskToggle = document.getElementById('theme-toggle');
-    const mobToggle = document.getElementById('mobile-theme-toggle');
-    if (deskToggle) deskToggle.innerHTML = icon;
-    if (mobToggle) mobToggle.innerHTML = icon;
+    if (window.Theme && Theme.updateIcons) {
+      Theme.updateIcons(theme);
+    }
   };
 
-  document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const next = Theme.toggle();
-    updateThemeIcons(next);
-  });
-  document.getElementById('mobile-theme-toggle')?.addEventListener('click', () => {
-    const next = Theme.toggle();
-    updateThemeIcons(next);
+  window.addEventListener('themechange', (e) => {
+    updateThemeIcons(e.detail.theme);
   });
 
   // ── Fetch Android App Configuration ──────────────────────────────────────────
@@ -1156,7 +1250,7 @@
     try {
       if (window.ConfigAPI && ConfigAPI.getAppConfig) {
         const res = await ConfigAPI.getAppConfig();
-        if (res && res.success) {
+        if (res && res.success && res.android_app_url) {
           appConfig = { ...appConfig, ...res };
         }
       }
@@ -1178,9 +1272,7 @@
       return;
     }
 
-    const isAvailable = appConfig.is_available && appConfig.android_app_url;
-    const btnLabel = isAvailable ? 'Install Android App' : 'Android App Coming Soon';
-
+    const btnLabel = 'Install Android App';
     const navBtnText = document.getElementById('nav-android-btn-text');
     const heroBtnText = document.getElementById('hero-android-btn-text');
     const navBtn = document.getElementById('nav-android-btn');
@@ -1188,8 +1280,8 @@
 
     if (navBtnText) navBtnText.textContent = btnLabel;
     if (heroBtnText) heroBtnText.textContent = btnLabel;
-    if (navBtn) navBtn.title = isAvailable ? 'Download Android Application' : 'Android Application Coming Soon';
-    if (heroBtn) heroBtn.title = isAvailable ? 'Download Android Application' : 'Android Application Coming Soon';
+    if (navBtn) navBtn.title = 'Install Android Application';
+    if (heroBtn) heroBtn.title = 'Install Android Application';
   }
 
   // ── Handle Android Install Button Click ──────────────────────────────────────
@@ -1200,12 +1292,8 @@
       }
       return;
     }
-    const isAvailable = appConfig.is_available && appConfig.android_app_url;
-    if (isAvailable) {
-      window.open(appConfig.android_app_url, '_blank', 'noopener,noreferrer');
-    } else {
-      openAndroidModal();
-    }
+    const targetUrl = appConfig.android_app_url || 'https://betadrop.app/i/zYdkDL';
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
   }
 
   function openAndroidModal() {
@@ -1449,8 +1537,8 @@
         return;
       }
     }
-    // Not logged in -> go to login page
-    window.location.href = defaultLoginPage;
+    // Not logged in -> go to universal all-in-one login portal
+    window.location.href = 'pages/auth/login.html';
   }
 
   // ── Hero & Mobile Interactive Maps Setup ─────────────────────────────────────
@@ -1566,11 +1654,19 @@
 
   // ── Initialization on DOM Ready ──────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
+    if (window.Theme) {
+      Theme.init();
+      updateThemeIcons(Theme.get());
+    }
     renderAuthUI();
     loadAppConfig();
     initMaps();
   });
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (window.Theme) {
+      Theme.init();
+      updateThemeIcons(Theme.get());
+    }
     renderAuthUI();
     loadAppConfig();
     initMaps();

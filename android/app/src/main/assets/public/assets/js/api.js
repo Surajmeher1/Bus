@@ -410,6 +410,7 @@ const Toast = {
 };
 
 // ── Theme Manager (Android 16 Dynamic Color & System Theme) ───────────────────
+let _lastThemeToggle = 0;
 const Theme = {
   get: () => {
     const saved = localStorage.getItem('sbt_theme');
@@ -430,14 +431,34 @@ const Theme = {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: t } }));
     }
+    Theme.updateIcons(t);
   },
   toggle: () => {
+    const now = Date.now();
+    if (now - _lastThemeToggle < 250) {
+      return Theme.get();
+    }
+    _lastThemeToggle = now;
     const next = Theme.get() === 'dark' ? 'light' : 'dark';
     Theme.set(next);
     return next;
   },
+  updateIcons: (t) => {
+    const currentTheme = t || Theme.get();
+    const isDark = currentTheme === 'dark';
+    const iconHtml = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+    const titleText = isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme';
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('#theme-toggle, #mobile-theme-toggle, .theme-toggle').forEach(el => {
+        el.innerHTML = iconHtml;
+        el.setAttribute('title', titleText);
+        el.setAttribute('aria-label', titleText);
+      });
+    }
+  },
   init: () => {
     Theme.set(Theme.get());
+    Theme.updateIcons(Theme.get());
     if (typeof window !== 'undefined' && window.matchMedia) {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
         if (!localStorage.getItem('sbt_theme')) {
@@ -563,16 +584,17 @@ document.addEventListener('DOMContentLoaded', () => {
   UserMenu.init();
   setActiveNav();
 
-  // Theme toggle button
-  document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const next = Theme.toggle();
-    const btn = document.getElementById('theme-toggle');
-    btn.innerHTML = next === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-  });
-  const themeBtn = document.getElementById('theme-toggle');
-  if (themeBtn) {
-    themeBtn.innerHTML = Theme.get() === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  // Global Theme toggle listener (delegated for all desktop and mobile toggles)
+  if (!window._themeListenerAttached) {
+    window._themeListenerAttached = true;
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#theme-toggle, #mobile-theme-toggle, .theme-toggle');
+      if (btn) {
+        Theme.toggle();
+      }
+    });
   }
+  Theme.updateIcons();
 
   // Populate user info in topbar
   const user = Auth.getUser();

@@ -58,12 +58,14 @@ function getMapConfig() {
 
 // Public App Configuration (Configurable Android release URL & map provider metadata)
 router.get('/config/app', (req, res) => {
-  const rawUrl = process.env.ANDROID_APP_URL ? process.env.ANDROID_APP_URL.trim() : '';
-  const isAvailable = !!(rawUrl && rawUrl !== 'coming-soon' && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')));
+  const rawUrl = process.env.ANDROID_APP_URL ? process.env.ANDROID_APP_URL.trim() : 'https://betadrop.app/i/zYdkDL';
+  const targetUrl = (rawUrl && rawUrl !== 'coming-soon' && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')))
+    ? rawUrl
+    : 'https://betadrop.app/i/zYdkDL';
   res.json({
     success: true,
-    android_app_url: isAvailable ? rawUrl : null,
-    is_available: isAvailable,
+    android_app_url: targetUrl,
+    is_available: true,
     app_name: 'GIET Smart Bus Tracker',
     package_name: 'edu.giet.smartbus',
     version: '1.0.0',
