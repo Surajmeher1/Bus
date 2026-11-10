@@ -150,7 +150,10 @@ module.exports = function setupTrackingSocket(io) {
           UPDATE buses SET
             status = 'running',
             tracking_status = 'STARTING',
-            trip_state = 'STARTING'
+            trip_state = 'STARTING',
+            last_valid_latitude = NULL,
+            last_valid_longitude = NULL,
+            last_gps_timestamp = NULL
           WHERE bus_id = ?
         `).run(busId);
       } catch (_) {}

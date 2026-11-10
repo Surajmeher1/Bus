@@ -240,14 +240,6 @@
     <button class="btn-stop" id="btn-stop-trip" onclick="endTrip()" style="display:none;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;padding:18px;border-radius:16px;border:none;font-weight:800;font-size:1.15rem;cursor:pointer;box-shadow:0 6px 20px rgba(239,68,68,.4);width:100%;align-items:center;justify-content:center;gap:10px;">
       <i class="fa-solid fa-circle-stop"></i> END TRIP (Automatic Stop)
     </button>
-    <div id="sim-controls" style="display:none;gap:8px;margin-top:4px;">
-      <button class="btn btn-sm btn-outline" id="btn-simulate-route" onclick="toggleRouteSimulation()" style="flex:1;border-color:rgba(16,185,129,0.5);color:#10b981;font-size:0.75rem;padding:8px 10px;" title="Simulate bus moving along route stops">
-        <i class="fa-solid fa-route"></i> Simulate GPS
-      </button>
-      <button class="btn btn-sm btn-outline" id="btn-campus-loc" onclick="useCampusGateLocation()" style="flex:1;border-color:rgba(16,185,129,0.5);color:#10b981;font-size:0.75rem;padding:8px 10px;" title="Set location to GIET Campus Gate">
-        <i class="fa-solid fa-location-crosshairs"></i> Set Campus GPS
-      </button>
-    </div>
     <div id="trip-end-hint" style="display:none;font-size:0.75rem;color:#6b7280;text-align:center;">
       <i class="fa-solid fa-circle-info" style="color:#ef4444;"></i> Tap End Trip to immediately stop live GPS &amp; set bus offline
     </div>
@@ -446,18 +438,9 @@ function initMap() {
   driverMap = L.map('driver-map', { zoomControl: true }).setView([19.0435, 83.8138], 14);
   BusMap.createTileLayer().addTo(driverMap);
 
-  // Click map handler: If trip is active, allows setting current location immediately!
+  // Click map handler: Allows adding pickup points before trip starts
   driverMap.on('click', (e) => {
-    if (tripActive) {
-      onGpsSuccess({
-        coords: {
-          latitude: e.latlng.lat,
-          longitude: e.latlng.lng,
-          accuracy: 5
-        }
-      }, true);
-      Toast.info(`📍 GPS location set on map: [${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}]`);
-    } else {
+    if (!tripActive) {
       openPickupModal(e.latlng.lat, e.latlng.lng);
     }
   });
@@ -941,7 +924,6 @@ function setTripActiveUI(active, wasAlreadyRunning) {
   const tripEndHint = document.getElementById('trip-end-hint');
   const gpsBanner = document.getElementById('status-banner');
   const gpsCard  = document.getElementById('gps-card');
-  const simControls = document.getElementById('sim-controls');
   const mapHint = document.getElementById('map-hint');
 
   if (active) {
@@ -949,10 +931,9 @@ function setTripActiveUI(active, wasAlreadyRunning) {
     stopBtn.style.display = 'flex';
     if (headerStopBtn) headerStopBtn.style.display = 'inline-flex';
     if (tripEndHint) tripEndHint.style.display = 'block';
-    if (simControls) simControls.style.display = 'flex';
     gpsCard.style.display = 'block';
     if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'block';
-    if (mapHint) mapHint.textContent = '📍 Tap map to manually broadcast location';
+    if (mapHint) mapHint.textContent = '📍 Authentic live hardware GPS streaming';
     gpsBanner.className   = 'status-banner live';
     document.getElementById('status-emoji').textContent = '🟢';
     document.getElementById('status-text').textContent  = '🟢 LIVE GPS ACTIVE';
@@ -965,7 +946,6 @@ function setTripActiveUI(active, wasAlreadyRunning) {
     stopBtn.style.display = 'none';
     if (headerStopBtn) headerStopBtn.style.display = 'none';
     if (tripEndHint) tripEndHint.style.display = 'none';
-    if (simControls) simControls.style.display = 'none';
     gpsCard.style.display = 'none';
     if (document.getElementById('next-stop-card')) document.getElementById('next-stop-card').style.display = 'none';
     if (mapHint) mapHint.textContent = 'Tap map to add a pickup point';

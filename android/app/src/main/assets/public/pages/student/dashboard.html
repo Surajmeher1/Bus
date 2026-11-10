@@ -1155,6 +1155,19 @@ document.addEventListener('bus:location', (e) => {
   const data = e.detail;
   if (!data) return;
 
+  // Update in-memory allBuses state
+  const busIdx = allBuses.findIndex(b => b.bus_id === data.bus_id || b.bus_number === data.bus_number);
+  if (busIdx !== -1) {
+    allBuses[busIdx] = { ...allBuses[busIdx], ...data, current_latitude: data.latitude, current_longitude: data.longitude, status: 'running' };
+  } else {
+    allBuses.push({ ...data, current_latitude: data.latitude, current_longitude: data.longitude, status: 'running' });
+  }
+
+  // Update markers across all maps immediately
+  if (typeof BusMap !== 'undefined') {
+    BusMap.updateMarker(data);
+  }
+
   // If this is the currently selected bus, refresh detail panel with live calculations
   if (currentSelectedBus && (currentSelectedBus.bus_id === data.bus_id || currentSelectedBus.bus_number === data.bus_number)) {
     selectBusForDetail({ ...currentSelectedBus, ...data });
@@ -1173,6 +1186,29 @@ document.addEventListener('bus:location', (e) => {
       }
     }
   });
+});
+
+document.addEventListener('bus:status', (e) => {
+  const data = e.detail;
+  if (!data) return;
+
+  const busIdx = allBuses.findIndex(b => b.bus_id === data.bus_id || b.bus_number === data.bus_number);
+  if (busIdx !== -1) {
+    allBuses[busIdx].status = data.status || 'running';
+    allBuses[busIdx].tracking_status = data.tracking_status || 'LIVE';
+  }
+
+  // Update active buses counter
+  const activeCount = allBuses.filter(b => b.status === 'running').length;
+  const statActiveEl = document.getElementById('stat-active-buses');
+  if (statActiveEl) statActiveEl.textContent = activeCount;
+
+  // Re-render cards
+  renderBusCards(allBuses);
+
+  // Fit maps if buses exist
+  if (liveMap) BusMap.fitToBuses(liveMap);
+  if (dashMap) BusMap.fitToBuses(dashMap);
 });
 
 document.addEventListener('notification:new', (e) => {

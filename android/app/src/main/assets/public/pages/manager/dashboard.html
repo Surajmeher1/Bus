@@ -663,8 +663,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.addEventListener('bus:location', (e) => {
     const d = e.detail;
-    if (mgrDashMap && BusMap.markers[d.bus_id]) BusMap.updateMarker(d);
-    if (mgrLiveMap && BusMap.markers[d.bus_id]) BusMap.updateMarker(d);
+    if (d && typeof BusMap !== 'undefined') {
+      BusMap.updateMarker(d);
+    }
+  });
+
+  document.addEventListener('bus:status', (e) => {
+    refreshDashboard();
   });
 });
 </script>

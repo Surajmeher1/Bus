@@ -2696,6 +2696,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadDashboard();
   SocketClient.connect();
 
+  document.addEventListener('bus:location', (e) => {
+    const data = e.detail;
+    if (!data) return;
+    if (typeof BusMap !== 'undefined') BusMap.updateMarker(data);
+    const speedEl = document.getElementById(`bus-speed-${data.bus_id}`);
+    if (speedEl) speedEl.textContent = `${Math.round(data.speed || 0)} km/h`;
+  });
+
+  document.addEventListener('bus:status', (e) => {
+    loadDashboard();
+    if (adminLiveMap) initAdminLiveMap();
+  });
+
   document.addEventListener('admin:geofence-violation', (e) => {
     const v = e.detail;
     const vContainer = document.getElementById('geofence-violations-list');
